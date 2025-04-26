@@ -66,7 +66,7 @@
 
 ### 8. 技術スタック 技術スタック
 
-- **フロント**: Next.js + TypeScript (shadcn/ui)
+- **フロント**: Next.js（App Router） + TypeScript (shadcn/ui)
 - **認証/DB**: Supabase (PostgreSQL)
 - **AI**: OpenAI API + LangChain (embedding & LLM 呼び出し)
 - **テスト**: Jest + React Testing Library （TDD 方針）
@@ -166,6 +166,128 @@ WHERE language = 'ja'
 | **α 期** (リリース直後) | 単純平均 `AVG(difficulty)`                                                                            | 総レビュー数 **< 30** または 1 冊あたり平均レビュー **< 3** |
 | **β 期** (レビュー増加) | 経験年数重み付きベイズ ` (Σd·w + m·μ)/(Σw + m)``w = 1/(1+experience_years) `, `m = 5`, `μ` = 全体平均 | 総レビュー数 **≥ 30** かつ 1 冊あたり平均レビュー **≥ 3**   |
 
-> - 数値は“数十件”を想定し、小規模でも早期にベイズ補正へ移行できるように設定。
+> - 数値は"数十件"を想定し、小規模でも早期にベイズ補正へ移行できるように設定。
 > - 切り替え判定は日次バッチまたは管理ダッシュボードで確認。
 > - 算出ロジックはサービス層にカプセル化し、`difficultyStrategy` を DI で差し替え可能にしておくとメンテ容易。
+
+### 15. ディレクトリ構成
+
+```
+devLibro/
+├── .github/                      # GitHub関連設定
+│   ├── workflows/                # CI/CD ワークフロー
+│   ├── ISSUE_TEMPLATE/           # Issue テンプレート
+│   └── PULL_REQUEST_TEMPLATE.md  # PR テンプレート
+├── public/                       # 静的ファイル
+│   ├── images/                   # 画像リソース
+│   └── fonts/                    # フォントファイル
+├── src/                          # ソースコード
+│   ├── app/                      # Next.js App Router
+│   │   ├── api/                  # API ルート
+│   │   │   ├── auth/             # 認証関連API
+│   │   │   ├── books/            # 書籍関連API
+│   │   │   ├── reviews/          # レビュー関連API
+│   │   │   └── ai/               # AI関連機能API
+│   │   ├── (marketing)/          # ログイン不要の公開ページ (SEO対策・MVP機能7)
+│   │   │   ├── page.tsx          # トップページ（検索エンジン最適化済み）
+│   │   │   ├── about/            # サービス紹介・使い方ガイド
+│   │   │   ├── books/            # 公開書籍カタログ（検索可能）
+│   │   │   └── layout.tsx        # 未ログインユーザー向け共通レイアウト
+│   │   ├── (app)/                # ルートグループ (アプリページ)
+│   │   │   ├── books/            # 書籍一覧・詳細
+│   │   │   │   └── [id]/         # 書籍詳細 (動的ルート)
+│   │   │   ├── me/               # マイページ
+│   │   │   │   ├── profile/      # プロフィール設定
+│   │   │   │   └── settings/     # ユーザー設定
+│   │   │   ├── search/           # 検索ページ
+│   │   │   └── layout.tsx        # アプリレイアウト (認証必須)
+│   │   └── layout.tsx            # ルートレイアウト
+│   ├── components/               # 共通コンポーネント
+│   │   ├── ui/                   # 基本UI (shadcn/ui)
+│   │   ├── books/                # 書籍関連コンポーネント
+│   │   │   ├── BookCard.tsx      # 書籍カード
+│   │   │   ├── DifficultyBadge.tsx # 難易度バッジ
+│   │   │   └── ReviewList.tsx    # レビューリスト
+│   │   ├── reviews/              # レビュー関連コンポーネント
+│   │   ├── layout/               # レイアウトコンポーネント
+│   │   │   ├── Header.tsx        # ヘッダー
+│   │   │   ├── Footer.tsx        # フッター
+│   │   │   └── Sidebar.tsx       # サイドバー
+│   │   ├── search/               # 検索関連コンポーネント
+│   │   └── auth/                 # 認証関連コンポーネント
+│   ├── lib/                      # ユーティリティ・ライブラリ
+│   │   ├── supabase/             # Supabase クライアント
+│   │   ├── api/                  # API関連ユーティリティ
+│   │   │   ├── books.ts          # Google Books API ラッパー
+│   │   │   └── commerce.ts       # Amazon/楽天リンク生成
+│   │   ├── ai/                   # AI関連ユーティリティ
+│   │   │   ├── embeddings.ts     # ベクトル検索機能
+│   │   │   ├── difficulty.ts     # 難易度推定ロジック
+│   │   │   └── summary.ts        # レビュー要約機能
+│   │   └── utils/                # 汎用ユーティリティ
+│   │       ├── datetime.ts       # 日付関連
+│   │       └── validation.ts     # バリデーション
+│   ├── hooks/                    # カスタムフック
+│   │   ├── useBooks.ts           # 書籍データ管理
+│   │   ├── useReviews.ts         # レビュー関連
+│   │   └── useSearch.ts          # 検索機能
+│   ├── styles/                   # グローバルスタイル
+│   ├── types/                    # 型定義
+│   │   ├── api.ts                # API関連型
+│   │   ├── book.ts               # 書籍関連型
+│   │   ├── user.ts               # ユーザー関連型
+│   │   └── supabase.ts           # Supabase関連型
+│   └── config/                   # 設定ファイル
+├── prisma/                       # Prisma ORM (オプション)
+│   └── schema.prisma             # データベーススキーマ
+├── migrations/                   # データベースマイグレーション
+│   └── 001_initial_schema.sql    # 初期スキーマ
+├── tests/                        # テスト
+│   ├── unit/                     # ユニットテスト
+│   ├── integration/              # 統合テスト
+│   ├── e2e/                      # E2Eテスト
+│   └── fixtures/                 # テスト用データ
+├── scripts/                      # ユーティリティスクリプト
+│   └── seed.ts                   # シードデータ
+├── docs/                         # ドキュメント
+├── .env.example                  # 環境変数テンプレート
+├── .eslintrc.js                  # ESLint設定
+├── .prettierrc                   # Prettier設定
+├── jest.config.js                # Jestテスト設定
+├── next.config.js                # Next.js設定
+├── tsconfig.json                 # TypeScript設定
+├── package.json                  # パッケージ設定
+└── README.md                     # プロジェクト概要
+```
+
+このディレクトリ構成は、Next.js App Router を採用し、機能ごとにモジュールを分離したクリーンアーキテクチャの考え方を取り入れています。各ディレクトリの役割と特徴：
+
+1. **ルートグループによる分離**:
+
+   - `(marketing)`: 未ログインでも閲覧可能なページ
+   - `(app)`: 認証が必要なアプリケーション本体
+
+2. **コンポーネント設計**:
+
+   - 機能ごとにディレクトリを分割し、再利用性を高める
+   - shadcn/ui を基本 UI として活用
+
+3. **API 設計**:
+
+   - リソースごとのエンドポイント分離
+   - Supabase 連携と Edge Functions を活用
+
+4. **AI モジュール**:
+
+   - レビュー要約、難易度推定など機能ごとに分離
+   - LangChain を使用した埋め込みと検索機能
+
+5. **テスト構造**:
+   - TDD 方針に基づき、十分なテストカバレッジを確保
+   - ユニット、統合、E2E テストの明確な分離
+
+この構成により、機能追加やメンテナンスが容易になり、チーム開発でも各メンバーが担当領域を明確に理解できます。また、AI や SEO 対策など後から追加される機能も柔軟に組み込める拡張性を確保しています。
+
+1. **ルートグループによる機能分離**:
+   - `(marketing)`: SEO 対策を施した未ログインユーザー向けページ群（MVP 機能 7）
+   - `(app)`: ログイン必須の主要機能（書籍管理・レビュー・共有機能など）
