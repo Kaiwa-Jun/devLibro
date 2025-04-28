@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { MessageSquarePlus } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import ReviewModal from '@/components/modals/ReviewModal';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,22 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-export default function WriteReviewButton() {
+interface WriteReviewButtonProps {
+  bookId?: string;
+}
+
+export default function WriteReviewButton({ bookId = '1' }: WriteReviewButtonProps) {
   const ref = useRef(null);
   const { scrollY } = useScroll();
   const opacity = useTransform(scrollY, [0, 100], [1, 0.8]);
+  const [open, setOpen] = useState(false);
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <motion.div
           className="fixed bottom-20 right-4 z-10 rounded-lg shadow-lg"
@@ -38,7 +47,7 @@ export default function WriteReviewButton() {
         <DialogHeader>
           <DialogTitle>レビューを投稿</DialogTitle>
         </DialogHeader>
-        <ReviewModal />
+        <ReviewModal bookId={bookId} onClose={handleClose} />
       </DialogContent>
     </Dialog>
   );
