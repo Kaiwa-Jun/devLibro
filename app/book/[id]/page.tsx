@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+
 import BookDetail from '@/components/book/BookDetail';
 import ReviewList from '@/components/book/ReviewList';
 import WriteReviewButton from '@/components/book/WriteReviewButton';
@@ -17,14 +18,14 @@ export function generateMetadata({ params }: Props): Metadata {
 }
 
 export async function generateStaticParams() {
-  return mockBooks.map((book) => ({
-    id: book.id.toString()
+  return mockBooks.map(book => ({
+    id: book.id.toString(),
   }));
 }
 
 export default function BookPage({ params }: Props) {
   const { id } = params;
-  
+
   return (
     <div className="space-y-6 pb-8 pt-2">
       <WriteReviewButton />

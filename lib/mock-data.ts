@@ -8,9 +8,11 @@ export const mockBooks: Book[] = [
     author: 'Boris Cherny',
     language: 'TypeScript',
     categories: ['フロントエンド', 'JavaScript'],
-    img_url: 'https://images.pexels.com/photos/3747279/pexels-photo-3747279.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/3747279/pexels-photo-3747279.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 3,
-    description: 'TypeScriptの基礎から高度な型の扱いまで、実践的なサンプルコードとともに解説。JavaScriptプログラマーが安全で拡張性の高いコードを書くための必読書。',
+    description:
+      'TypeScriptの基礎から高度な型の扱いまで、実践的なサンプルコードとともに解説。JavaScriptプログラマーが安全で拡張性の高いコードを書くための必読書。',
   },
   {
     id: '2',
@@ -19,9 +21,11 @@ export const mockBooks: Book[] = [
     author: 'David Flanagan',
     language: 'JavaScript',
     categories: ['フロントエンド', 'JavaScript'],
-    img_url: 'https://images.pexels.com/photos/11035471/pexels-photo-11035471.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/11035471/pexels-photo-11035471.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 2,
-    description: 'JavaScriptの基礎から応用まで幅広くカバーしたリファレンス。Node.js、ブラウザAPI、非同期プログラミングなど幅広いトピックを解説。',
+    description:
+      'JavaScriptの基礎から応用まで幅広くカバーしたリファレンス。Node.js、ブラウザAPI、非同期プログラミングなど幅広いトピックを解説。',
   },
   {
     id: '3',
@@ -30,9 +34,11 @@ export const mockBooks: Book[] = [
     author: 'Alex Banks, Eve Porcello',
     language: 'JavaScript',
     categories: ['フロントエンド', 'React'],
-    img_url: 'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 2,
-    description: 'Reactの基本概念からRedux、React Hooksまで、実践的なプロジェクトを通して学ぶ入門書。初心者から中級者まで幅広く対応。',
+    description:
+      'Reactの基本概念からRedux、React Hooksまで、実践的なプロジェクトを通して学ぶ入門書。初心者から中級者まで幅広く対応。',
   },
   {
     id: '4',
@@ -41,9 +47,11 @@ export const mockBooks: Book[] = [
     author: 'Jake VanderPlas',
     language: 'Python',
     categories: ['バックエンド', 'データサイエンス'],
-    img_url: 'https://images.pexels.com/photos/4115236/pexels-photo-4115236.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/4115236/pexels-photo-4115236.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 4,
-    description: 'Python のデータサイエンスライブラリ（NumPy、pandas、Matplotlib、scikit-learn）を活用したデータ分析と可視化の実践ガイド。',
+    description:
+      'Python のデータサイエンスライブラリ（NumPy、pandas、Matplotlib、scikit-learn）を活用したデータ分析と可視化の実践ガイド。',
   },
   {
     id: '5',
@@ -52,9 +60,11 @@ export const mockBooks: Book[] = [
     author: 'Katherine Cox-Buday',
     language: 'Go',
     categories: ['バックエンド'],
-    img_url: 'https://images.pexels.com/photos/11035524/pexels-photo-11035524.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/11035524/pexels-photo-11035524.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 4,
-    description: 'Goの並行処理機能（ゴルーチン、チャネル、セレクト）を活用した効率的なプログラミング手法を解説。並行処理のパターンとアンチパターンを学ぶ。',
+    description:
+      'Goの並行処理機能（ゴルーチン、チャネル、セレクト）を活用した効率的なプログラミング手法を解説。並行処理のパターンとアンチパターンを学ぶ。',
   },
   {
     id: '6',
@@ -63,9 +73,11 @@ export const mockBooks: Book[] = [
     author: '青山真也',
     language: 'その他',
     categories: ['インフラ', 'DevOps'],
-    img_url: 'https://images.pexels.com/photos/11035501/pexels-photo-11035501.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/11035501/pexels-photo-11035501.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 5,
-    description: 'コンテナオーケストレーションツールKubernetesの設計思想、アーキテクチャ、運用手法までを網羅したガイド。本番環境での活用法も解説。',
+    description:
+      'コンテナオーケストレーションツールKubernetesの設計思想、アーキテクチャ、運用手法までを網羅したガイド。本番環境での活用法も解説。',
   },
   {
     id: '7',
@@ -74,9 +86,11 @@ export const mockBooks: Book[] = [
     author: '谷本心',
     language: 'Java',
     categories: ['バックエンド'],
-    img_url: 'https://images.pexels.com/photos/11035390/pexels-photo-11035390.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/11035390/pexels-photo-11035390.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 1,
-    description: 'Javaプログラミングの基礎からオブジェクト指向、実践的なアプリケーション開発まで段階的に学べる入門書。初心者でも理解しやすい解説。',
+    description:
+      'Javaプログラミングの基礎からオブジェクト指向、実践的なアプリケーション開発まで段階的に学べる入門書。初心者でも理解しやすい解説。',
   },
   {
     id: '8',
@@ -85,9 +99,11 @@ export const mockBooks: Book[] = [
     author: 'Jim Blandy, Jason Orendorff, Leonora F.S. Tindall',
     language: 'Rust',
     categories: ['バックエンド', 'システムプログラミング'],
-    img_url: 'https://images.pexels.com/photos/4545156/pexels-photo-4545156.jpeg?auto=compress&cs=tinysrgb&w=800',
+    img_url:
+      'https://images.pexels.com/photos/4545156/pexels-photo-4545156.jpeg?auto=compress&cs=tinysrgb&w=800',
     avg_difficulty: 5,
-    description: 'Rustの特徴である所有権とボローチェックを理解し、安全で高速なプログラムを書く方法を学ぶ入門書。コンカレンシーやFFIなどの高度なトピックも解説。',
+    description:
+      'Rustの特徴である所有権とボローチェックを理解し、安全で高速なプログラムを書く方法を学ぶ入門書。コンカレンシーやFFIなどの高度なトピックも解説。',
   },
 ];
 
@@ -99,7 +115,8 @@ export const mockReviews: Review[] = [
     book_id: '1',
     difficulty: 4,
     experience_years: 2,
-    comment: 'TypeScriptの型システムの理解が深まりました。特に Union Types や Intersection Types の解説が分かりやすかったです。中級から上級者向けだと思います。',
+    comment:
+      'TypeScriptの型システムの理解が深まりました。特に Union Types や Intersection Types の解説が分かりやすかったです。中級から上級者向けだと思います。',
     created_at: '2023-10-15T08:30:00Z',
   },
   {
@@ -109,7 +126,8 @@ export const mockReviews: Review[] = [
     book_id: '1',
     difficulty: 3,
     experience_years: 4,
-    comment: '業務で使うTypeScriptの理解が格段に向上しました。型定義のセクションは特に参考になりました。エラーメッセージの読み方も学べて良かったです。',
+    comment:
+      '業務で使うTypeScriptの理解が格段に向上しました。型定義のセクションは特に参考になりました。エラーメッセージの読み方も学べて良かったです。',
     created_at: '2023-09-22T14:45:00Z',
   },
   {
@@ -119,7 +137,8 @@ export const mockReviews: Review[] = [
     book_id: '1',
     difficulty: 5,
     experience_years: 1,
-    comment: '初心者にはややハードルが高いかも。TypeScriptの経験が少ない状態で読むと難しく感じました。もう少しJavaScriptの基礎を固めてから読み直そうと思います。',
+    comment:
+      '初心者にはややハードルが高いかも。TypeScriptの経験が少ない状態で読むと難しく感じました。もう少しJavaScriptの基礎を固めてから読み直そうと思います。',
     created_at: '2023-11-05T10:15:00Z',
   },
   {
@@ -129,7 +148,8 @@ export const mockReviews: Review[] = [
     book_id: '1',
     difficulty: 3,
     experience_years: 7,
-    comment: '高度な型の活用方法が参考になりました。特にジェネリクスやcondition typesの実践的な例が多く、実務での型設計の参考になります。',
+    comment:
+      '高度な型の活用方法が参考になりました。特にジェネリクスやcondition typesの実践的な例が多く、実務での型設計の参考になります。',
     created_at: '2024-01-10T16:20:00Z',
   },
 ];

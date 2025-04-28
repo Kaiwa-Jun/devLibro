@@ -1,9 +1,10 @@
 'use client';
 
-import { Home, User } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Home, User } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
 import { cn } from '@/lib/utils';
 
 export default function TabBar() {
@@ -28,7 +29,7 @@ export default function TabBar() {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
       <div className="container mx-auto px-4">
         <div className="flex justify-around items-center h-16">
-          {tabs.map((tab) => (
+          {tabs.map(tab => (
             <Link
               key={tab.name}
               href={tab.href}
@@ -37,10 +38,7 @@ export default function TabBar() {
                 tab.active ? 'text-primary' : 'text-muted-foreground'
               )}
             >
-              <motion.div
-                whileTap={{ scale: 0.9 }}
-                className="flex flex-col items-center"
-              >
+              <motion.div whileTap={{ scale: 0.9 }} className="flex flex-col items-center">
                 <tab.icon className="h-6 w-6" />
                 <span className="text-xs mt-1">{tab.name}</span>
               </motion.div>

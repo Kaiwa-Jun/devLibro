@@ -1,5 +1,5 @@
 // Jest拡張とグローバル設定を追加
-import "@testing-library/jest-dom";
+import '@testing-library/jest-dom';
 
 // テスト実行前のグローバルモックセットアップ
 // 例: fetch APIのモック
@@ -10,12 +10,8 @@ global.fetch = jest.fn();
 const originalConsoleError = console.error;
 console.error = (...args) => {
   if (
-    /Warning: ReactDOM.render is no longer supported in React 18./.test(
-      args[0]
-    ) ||
-    /Warning: The current testing environment is not configured to support act/.test(
-      args[0]
-    )
+    /Warning: ReactDOM.render is no longer supported in React 18./.test(args[0]) ||
+    /Warning: The current testing environment is not configured to support act/.test(args[0])
   ) {
     return;
   }

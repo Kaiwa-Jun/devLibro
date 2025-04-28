@@ -1,8 +1,9 @@
 import { Metadata } from 'next';
-import SearchBar from '@/components/home/SearchBar';
-import FilterButtons from '@/components/home/FilterButtons';
-import BookGrid from '@/components/home/BookGrid';
+
 import AddBookButton from '@/components/home/AddBookButton';
+import BookGrid from '@/components/home/BookGrid';
+import FilterButtons from '@/components/home/FilterButtons';
+import SearchBar from '@/components/home/SearchBar';
 
 export const metadata: Metadata = {
   title: 'DevLibro - ホーム',

@@ -1,35 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import * as LucideIcons from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function ShareButton() {
   const [step, setStep] = useState(1);
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState('month');
   const [open, setOpen] = useState(false);
 
   const handleShare = () => {
-    toast.success("共有リンクがコピーされました");
+    toast.success('共有リンクがコピーされました');
     setOpen(false);
     setStep(1);
   };
@@ -67,9 +62,7 @@ export default function ShareButton() {
             <Card>
               <CardHeader>
                 <CardTitle>期間を選択</CardTitle>
-                <CardDescription>
-                  共有する読書データの期間を選択してください
-                </CardDescription>
+                <CardDescription>共有する読書データの期間を選択してください</CardDescription>
               </CardHeader>
               <CardContent>
                 <RadioGroup value={period} onValueChange={setPeriod}>
@@ -108,10 +101,10 @@ export default function ShareButton() {
               <CardHeader>
                 <CardTitle>共有プレビュー</CardTitle>
                 <CardDescription>
-                  {period === "week" && "直近1週間"}
-                  {period === "month" && "直近1ヶ月"}
-                  {period === "year" && "直近1年"}
-                  {period === "all" && "すべての期間"}
+                  {period === 'week' && '直近1週間'}
+                  {period === 'month' && '直近1ヶ月'}
+                  {period === 'year' && '直近1年'}
+                  {period === 'all' && 'すべての期間'}
                   の読書データを共有します
                 </CardDescription>
               </CardHeader>
@@ -135,10 +128,8 @@ export default function ShareButton() {
                       variant="secondary"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(
-                          "https://devlibro.example.com/share/u123abc"
-                        );
-                        toast.success("URLをコピーしました");
+                        navigator.clipboard.writeText('https://devlibro.example.com/share/u123abc');
+                        toast.success('URLをコピーしました');
                       }}
                     >
                       コピー

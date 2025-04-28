@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { BookOpen, Mail, Lock, User, Github, Chrome } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,19 +45,11 @@ export default function LoginPage() {
 
   const SocialLoginButtons = () => (
     <div className="space-y-3">
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => handleSocialLogin('GitHub')}
-      >
+      <Button variant="outline" className="w-full" onClick={() => handleSocialLogin('GitHub')}>
         <Github className="mr-2 h-4 w-4" />
         GitHubでログイン
       </Button>
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => handleSocialLogin('Google')}
-      >
+      <Button variant="outline" className="w-full" onClick={() => handleSocialLogin('Google')}>
         <Chrome className="mr-2 h-4 w-4" />
         Googleでログイン
       </Button>
@@ -74,12 +67,8 @@ export default function LoginPage() {
           >
             <BookOpen className="h-12 w-12 text-primary" />
           </motion.div>
-          <h2 className="mt-6 text-3xl font-bold tracking-tight">
-            DevLibroにログイン
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            技術書の管理をもっと便利に
-          </p>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight">DevLibroにログイン</h2>
+          <p className="mt-2 text-sm text-muted-foreground">技術書の管理をもっと便利に</p>
         </div>
 
         <Tabs defaultValue="login" className="w-full">
@@ -91,7 +80,7 @@ export default function LoginPage() {
           <TabsContent value="login">
             <div className="mt-8 space-y-6">
               <SocialLoginButtons />
-              
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -113,7 +102,7 @@ export default function LoginPage() {
                         placeholder="example@email.com"
                         className="pl-10"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={e => setEmail(e.target.value)}
                       />
                     </div>
                   </div>
@@ -128,7 +117,7 @@ export default function LoginPage() {
                         placeholder="••••••••"
                         className="pl-10"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={e => setPassword(e.target.value)}
                       />
                     </div>
                   </div>
@@ -144,7 +133,7 @@ export default function LoginPage() {
           <TabsContent value="signup">
             <div className="mt-8 space-y-6">
               <SocialLoginButtons />
-              
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -166,7 +155,7 @@ export default function LoginPage() {
                         placeholder="ユーザー名"
                         className="pl-10"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={e => setName(e.target.value)}
                       />
                     </div>
                   </div>
@@ -181,7 +170,7 @@ export default function LoginPage() {
                         placeholder="example@email.com"
                         className="pl-10"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={e => setEmail(e.target.value)}
                       />
                     </div>
                   </div>
@@ -196,7 +185,7 @@ export default function LoginPage() {
                         placeholder="••••••••"
                         className="pl-10"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={e => setPassword(e.target.value)}
                       />
                     </div>
                   </div>

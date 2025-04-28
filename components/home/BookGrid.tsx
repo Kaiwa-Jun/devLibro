@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+
 import BookCard from '@/components/home/BookCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockBooks } from '@/lib/mock-data';
@@ -25,14 +26,14 @@ export default function BookGrid() {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    show: { opacity: 1, y: 0 },
   };
 
   if (loading) {
@@ -50,13 +51,13 @@ export default function BookGrid() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
       variants={container}
       initial="hidden"
       animate="show"
     >
-      {books.map((book) => (
+      {books.map(book => (
         <motion.div key={book.id} variants={item}>
           <BookCard book={book} />
         </motion.div>

@@ -9,7 +9,7 @@
 // 以下はAPIモジュールが存在することを想定したサンプルコードです
 // 実際の実装に合わせて調整してください
 
-describe("API fetch tests", () => {
+describe('API fetch tests', () => {
   // fetch APIのグローバルモックをセットアップ
   beforeEach(() => {
     global.fetch = jest.fn();
@@ -19,23 +19,21 @@ describe("API fetch tests", () => {
     jest.resetAllMocks();
   });
 
-  it("should fetch book data from Google Books API", async () => {
+  it('should fetch book data from Google Books API', async () => {
     // 成功レスポンスのモック
     const mockResponse = {
       items: [
         {
-          id: "bookId123",
+          id: 'bookId123',
           volumeInfo: {
-            title: "テスト駆動開発入門",
-            authors: ["テスト 太郎"],
-            industryIdentifiers: [
-              { type: "ISBN_13", identifier: "9784123456789" },
-            ],
+            title: 'テスト駆動開発入門',
+            authors: ['テスト 太郎'],
+            industryIdentifiers: [{ type: 'ISBN_13', identifier: '9784123456789' }],
             imageLinks: {
-              thumbnail: "https://example.com/image.jpg",
+              thumbnail: 'https://example.com/image.jpg',
             },
-            language: "ja",
-            categories: ["コンピュータ", "プログラミング"],
+            language: 'ja',
+            categories: ['コンピュータ', 'プログラミング'],
           },
         },
       ],
@@ -61,11 +59,9 @@ describe("API fetch tests", () => {
     expect(true).toBe(true);
   });
 
-  it("should handle API error gracefully", async () => {
+  it('should handle API error gracefully', async () => {
     // エラーレスポンスのモック
-    (global.fetch as jest.Mock).mockRejectedValueOnce(
-      new Error("API接続エラー")
-    );
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API接続エラー'));
 
     // 実際のテスト（コメントアウト状態）
     // await expect(fetchBookByISBN('9784123456789')).rejects.toThrow('API接続エラー');
@@ -78,10 +74,10 @@ describe("API fetch tests", () => {
 /**
  * Supabaseクライアントのモックサンプル
  */
-describe("Supabase client mocks", () => {
+describe('Supabase client mocks', () => {
   // 実際にSupabaseクライアントがセットアップされていることを想定
 
-  it("should mock Supabase query", async () => {
+  it('should mock Supabase query', async () => {
     // 以下は実装例です。実際のプロジェクト構造に合わせて調整してください
 
     /*

@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Camera } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useDebounce } from '@/hooks/useDebounce';
-import { mockBooks } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useDebounce } from '@/hooks/useDebounce';
+import { mockBooks } from '@/lib/mock-data';
 
 export default function SearchBar() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,13 +17,16 @@ export default function SearchBar() {
   const [noResults, setNoResults] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // 検索候補のモックデータ
-  const suggestions = mockBooks.filter(book => 
-    book.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    book.author.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-  ).slice(0, 5);
-  
+  const suggestions = mockBooks
+    .filter(
+      book =>
+        book.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    )
+    .slice(0, 5);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -50,7 +54,7 @@ export default function SearchBar() {
     setShowSuggestions(true);
     setNoResults(false);
   }, [debouncedSearchTerm]);
-  
+
   return (
     <div className="relative max-w-2xl mx-auto" ref={containerRef}>
       <div className="relative">
@@ -60,7 +64,7 @@ export default function SearchBar() {
           placeholder="書籍タイトルを検索"
           className="pl-10 pr-4 h-11 rounded-full bg-muted"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={e => setSearchTerm(e.target.value)}
           onFocus={() => {
             if (searchTerm) setShowSuggestions(true);
           }}
@@ -112,7 +116,7 @@ export default function SearchBar() {
                 </div>
               </div>
             ) : (
-              suggestions.map((book) => (
+              suggestions.map(book => (
                 <Link
                   key={book.id}
                   href={`/book/${book.id}`}

@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { ExternalLink, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
+import { ExternalLink, BookOpen } from 'lucide-react';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Book } from '@/types';
-import { getDifficultyInfo } from '@/lib/utils';
 import { mockBooks } from '@/lib/mock-data';
+import { getDifficultyInfo } from '@/lib/utils';
+import { Book } from '@/types';
 
 type BookDetailProps = {
   id: string;
@@ -73,7 +74,7 @@ export default function BookDetail({ id }: BookDetailProps) {
               sizes="180px"
             />
           </motion.div>
-          
+
           <div className="flex-1 space-y-4">
             <motion.div
               initial={{ opacity: 0 }}
@@ -83,8 +84,8 @@ export default function BookDetail({ id }: BookDetailProps) {
               <h1 className="text-2xl font-bold">{book.title}</h1>
               <p className="text-muted-foreground">{book.author}</p>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -96,17 +97,13 @@ export default function BookDetail({ id }: BookDetailProps) {
               <Badge variant="outline" className="border">
                 {book.language}
               </Badge>
-              {book.categories.map((category) => (
-                <Badge 
-                  key={category} 
-                  variant="outline"
-                  className="border"
-                >
+              {book.categories.map(category => (
+                <Badge key={category} variant="outline" className="border">
                   {category}
                 </Badge>
               ))}
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="gap-1.5 border"
                 style={{ color: `var(--${difficultyInfo.color})` }}
               >
@@ -114,8 +111,8 @@ export default function BookDetail({ id }: BookDetailProps) {
                 <span>{difficultyInfo.label}</span>
               </Badge>
             </motion.div>
-            
-            <motion.p 
+
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
@@ -123,8 +120,8 @@ export default function BookDetail({ id }: BookDetailProps) {
             >
               {book.description}
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}

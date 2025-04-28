@@ -10,9 +10,9 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: '2rem',
       screens: {
-        "2xl": "1200px",
+        '2xl': '1200px',
       },
     },
     extend: {
@@ -57,7 +57,7 @@ const config: Config = {
         sm: 'calc(var(--radius) - 0.5rem)',
       },
       boxShadow: {
-        'card': '0 2px 4px 0 rgba(0,0,0,0.08)',
+        card: '0 2px 4px 0 rgba(0,0,0,0.08)',
       },
       fontFamily: {
         sans: ['Inter', 'Noto Sans JP', 'system-ui', 'sans-serif'],

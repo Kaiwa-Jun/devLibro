@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import * as LucideIcons from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
+import { useState } from 'react';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -12,60 +14,54 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 const experienceOptions = [
-  { value: "0", label: "未経験" },
-  { value: "1", label: "1年未満" },
-  { value: "2", label: "1〜3年" },
-  { value: "3", label: "3〜5年" },
-  { value: "4", label: "5年以上" },
+  { value: '0', label: '未経験' },
+  { value: '1', label: '1年未満' },
+  { value: '2', label: '1〜3年' },
+  { value: '3', label: '3〜5年' },
+  { value: '4', label: '5年以上' },
 ];
 
 const getExperienceLabel = (value: string) => {
-  return (
-    experienceOptions.find((option) => option.value === value)?.label ||
-    "未設定"
-  );
+  return experienceOptions.find(option => option.value === value)?.label || '未設定';
 };
 
 const getExperienceValue = (years: number) => {
-  if (years === 0) return "0";
-  if (years < 1) return "1";
-  if (years < 3) return "2";
-  if (years < 5) return "3";
-  return "4";
+  if (years === 0) return '0';
+  if (years < 1) return '1';
+  if (years < 3) return '2';
+  if (years < 5) return '3';
+  return '4';
 };
 
 export default function UserInfo() {
-  const [userName, setUserName] = useState("テックリーダー");
+  const [userName, setUserName] = useState('テックリーダー');
   const [experienceYears, setExperienceYears] = useState(5);
   const [editMode, setEditMode] = useState(false);
 
   const [editedName, setEditedName] = useState(userName);
-  const [editedExperience, setEditedExperience] = useState(
-    getExperienceValue(experienceYears)
-  );
+  const [editedExperience, setEditedExperience] = useState(getExperienceValue(experienceYears));
 
   const handleSave = () => {
     setUserName(editedName);
     // 経験年数の値を数値に変換
     const yearsMap: Record<string, number> = {
-      "0": 0,
-      "1": 0.5,
-      "2": 2,
-      "3": 4,
-      "4": 5,
+      '0': 0,
+      '1': 0.5,
+      '2': 2,
+      '3': 4,
+      '4': 5,
     };
     setExperienceYears(yearsMap[editedExperience]);
     setEditMode(false);
@@ -102,20 +98,17 @@ export default function UserInfo() {
                   <Input
                     id="username"
                     value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
+                    onChange={e => setEditedName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="experience">経験年数</Label>
-                  <Select
-                    value={editedExperience}
-                    onValueChange={setEditedExperience}
-                  >
+                  <Select value={editedExperience} onValueChange={setEditedExperience}>
                     <SelectTrigger id="experience" className="w-full">
                       <SelectValue placeholder="経験年数を選択" />
                     </SelectTrigger>
                     <SelectContent>
-                      {experienceOptions.map((option) => (
+                      {experienceOptions.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

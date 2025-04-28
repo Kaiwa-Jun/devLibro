@@ -6,12 +6,12 @@ const nextConfig = {
   },
   images: { unoptimized: true },
   // メモリキャッシュを使用してファイルシステムの問題を回避
-  webpack: (config) => {
+  webpack: config => {
     config.cache = {
-      type: 'memory'
+      type: 'memory',
     };
     return config;
-  }
+  },
 };
 
 module.exports = nextConfig;

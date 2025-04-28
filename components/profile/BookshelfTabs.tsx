@@ -1,22 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import * as LucideIcons from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import AddBookModal from '@/components/modals/AddBookModal';
+import BookshelfItem from '@/components/profile/BookshelfItem';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import BookshelfItem from "@/components/profile/BookshelfItem";
-import AddBookModal from "@/components/modals/AddBookModal";
-import { UserBook } from "@/types";
-import { mockUserBooks } from "@/lib/mock-data";
+} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { mockUserBooks } from '@/lib/mock-data';
+import { UserBook } from '@/types';
 
 export default function BookshelfTabs() {
   const [loading, setLoading] = useState(true);
@@ -32,9 +33,9 @@ export default function BookshelfTabs() {
     return () => clearTimeout(timer);
   }, []);
 
-  const unreadBooks = userBooks.filter((book) => book.status === "unread");
-  const readingBooks = userBooks.filter((book) => book.status === "reading");
-  const doneBooks = userBooks.filter((book) => book.status === "done");
+  const unreadBooks = userBooks.filter(book => book.status === 'unread');
+  const readingBooks = userBooks.filter(book => book.status === 'reading');
+  const doneBooks = userBooks.filter(book => book.status === 'done');
 
   if (loading) {
     return (
@@ -71,9 +72,7 @@ export default function BookshelfTabs() {
       <Tabs defaultValue="unread">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="unread">未読 ({unreadBooks.length})</TabsTrigger>
-          <TabsTrigger value="reading">
-            読書中 ({readingBooks.length})
-          </TabsTrigger>
+          <TabsTrigger value="reading">読書中 ({readingBooks.length})</TabsTrigger>
           <TabsTrigger value="done">読了 ({doneBooks.length})</TabsTrigger>
         </TabsList>
 
@@ -81,13 +80,9 @@ export default function BookshelfTabs() {
           <AnimatePresence>
             <motion.div className="space-y-4">
               {unreadBooks.length > 0 ? (
-                unreadBooks.map((userBook) => (
-                  <BookshelfItem key={userBook.id} userBook={userBook} />
-                ))
+                unreadBooks.map(userBook => <BookshelfItem key={userBook.id} userBook={userBook} />)
               ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  未読の本はありません
-                </p>
+                <p className="text-center text-muted-foreground py-8">未読の本はありません</p>
               )}
             </motion.div>
           </AnimatePresence>
@@ -97,13 +92,11 @@ export default function BookshelfTabs() {
           <AnimatePresence>
             <motion.div className="space-y-4">
               {readingBooks.length > 0 ? (
-                readingBooks.map((userBook) => (
+                readingBooks.map(userBook => (
                   <BookshelfItem key={userBook.id} userBook={userBook} />
                 ))
               ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  読書中の本はありません
-                </p>
+                <p className="text-center text-muted-foreground py-8">読書中の本はありません</p>
               )}
             </motion.div>
           </AnimatePresence>
@@ -113,13 +106,9 @@ export default function BookshelfTabs() {
           <AnimatePresence>
             <motion.div className="space-y-4">
               {doneBooks.length > 0 ? (
-                doneBooks.map((userBook) => (
-                  <BookshelfItem key={userBook.id} userBook={userBook} />
-                ))
+                doneBooks.map(userBook => <BookshelfItem key={userBook.id} userBook={userBook} />)
               ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  読了した本はありません
-                </p>
+                <p className="text-center text-muted-foreground py-8">読了した本はありません</p>
               )}
             </motion.div>
           </AnimatePresence>

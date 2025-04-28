@@ -1,8 +1,8 @@
-import { Metadata } from "next";
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "マイ本棚 | DevLibro",
-  description: "あなたの技術書コレクションを管理しましょう",
+  title: 'マイ本棚 | DevLibro',
+  description: 'あなたの技術書コレクションを管理しましょう',
 };
 
 export default function ProfilePage() {

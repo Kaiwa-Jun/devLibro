@@ -1,22 +1,23 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import * as LucideIcons from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { UserBook } from "@/types";
-import { formatDate } from "@/lib/utils";
+} from '@/components/ui/dropdown-menu';
+import { Progress } from '@/components/ui/progress';
+import { formatDate } from '@/lib/utils';
+import { UserBook } from '@/types';
 
 type BookshelfItemProps = {
   userBook: UserBook;
@@ -27,23 +28,23 @@ export default function BookshelfItem({ userBook }: BookshelfItemProps) {
 
   const getStatusIcon = () => {
     switch (userBook.status) {
-      case "unread":
+      case 'unread':
         return <LucideIcons.Clock className="h-4 w-4" />;
-      case "reading":
+      case 'reading':
         return <LucideIcons.BookOpen className="h-4 w-4" />;
-      case "done":
+      case 'done':
         return <LucideIcons.Check className="h-4 w-4" />;
     }
   };
 
   const getStatusText = () => {
     switch (userBook.status) {
-      case "unread":
-        return "未読";
-      case "reading":
-        return "読書中";
-      case "done":
-        return "読了";
+      case 'unread':
+        return '未読';
+      case 'reading':
+        return '読書中';
+      case 'done':
+        return '読了';
     }
   };
 
@@ -79,11 +80,7 @@ export default function BookshelfItem({ userBook }: BookshelfItemProps) {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0"
-                    >
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
                       <LucideIcons.MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -91,16 +88,12 @@ export default function BookshelfItem({ userBook }: BookshelfItemProps) {
                     <DropdownMenuItem>未読に設定</DropdownMenuItem>
                     <DropdownMenuItem>読書中に設定</DropdownMenuItem>
                     <DropdownMenuItem>読了に設定</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      本棚から削除
-                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">本棚から削除</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
 
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {userBook.book.author}
-              </p>
+              <p className="text-sm text-muted-foreground line-clamp-1">{userBook.book.author}</p>
 
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="gap-1">
@@ -115,7 +108,7 @@ export default function BookshelfItem({ userBook }: BookshelfItemProps) {
                 )}
               </div>
 
-              {userBook.status === "reading" && (
+              {userBook.status === 'reading' && (
                 <div className="mt-2">
                   <div className="flex justify-between text-xs mb-1">
                     <span>進捗</span>
