@@ -1,53 +1,53 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Share2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import * as LucideIcons from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+} from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export default function ShareButton() {
   const [step, setStep] = useState(1);
-  const [period, setPeriod] = useState('month');
+  const [period, setPeriod] = useState("month");
   const [open, setOpen] = useState(false);
-  
+
   const handleShare = () => {
-    toast.success('共有リンクがコピーされました');
+    toast.success("共有リンクがコピーされました");
     setOpen(false);
     setStep(1);
   };
-  
+
   const handleNext = () => {
     setStep(2);
   };
-  
+
   const handleBack = () => {
     setStep(1);
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <motion.div whileTap={{ scale: 0.95 }}>
           <Button variant="outline" size="sm" className="gap-2">
-            <Share2 className="h-4 w-4" />
+            <LucideIcons.Share2 className="h-4 w-4" />
             <span>SNS共有</span>
           </Button>
         </motion.div>
@@ -56,7 +56,7 @@ export default function ShareButton() {
         <DialogHeader>
           <DialogTitle>読書記録を共有</DialogTitle>
         </DialogHeader>
-        
+
         {step === 1 ? (
           <motion.div
             key="step1"
@@ -90,7 +90,7 @@ export default function ShareButton() {
                     <Label htmlFor="all">すべて</Label>
                   </div>
                 </RadioGroup>
-                
+
                 <div className="flex justify-end mt-6">
                   <Button onClick={handleNext}>次へ</Button>
                 </div>
@@ -108,10 +108,10 @@ export default function ShareButton() {
               <CardHeader>
                 <CardTitle>共有プレビュー</CardTitle>
                 <CardDescription>
-                  {period === 'week' && '直近1週間'}
-                  {period === 'month' && '直近1ヶ月'}
-                  {period === 'year' && '直近1年'}
-                  {period === 'all' && 'すべての期間'}
+                  {period === "week" && "直近1週間"}
+                  {period === "month" && "直近1ヶ月"}
+                  {period === "year" && "直近1年"}
+                  {period === "all" && "すべての期間"}
                   の読書データを共有します
                 </CardDescription>
               </CardHeader>
@@ -122,7 +122,7 @@ export default function ShareButton() {
                     読んだ本: 5冊 / 総ページ数: 1,250 / 学習時間: 42時間
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="share-url">共有URL</Label>
                   <div className="flex space-x-2">
@@ -131,17 +131,25 @@ export default function ShareButton() {
                       value="https://devlibro.example.com/share/u123abc"
                       readOnly
                     />
-                    <Button variant="secondary" size="sm" onClick={() => {
-                      navigator.clipboard.writeText("https://devlibro.example.com/share/u123abc");
-                      toast.success("URLをコピーしました");
-                    }}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          "https://devlibro.example.com/share/u123abc"
+                        );
+                        toast.success("URLをコピーしました");
+                      }}
+                    >
                       コピー
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between mt-6">
-                  <Button variant="outline" onClick={handleBack}>戻る</Button>
+                  <Button variant="outline" onClick={handleBack}>
+                    戻る
+                  </Button>
                   <Button onClick={handleShare}>共有する</Button>
                 </div>
               </CardContent>

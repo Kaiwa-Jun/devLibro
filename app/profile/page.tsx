@@ -1,21 +1,15 @@
-import { Metadata } from 'next';
-import UserInfo from '@/components/profile/UserInfo';
-import BookshelfTabs from '@/components/profile/BookshelfTabs';
-import ShareButton from '@/components/profile/ShareButton';
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'マイ本棚 | DevLibro',
-  description: 'あなたの技術書コレクションを管理しましょう',
+  title: "マイ本棚 | DevLibro",
+  description: "あなたの技術書コレクションを管理しましょう",
 };
 
 export default function ProfilePage() {
   return (
     <div className="space-y-6 pb-8 pt-2">
-      <div className="flex justify-between items-start">
-        <UserInfo />
-        <ShareButton />
-      </div>
-      <BookshelfTabs />
+      <h1 className="text-2xl font-bold">マイ本棚</h1>
+      <p>Coming soon... (開発中)</p>
     </div>
   );
 }
