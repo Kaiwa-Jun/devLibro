@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
+    
+    --primary: 207 82% 51%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 200 4% 96%;
+    --secondary-foreground: 0 0% 13%;
+    
+    --muted: 200 4% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 36 100% 50%;
+    --accent-foreground: 0 0% 13%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 207 82% 51%;
+
+    --difficulty-easy: #ef4444;
+    --difficulty-somewhat-easy: #eab308;
+    --difficulty-normal: #22c55e;
+    --difficulty-somewhat-hard: #3b82f6;
+    --difficulty-hard: #a855f7;
+    --difficulty-unknown: #94a3b8;
+    
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 93%;
+    
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 93%;
+    
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 93%;
+    
+    --primary: 183 100% 35%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 93%;
+    
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 63.9%;
+    
+    --accent: 36 100% 66%;
+    --accent-foreground: 0 0% 13%;
+    
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 93%;
+    
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 183 100% 35%;
+
+    --difficulty-easy: #ef4444;
+    --difficulty-somewhat-easy: #eab308;
+    --difficulty-normal: #22c55e;
+    --difficulty-somewhat-hard: #3b82f6;
+    --difficulty-hard: #a855f7;
+    --difficulty-unknown: #94a3b8;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.font-sans {
+  font-family: "Inter", "Noto Sans JP", system-ui, sans-serif;
+}
+
+/* ダークモード時のバッジスタイル */
+.dark .border {
+  border-color: hsl(0 0% 20%);
+}
+
+.dark [data-state="active"] {
+  border-color: hsl(0 0% 20%) !important;
+}
