@@ -1,0 +1,42 @@
+name: テスト実行
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Node.jsのセットアップ ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: 依存関係のインストール
+        run: npm ci
+
+      - name: コードのリント
+        run: npm run lint
+
+      - name: テストの実行
+        run: npm run test -- --passWithNoTests
+
+      - name: テストカバレッジの保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
+      - name: ビルドの確認
+        run: npm run build
