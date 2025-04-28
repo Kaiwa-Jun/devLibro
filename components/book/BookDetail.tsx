@@ -1,9 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ExternalLink, BookOpen } from 'lucide-react';
+import { BookOpen, ExternalLink, Info, Share2, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -128,18 +128,39 @@ export default function BookDetail({ id }: BookDetailProps) {
               className="flex flex-wrap gap-2 pt-2"
             >
               <Button variant="outline" className="gap-2" asChild>
-                <a href="#" target="_blank" rel="noopener noreferrer">
+                <a href="https://amazon.co.jp" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                   <span>Amazon</span>
                 </a>
               </Button>
               <Button variant="outline" className="gap-2" asChild>
-                <a href="#" target="_blank" rel="noopener noreferrer">
+                <a href="https://books.rakuten.co.jp" target="_blank" rel="noopener noreferrer">
                   <BookOpen className="h-4 w-4" />
                   <span>楽天Books</span>
                 </a>
               </Button>
             </motion.div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex space-x-2">
+                <Button size="sm" variant="outline">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  シェア
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <a href="https://example.com/amazon" target="_blank" rel="noopener noreferrer">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Amazonで購入
+                  </a>
+                </Button>
+              </div>
+              <Button size="sm" variant="outline" asChild>
+                <a href="https://example.com/more" target="_blank" rel="noopener noreferrer">
+                  <Info className="mr-2 h-4 w-4" />
+                  詳細情報
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

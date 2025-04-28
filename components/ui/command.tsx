@@ -1,6 +1,6 @@
 'use client';
 
-import { type DialogProps } from '@radix-ui/react-dialog';
+import { DialogProps } from '@radix-ui/react-dialog';
 import { Command as CommandPrimitive } from 'cmdk';
 import { Search } from 'lucide-react';
 import * as React from 'react';
@@ -23,7 +23,9 @@ const Command = React.forwardRef<
 ));
 Command.displayName = CommandPrimitive.displayName;
 
-interface CommandDialogProps extends DialogProps {}
+interface CommandDialogProps extends DialogProps {
+  commandProps?: React.ComponentPropsWithoutRef<typeof Command>;
+}
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
@@ -37,11 +39,18 @@ const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   );
 };
 
+type CommandInputProps = React.ComponentProps<typeof CommandPrimitive.Input> & {
+  wrapperClassName?: string;
+};
+
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+  CommandInputProps
+>(({ className, wrapperClassName, ...props }, ref) => (
+  <div
+    className={cn('flex items-center border-b px-3', wrapperClassName)}
+    data-cmdk-input-wrapper=""
+  >
     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}
@@ -135,11 +144,11 @@ CommandShortcut.displayName = 'CommandShortcut';
 export {
   Command,
   CommandDialog,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
-  CommandShortcut,
+  CommandList,
   CommandSeparator,
+  CommandShortcut,
 };

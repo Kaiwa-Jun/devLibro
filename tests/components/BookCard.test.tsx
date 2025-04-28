@@ -6,14 +6,20 @@ import { Book } from '@/types';
 // モックの設定
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: {
+    src: string;
+    alt: string;
+    className?: string;
+    fill?: boolean;
+    sizes?: string;
+  }) => {
     return <img src={props.src} alt={props.alt} className={props.className} />;
   },
 }));
 
 jest.mock('next/link', () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: { href: string; className?: string; children: React.ReactNode }) => {
     return <a href={props.href}>{props.children}</a>;
   },
 }));
@@ -21,7 +27,13 @@ jest.mock('next/link', () => ({
 // フレーマーモーションのモック
 jest.mock('framer-motion', () => ({
   motion: {
-    div: (props: any) => {
+    div: (props: {
+      className?: string;
+      children: React.ReactNode;
+      initial?: Record<string, unknown>;
+      animate?: Record<string, unknown>;
+      transition?: Record<string, unknown>;
+    }) => {
       return <div className={props.className}>{props.children}</div>;
     },
   },

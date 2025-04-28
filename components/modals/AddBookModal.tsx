@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Camera, Loader2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Camera, Loader2, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -9,15 +9,41 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/useDebounce';
+
+interface BookData {
+  id: string;
+  title: string;
+  author: string;
+  img_url: string;
+  publisher: string;
+  isbn: string;
+}
+
+interface FormData {
+  title: string;
+  author: string;
+  isbn: string;
+  rating: number;
+  status: string;
+  notes: string;
+}
+
+type BookStatus = 'unread' | 'reading' | 'done';
+
+type AddBookModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddBook: (book: FormData) => void;
+};
 
 export default function AddBookModal() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedBook, setSelectedBook] = useState<any | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<'unread' | 'reading' | 'done'>('unread');
+  const [searchResults, setSearchResults] = useState<BookData[]>([]);
+  const [selectedBook, setSelectedBook] = useState<BookData | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<BookStatus>('unread');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -60,7 +86,7 @@ export default function AddBookModal() {
     }
   };
 
-  const handleSelectBook = (book: any) => {
+  const handleSelectBook = (book: BookData) => {
     setSelectedBook(book);
   };
 
@@ -204,7 +230,10 @@ export default function AddBookModal() {
 
             <div className="space-y-2">
               <h3 className="text-sm font-medium">ステータス</h3>
-              <Tabs value={selectedStatus} onValueChange={value => setSelectedStatus(value as any)}>
+              <Tabs
+                value={selectedStatus}
+                onValueChange={value => setSelectedStatus(value as BookStatus)}
+              >
                 <TabsList className="grid grid-cols-3 w-full">
                   <TabsTrigger value="unread">未読</TabsTrigger>
                   <TabsTrigger value="reading">読書中</TabsTrigger>
