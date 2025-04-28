@@ -32,12 +32,6 @@ interface FormData {
 
 type BookStatus = 'unread' | 'reading' | 'done';
 
-type AddBookModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onAddBook: (book: FormData) => void;
-};
-
 export default function AddBookModal() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -80,7 +74,7 @@ export default function AddBookModal() {
         setSearchResults(mockResults);
         setIsSearching(false);
       }, 1000);
-    } catch (error) {
+    } catch (_error) {
       toast.error('検索中にエラーが発生しました');
       setIsSearching(false);
     }
@@ -94,7 +88,6 @@ export default function AddBookModal() {
     if (!selectedBook) return;
 
     // 実際の実装ではここでAPI呼び出し
-    console.log({ book: selectedBook, status: selectedStatus });
     toast.success('蔵書に追加しました');
 
     // フォームをリセット

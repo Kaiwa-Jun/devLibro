@@ -12,7 +12,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { getDifficultyInfo } from '@/lib/utils';
 
-export default function ReviewModal() {
+interface ReviewModalProps {
+  bookId: string;
+  onClose: () => void;
+}
+
+export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
   const [difficulty, setDifficulty] = useState(3);
   const [comment, setComment] = useState('');
   const [postType, setPostType] = useState<'named' | 'anonymous'>('named');
@@ -26,28 +31,23 @@ export default function ReviewModal() {
     }
   };
 
-  const handleSubmit = () => {
-    if (!comment.trim()) {
-      toast.error('レビューコメントを入力してください');
-      return;
+  const handleSaveReview = async () => {
+    if (!comment.trim()) return;
+
+    try {
+      // APIを呼び出す代わりにモック処理
+      // 実際の実装では、ここで保存APIを呼び出す
+      console.log(
+        `保存するレビュー: bookId=${bookId}, difficulty=${difficulty}, comment=${comment}, userName=${postType === 'named' ? userName : '匿名'}`
+      );
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast.success('レビューを保存しました');
+      onClose();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      toast.error(`エラーが発生しました: ${errorMessage}`);
     }
-
-    if (postType === 'named' && !userName.trim()) {
-      toast.error('ユーザー名を入力してください');
-      return;
-    }
-
-    // 実際の実装ではここでAPI呼び出し
-    console.log({
-      difficulty,
-      comment,
-      userName: postType === 'anonymous' ? '匿名' : userName,
-    });
-    toast.success('レビューを投稿しました');
-
-    // フォームをリセット
-    setDifficulty(3);
-    setComment('');
   };
 
   const difficultyOptions = [1, 2, 3, 4, 5].map(level => {
@@ -139,8 +139,8 @@ export default function ReviewModal() {
         />
       </div>
 
-      <Button className="w-full" onClick={handleSubmit}>
-        レビューを投稿
+      <Button className="w-full" onClick={handleSaveReview}>
+        レビューを保存
       </Button>
     </div>
   );

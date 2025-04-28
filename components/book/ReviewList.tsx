@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 import ReviewItem from '@/components/book/ReviewItem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

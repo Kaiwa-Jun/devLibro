@@ -1,22 +1,10 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Filter,
-  X,
-  Code2,
-  Server,
-  Smartphone,
-  Cloud,
-  Database,
-  Shield,
-  Brain,
-  Cog,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Brain, Cloud, Code2, Cog, Database, Server, Shield, Smartphone, X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn, getDifficultyInfo } from '@/lib/utils';

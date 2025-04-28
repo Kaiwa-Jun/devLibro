@@ -23,8 +23,8 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function BookPage({ params }: Props) {
-  const { id } = params;
+export default function Page({ params: _params }: { params: { id: string } }) {
+  const { id } = _params;
 
   return (
     <div className="space-y-6 pb-8 pt-2">

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, Mail, Lock, User, Github, Chrome } from 'lucide-react';
+import { BookOpen, Chrome, Github, Lock, Mail, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -18,7 +18,8 @@ type AuthDialogProps = {
 };
 
 export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
-  const router = useRouter();
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const _router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');

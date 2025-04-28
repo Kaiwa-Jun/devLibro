@@ -1,10 +1,10 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Camera } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Camera, Search, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,11 @@ export default function SearchBar() {
     setShowSuggestions(true);
     setNoResults(false);
   }, [debouncedSearchTerm]);
+
+  const handleSearch = () => {
+    if (!searchTerm.trim()) return;
+    // Navigate to search results page
+  };
 
   return (
     <div className="relative max-w-2xl mx-auto" ref={containerRef}>
@@ -107,7 +112,6 @@ export default function SearchBar() {
                     className="gap-2"
                     onClick={() => {
                       // ここにバーコードスキャン機能を実装
-                      console.log('バーコードスキャン');
                     }}
                   >
                     <Camera className="h-4 w-4" />
