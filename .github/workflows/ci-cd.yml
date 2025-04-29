@@ -1,0 +1,78 @@
+name: CI/CD ワークフロー
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: '開発環境にデプロイする'
+        type: boolean
+        default: false
+
+jobs:
+  lint-test-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Node.jsのセットアップ ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: 依存関係のインストール
+        run: npm ci
+
+      - name: コードのリント
+        run: npm run lint
+
+      - name: テストの実行
+        run: npm run test:ci
+
+      - name: テストカバレッジの保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
+      - name: カバレッジレポートをPRコメントとして表示
+        uses: MishaKav/jest-coverage-comment@main
+        if: github.event_name == 'pull_request'
+        with:
+          coverage-summary-path: ./coverage/coverage-summary.json
+          title: 'テストカバレッジレポート'
+          summary-title: '📊 カバレッジ概要'
+          badge-title: 'カバレッジ'
+          hide-comment: false
+          create-new-comment: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ビルドの確認
+        run: npm run build
+
+  deploy-dev:
+    needs: lint-test-build
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || github.event.inputs.deploy == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Vercelへのデプロイ
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod'
