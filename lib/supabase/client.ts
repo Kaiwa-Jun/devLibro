@@ -23,6 +23,23 @@ const getSupabaseClient = () => {
   return supabase;
 };
 
+// ユーザープロフィールを更新する関数
+export const updateUserProfile = async (
+  userId: string,
+  data: { display_name?: string; experience_years?: number }
+) => {
+  const client = getSupabaseClient();
+  const { error } = await client.from('users').update(data).eq('id', userId);
+  return { error };
+};
+
+// ユーザープロフィールを取得する関数
+export const getUserProfile = async (userId: string) => {
+  const client = getSupabaseClient();
+  const { data, error } = await client.from('users').select('*').eq('id', userId).single();
+  return { data, error };
+};
+
 // ユーザー認証関連の関数
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
   const client = getSupabaseClient();
