@@ -15,7 +15,8 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
 
   // クライアントサイドでのみリダイレクトを行う
   if (isClient && !loading && !user) {
-    redirect('/login');
+    // パラメータを追加して、本棚閲覧のためのログインであることを伝える
+    redirect('/login?redirectFrom=bookshelf');
   }
 
   // ローディング中はシンプルなローディング表示
