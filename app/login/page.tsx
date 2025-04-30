@@ -26,12 +26,15 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showBookshelfMessage, setShowBookshelfMessage] = useState(false);
+  const [showReviewMessage, setShowReviewMessage] = useState(false);
 
   // URLパラメータからリダイレクト元を確認
   useEffect(() => {
     const redirectFrom = searchParams.get('redirectFrom');
     if (redirectFrom === 'bookshelf') {
       setShowBookshelfMessage(true);
+    } else if (redirectFrom === 'review') {
+      setShowReviewMessage(true);
     }
   }, [searchParams]);
 
@@ -53,7 +56,18 @@ export default function LoginPage() {
 
       if (data?.session) {
         toast.success('ログインしました');
-        router.push('/');
+
+        // リダイレクト元によって遷移先を変更
+        const redirectFrom = searchParams.get('redirectFrom');
+        if (redirectFrom === 'bookshelf') {
+          router.push('/profile');
+        } else if (redirectFrom === 'review') {
+          // 直前のページに戻りたい場合は、referrer情報を使用するか、
+          // 遷移前のURLをローカルストレージに保存する実装も考えられます
+          router.back();
+        } else {
+          router.push('/');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -157,6 +171,14 @@ export default function LoginPage() {
           <Alert className="bg-blue-50 border-blue-200 text-blue-800">
             <AlertDescription>
               本棚を閲覧するにはログインが必要です。ログインまたは新規登録してください。
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {showReviewMessage && (
+          <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+            <AlertDescription>
+              レビューを投稿するにはログインが必要です。ログインまたは新規登録してください。
             </AlertDescription>
           </Alert>
         )}
