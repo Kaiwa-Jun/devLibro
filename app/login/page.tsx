@@ -10,45 +10,117 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  signInWithEmail,
+  signInWithGitHub,
+  signInWithGoogle,
+  signUpWithEmail,
+} from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      toast.success('ログインしました');
-      router.push('/');
-    } else {
+    if (!email || !password) {
       toast.error('メールアドレスとパスワードを入力してください');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await signInWithEmail(email, password);
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data) {
+        toast.success('ログインしました');
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('ログイン処理中にエラーが発生しました');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password && name) {
-      toast.success('アカウントを作成しました');
-      router.push('/');
-    } else {
+    if (!email || !password || !name) {
       toast.error('すべての項目を入力してください');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await signUpWithEmail(email, password, name);
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success('アカウントを作成しました。確認メールを送信しました。');
+      // 新規登録後は自動ログインしない（確認メールが必要な場合があるため）
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error('アカウント作成中にエラーが発生しました');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    toast.info(`${provider}でログインします`);
-    // 実際の実装ではここでソーシャルログイン処理
+  const handleSocialLogin = async (provider: 'github' | 'google') => {
+    try {
+      setLoading(true);
+
+      if (provider === 'github') {
+        const { data, error } = await signInWithGitHub();
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+      } else if (provider === 'google') {
+        const { data, error } = await signInWithGoogle();
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+      }
+
+      // OAuthリダイレクトが行われるので、ここにはたどり着かない
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      toast.error(`${provider}ログイン中にエラーが発生しました`);
+      setLoading(false);
+    }
   };
 
   const SocialLoginButtons = () => (
     <div className="space-y-3">
-      <Button variant="outline" className="w-full" onClick={() => handleSocialLogin('GitHub')}>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => handleSocialLogin('github')}
+        disabled={loading}
+      >
         <Github className="mr-2 h-4 w-4" />
         GitHubでログイン
       </Button>
-      <Button variant="outline" className="w-full" onClick={() => handleSocialLogin('Google')}>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => handleSocialLogin('google')}
+        disabled={loading}
+      >
         <Chrome className="mr-2 h-4 w-4" />
         Googleでログイン
       </Button>
@@ -102,6 +174,7 @@ export default function LoginPage() {
                         className="pl-10"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -117,13 +190,14 @@ export default function LoginPage() {
                         className="pl-10"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
+                        disabled={loading}
                       />
                     </div>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full mt-6">
-                  ログイン
+                <Button type="submit" className="w-full mt-6" disabled={loading}>
+                  {loading ? 'ログイン中...' : 'ログイン'}
                 </Button>
               </form>
             </div>
@@ -155,6 +229,7 @@ export default function LoginPage() {
                         className="pl-10"
                         value={name}
                         onChange={e => setName(e.target.value)}
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -170,6 +245,7 @@ export default function LoginPage() {
                         className="pl-10"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -185,13 +261,14 @@ export default function LoginPage() {
                         className="pl-10"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
+                        disabled={loading}
                       />
                     </div>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full mt-6">
-                  アカウントを作成
+                <Button type="submit" className="w-full mt-6" disabled={loading}>
+                  {loading ? '処理中...' : 'アカウントを作成'}
                 </Button>
               </form>
             </div>

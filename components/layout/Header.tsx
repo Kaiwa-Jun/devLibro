@@ -1,22 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, Home, User, LogIn, Moon, Sun } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { BookOpen, Home, Moon, Sun, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
 
+import AuthButton from '@/components/auth/AuthButton';
 import { Button } from '@/components/ui/button';
-
-const AuthDialog = dynamic(() => import('@/components/auth/AuthDialog'), {
-  ssr: false,
-});
 
 export default function Header() {
   const pathname = usePathname();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const tabs = [
@@ -72,18 +66,8 @@ export default function Header() {
             <span className="sr-only">テーマを切り替え</span>
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 h-11 px-4 rounded-lg"
-            onClick={() => setIsAuthOpen(true)}
-          >
-            <LogIn className="h-4 w-4" />
-            新規登録/ログイン
-          </Button>
+          <AuthButton />
         </div>
-
-        <AuthDialog isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       </div>
     </header>
   );
