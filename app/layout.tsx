@@ -14,6 +14,7 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'DevLibro - 技術書書評アプリ',
   description: '開発者のための技術書レビュー・管理プラットフォーム',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   openGraph: {
     title: 'DevLibro - 技術書書評アプリ',
     description: '開発者のための技術書レビュー・管理プラットフォーム',

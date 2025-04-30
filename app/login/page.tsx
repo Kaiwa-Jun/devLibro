@@ -40,7 +40,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (data) {
+      if (data?.session) {
         toast.success('ログインしました');
         router.push('/');
       }
@@ -61,7 +61,7 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const { data, error } = await signUpWithEmail(email, password, name);
+      const { error } = await signUpWithEmail(email, password, name);
 
       if (error) {
         toast.error(error.message);
@@ -83,13 +83,13 @@ export default function LoginPage() {
       setLoading(true);
 
       if (provider === 'github') {
-        const { data, error } = await signInWithGitHub();
+        const { error } = await signInWithGitHub();
         if (error) {
           toast.error(error.message);
           return;
         }
       } else if (provider === 'google') {
-        const { data, error } = await signInWithGoogle();
+        const { error } = await signInWithGoogle();
         if (error) {
           toast.error(error.message);
           return;

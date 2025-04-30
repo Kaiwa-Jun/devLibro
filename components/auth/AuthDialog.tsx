@@ -24,7 +24,6 @@ type AuthDialogProps = {
 };
 
 export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +46,7 @@ export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
         return;
       }
 
-      if (data) {
+      if (data?.session) {
         toast.success('ログインしました');
         onClose();
         router.refresh();
@@ -69,7 +68,7 @@ export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
     try {
       setLoading(true);
-      const { data, error } = await signUpWithEmail(email, password, name);
+      const { error } = await signUpWithEmail(email, password, name);
 
       if (error) {
         toast.error(error.message);
@@ -91,13 +90,13 @@ export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
       setLoading(true);
 
       if (provider === 'github') {
-        const { data, error } = await signInWithGitHub();
+        const { error } = await signInWithGitHub();
         if (error) {
           toast.error(error.message);
           return;
         }
       } else if (provider === 'google') {
-        const { data, error } = await signInWithGoogle();
+        const { error } = await signInWithGoogle();
         if (error) {
           toast.error(error.message);
           return;
