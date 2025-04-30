@@ -6,7 +6,7 @@ const nextConfig = {
   },
   images: {
     // unoptimized: true, // Vercelデプロイのために変更
-    domains: ['vercel.com'],
+    domains: ['vercel.com', 'images.pexels.com'],
   },
   // SWCコンパイラを強制的に使用
   swcMinify: true,
