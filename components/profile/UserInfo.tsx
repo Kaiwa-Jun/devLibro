@@ -2,18 +2,19 @@
 
 import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { getUserProfile, updateUserProfile } from '@/lib/supabase/client';
 
 const experienceOptions = [
   { value: '0', label: '未経験' },
@@ -46,25 +49,115 @@ const getExperienceValue = (years: number) => {
 };
 
 export default function UserInfo() {
-  const [userName, setUserName] = useState('テックリーダー');
-  const [experienceYears, setExperienceYears] = useState(5);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // ユーザー情報を状態として保持
+  const [userName, setUserName] = useState<string>('ユーザー');
+  const [experienceYears, setExperienceYears] = useState(0);
   const [editMode, setEditMode] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedExperience, setEditedExperience] = useState('0');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [editedName, setEditedName] = useState(userName);
-  const [editedExperience, setEditedExperience] = useState(getExperienceValue(experienceYears));
+  // ユーザー情報とプロフィール情報の取得
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        // ユーザー名の初期設定
+        const displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー';
+        setUserName(displayName);
+        setEditedName(displayName);
 
-  const handleSave = () => {
-    setUserName(editedName);
-    // 経験年数の値を数値に変換
-    const yearsMap: Record<string, number> = {
-      '0': 0,
-      '1': 0.5,
-      '2': 2,
-      '3': 4,
-      '4': 5,
+        // Supabaseからプロフィール情報を取得
+        try {
+          const { data, error } = await getUserProfile(user.id);
+          if (error) {
+            console.error('プロフィール取得エラー:', error);
+            return;
+          }
+
+          if (data && typeof data === 'object') {
+            // プロフィール情報があれば反映
+            if (data.display_name && typeof data.display_name === 'string') {
+              setUserName(data.display_name);
+              setEditedName(data.display_name);
+            }
+
+            if (data.experience_years !== undefined && data.experience_years !== null) {
+              const years = Number(data.experience_years);
+              if (!isNaN(years)) {
+                setExperienceYears(years);
+                setEditedExperience(getExperienceValue(years));
+              }
+            }
+          }
+        } catch (error) {
+          console.error('プロフィール取得中にエラーが発生しました:', error);
+        }
+      }
     };
-    setExperienceYears(yearsMap[editedExperience]);
-    setEditMode(false);
+
+    fetchUserProfile();
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
+
+    try {
+      // 経験年数の値を数値に変換
+      const yearsMap: Record<string, number> = {
+        '0': 0,
+        '1': 0.5,
+        '2': 2,
+        '3': 4,
+        '4': 5,
+      };
+      const years = yearsMap[editedExperience];
+
+      // Supabaseに保存
+      const { error } = await updateUserProfile(user.id, {
+        display_name: editedName,
+        experience_years: years,
+      });
+
+      if (error) {
+        console.error('プロフィール更新エラー:', error);
+        toast({
+          variant: 'destructive',
+          title: 'エラー',
+          description: 'プロフィールの更新に失敗しました。',
+        });
+        return;
+      }
+
+      // 成功したら表示を更新
+      setUserName(editedName);
+      setExperienceYears(years);
+      setEditMode(false);
+
+      toast({
+        title: '更新完了',
+        description: 'プロフィール情報を更新しました。',
+      });
+    } catch (error) {
+      console.error('保存中にエラーが発生しました:', error);
+      toast({
+        variant: 'destructive',
+        title: 'エラー',
+        description: 'プロフィールの更新に失敗しました。',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // アバターに表示する頭文字を取得
+  const getInitials = () => {
+    if (!userName) return 'U';
+    return userName.charAt(0).toUpperCase();
   };
 
   return (
@@ -74,9 +167,7 @@ export default function UserInfo() {
       animate={{ opacity: 1, y: 0 }}
     >
       <Avatar className="h-16 w-16">
-        <AvatarFallback className="bg-primary/10">
-          <LucideIcons.User className="h-7 w-7 text-primary" />
-        </AvatarFallback>
+        <AvatarFallback className="bg-primary/10">{getInitials()}</AvatarFallback>
       </Avatar>
 
       <div>
@@ -121,9 +212,9 @@ export default function UserInfo() {
                 <DialogClose asChild>
                   <Button variant="outline">キャンセル</Button>
                 </DialogClose>
-                <DialogClose asChild>
-                  <Button onClick={handleSave}>保存</Button>
-                </DialogClose>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? '保存中...' : '保存'}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
