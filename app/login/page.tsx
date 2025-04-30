@@ -2,10 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { BookOpen, Chrome, Github, Lock, Mail, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,10 +20,20 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showBookshelfMessage, setShowBookshelfMessage] = useState(false);
+
+  // URLパラメータからリダイレクト元を確認
+  useEffect(() => {
+    const redirectFrom = searchParams.get('redirectFrom');
+    if (redirectFrom === 'bookshelf') {
+      setShowBookshelfMessage(true);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +152,14 @@ export default function LoginPage() {
           <h2 className="mt-6 text-3xl font-bold tracking-tight">DevLibroにログイン</h2>
           <p className="mt-2 text-sm text-muted-foreground">技術書の管理をもっと便利に</p>
         </div>
+
+        {showBookshelfMessage && (
+          <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+            <AlertDescription>
+              本棚を閲覧するにはログインが必要です。ログインまたは新規登録してください。
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
