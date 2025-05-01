@@ -78,12 +78,28 @@ const mapGoogleBookToBook = (googleBook: GoogleBookItem): Book => {
   };
 };
 
-// タイトルによる書籍検索
-export const searchBooksByTitle = async (title: string): Promise<Book[]> => {
+// ページネーションパラメータ型
+export type SearchBooksParams = {
+  query: string;
+  startIndex?: number;
+  maxResults?: number;
+};
+
+// タイトルによる書籍検索（ページネーション対応）
+export const searchBooksByTitle = async ({
+  query,
+  startIndex = 0,
+  maxResults = 20,
+}: SearchBooksParams): Promise<{
+  books: Book[];
+  totalItems: number;
+  hasMore: boolean;
+}> => {
   try {
     const params = new URLSearchParams({
-      q: `intitle:${title}`,
-      maxResults: '10', // 最大10件の結果を取得
+      q: `intitle:${query}`,
+      startIndex: startIndex.toString(),
+      maxResults: maxResults.toString(),
     });
 
     if (API_KEY) {
@@ -97,16 +113,31 @@ export const searchBooksByTitle = async (title: string): Promise<Book[]> => {
     }
 
     const data: GoogleBooksResponse = await response.json();
+    const books = data.items ? data.items.map(mapGoogleBookToBook) : [];
+    const totalItems = data.totalItems || 0;
 
-    if (!data.items) {
-      return [];
-    }
+    // 次のページがあるかどうかを判定
+    const hasMore = startIndex + books.length < totalItems;
 
-    return data.items.map(mapGoogleBookToBook);
+    return {
+      books,
+      totalItems,
+      hasMore,
+    };
   } catch (error) {
     console.error('Error searching books by title:', error);
-    return [];
+    return {
+      books: [],
+      totalItems: 0,
+      hasMore: false,
+    };
   }
+};
+
+// 旧API関数（互換性のために残す）
+export const searchBooksByTitleLegacy = async (title: string): Promise<Book[]> => {
+  const { books } = await searchBooksByTitle({ query: title });
+  return books;
 };
 
 // ISBNによる書籍検索
@@ -163,7 +194,10 @@ export const searchBooksWithSuggestions = async (query: string): Promise<Book[]>
 
     // 2. DBで結果が見つからなければGoogle Books APIを使用
     if (dbResults.length === 0) {
-      const apiResults = await searchBooksByTitle(query);
+      const { books: apiResults } = await searchBooksByTitle({
+        query,
+        maxResults: 10, // サジェストは10件に制限
+      });
 
       // 3. 将来的な検索のために結果をDBに保存
       if (apiResults.length > 0) {

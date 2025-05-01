@@ -1,8 +1,8 @@
 'use client';
 
-import { ArrowLeft, Book as BookIcon } from 'lucide-react';
+import { ArrowLeft, Book as BookIcon, Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import BookCard from '@/components/home/BookCard';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,29 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+  const [page, setPage] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loaderRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isLoadingMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMoreBooks();
+        }
+      });
+
+      if (node) observerRef.current.observe(node);
+    },
+    [isLoadingMore, hasMore]
+  );
+
+  // 最初の検索
   useEffect(() => {
     const fetchBooks = async () => {
       if (!query) {
@@ -27,11 +49,15 @@ export default function SearchPage() {
 
       setIsLoading(true);
       setError(null);
+      setPage(0);
 
       try {
-        const results = await searchBooksByTitle(query);
-        setBooks(results);
-        if (results.length === 0) {
+        const results = await searchBooksByTitle({ query });
+        setBooks(results.books);
+        setTotalItems(results.totalItems);
+        setHasMore(results.hasMore);
+
+        if (results.books.length === 0) {
           setError('検索結果が見つかりませんでした。別のキーワードで試してください。');
         }
       } catch (err) {
@@ -44,6 +70,30 @@ export default function SearchPage() {
 
     fetchBooks();
   }, [query, router]);
+
+  // 追加データの読み込み
+  const loadMoreBooks = async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    const startIndex = nextPage * 20; // 1ページあたり20件表示
+
+    try {
+      const results = await searchBooksByTitle({
+        query,
+        startIndex,
+      });
+
+      setBooks(prevBooks => [...prevBooks, ...results.books]);
+      setHasMore(results.hasMore);
+      setPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more books:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   return (
     <div className="container py-6">
@@ -68,12 +118,38 @@ export default function SearchPage() {
         </div>
       ) : (
         <>
-          <p className="text-muted-foreground mb-6">{books.length}件の検索結果</p>
+          <p className="text-muted-foreground mb-6">
+            {totalItems > 0
+              ? `${totalItems}件中 ${books.length}件表示`
+              : `${books.length}件の検索結果`}
+          </p>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {books.map(book => (
               <BookCard key={book.id} book={book} />
             ))}
           </div>
+
+          {/* 無限スクロール用ローダー */}
+          {hasMore && (
+            <div ref={loaderRef} className="flex justify-center items-center py-8">
+              {isLoadingMore ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <p className="text-sm text-muted-foreground">読み込み中...</p>
+                </div>
+              ) : (
+                <div className="h-10" />
+              )}
+            </div>
+          )}
+
+          {/* すべての結果を表示した場合 */}
+          {books.length > 0 && !hasMore && !isLoadingMore && (
+            <p className="text-center text-sm text-muted-foreground py-8">
+              すべての検索結果を表示しました
+            </p>
+          )}
         </>
       )}
     </div>
