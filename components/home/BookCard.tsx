@@ -28,8 +28,12 @@ export default function BookCard({ book }: BookCardProps) {
             src={book.img_url}
             alt={book.title}
             fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            className="object-cover bg-muted transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 40vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+            priority={false}
+            quality={85}
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJNQNlw9Q6ZAAAAABJRU5ErkJggg=="
+            placeholder="blur"
           />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4">
             <h3 className="font-medium text-white truncate group-hover:text-primary/90 transition-colors">
