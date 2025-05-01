@@ -4,28 +4,23 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Search, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/useDebounce';
-import { mockBooks } from '@/lib/mock-data';
+import { searchBooksWithSuggestions } from '@/lib/api/books';
+import { Book } from '@/types';
 
 export default function SearchBar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [noResults, setNoResults] = useState(false);
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [isLoading, setIsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<Book[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // 検索候補のモックデータ
-  const suggestions = mockBooks
-    .filter(
-      book =>
-        book.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    )
-    .slice(0, 5);
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -38,26 +33,40 @@ export default function SearchBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 検索語がある場合はAPIを呼び出す
   useEffect(() => {
-    if (debouncedSearchTerm === '') {
-      setShowSuggestions(false);
-      setNoResults(false);
-      return;
-    }
+    const fetchSuggestions = async () => {
+      if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
 
-    if (debouncedSearchTerm === '000') {
-      setShowSuggestions(true);
-      setNoResults(true);
-      return;
-    }
+      setIsLoading(true);
+      try {
+        const results = await searchBooksWithSuggestions(debouncedSearchTerm);
+        setSuggestions(results);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setShowSuggestions(true);
-    setNoResults(false);
+    fetchSuggestions();
   }, [debouncedSearchTerm]);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) return;
-    // Navigate to search results page
+    router.push(`/search?q=${encodeURIComponent(searchTerm)}`);
+    setShowSuggestions(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -70,8 +79,9 @@ export default function SearchBar() {
           className="pl-10 pr-4 h-11 rounded-full bg-muted"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
+          onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (searchTerm) setShowSuggestions(true);
+            if (searchTerm && searchTerm.length >= 2) setShowSuggestions(true);
           }}
         />
         {searchTerm && (
@@ -82,7 +92,7 @@ export default function SearchBar() {
             onClick={() => {
               setSearchTerm('');
               setShowSuggestions(false);
-              setNoResults(false);
+              setSuggestions([]);
             }}
           >
             <X className="h-4 w-4" />
@@ -98,7 +108,12 @@ export default function SearchBar() {
             exit={{ opacity: 0, y: -10 }}
             className="absolute z-10 top-full left-0 right-0 mt-2 bg-popover border rounded-lg shadow-lg overflow-hidden"
           >
-            {noResults ? (
+            {isLoading ? (
+              <div className="p-4 text-center">
+                <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <p className="mt-2 text-sm text-muted-foreground">検索中...</p>
+              </div>
+            ) : suggestions.length === 0 ? (
               <div className="p-4 space-y-4">
                 <p className="text-center text-muted-foreground">
                   お探しの書籍が見つかりませんでした。
@@ -111,7 +126,8 @@ export default function SearchBar() {
                     size="sm"
                     className="gap-2"
                     onClick={() => {
-                      // ここにバーコードスキャン機能を実装
+                      // バーコードスキャン機能への遷移
+                      router.push('/scan');
                     }}
                   >
                     <Camera className="h-4 w-4" />
@@ -120,28 +136,42 @@ export default function SearchBar() {
                 </div>
               </div>
             ) : (
-              suggestions.map(book => (
-                <Link
-                  key={book.id}
-                  href={`/book/${book.id}`}
-                  className="flex items-center gap-3 p-3 hover:bg-muted transition-colors"
-                  onClick={() => setShowSuggestions(false)}
-                >
-                  <div className="relative h-12 w-9 flex-shrink-0">
-                    <Image
-                      src={book.img_url}
-                      alt={book.title}
-                      fill
-                      className="object-cover rounded"
-                      sizes="36px"
-                    />
+              <div className="max-h-[60vh] overflow-auto">
+                {suggestions.map(book => (
+                  <Link
+                    key={book.id}
+                    href={`/book/${book.id}`}
+                    className="flex items-center gap-3 p-3 hover:bg-muted transition-colors"
+                    onClick={() => setShowSuggestions(false)}
+                  >
+                    <div className="relative h-12 w-9 flex-shrink-0">
+                      <Image
+                        src={book.img_url}
+                        alt={book.title}
+                        fill
+                        className="object-cover rounded"
+                        sizes="36px"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{book.title}</h4>
+                      <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                    </div>
+                  </Link>
+                ))}
+                {suggestions.length > 0 && (
+                  <div className="p-2 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-muted-foreground"
+                      onClick={handleSearch}
+                    >
+                      「{searchTerm}」の検索結果をすべて表示
+                    </Button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{book.title}</h4>
-                    <p className="text-sm text-muted-foreground truncate">{book.author}</p>
-                  </div>
-                </Link>
-              ))
+                )}
+              </div>
             )}
           </motion.div>
         )}

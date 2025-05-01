@@ -28,6 +28,15 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/lib/supabase/client';
 
+// ユーザープロフィールの型定義
+interface UserProfile {
+  id: string;
+  display_name?: string;
+  experience_years?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const experienceOptions = [
   { value: '0', label: '未経験' },
   { value: '1', label: '1年未満' },
@@ -77,19 +86,17 @@ export default function UserInfo() {
             return;
           }
 
-          if (data && typeof data === 'object') {
+          if (data) {
             // プロフィール情報があれば反映
-            if (data.display_name && typeof data.display_name === 'string') {
-              setUserName(data.display_name);
-              setEditedName(data.display_name);
+            if (data.display_name) {
+              setUserName(String(data.display_name));
+              setEditedName(String(data.display_name));
             }
 
             if (data.experience_years !== undefined && data.experience_years !== null) {
               const years = Number(data.experience_years);
-              if (!isNaN(years)) {
-                setExperienceYears(years);
-                setEditedExperience(getExperienceValue(years));
-              }
+              setExperienceYears(years);
+              setEditedExperience(getExperienceValue(years));
             }
           }
         } catch (error) {
