@@ -3,7 +3,6 @@ import { Metadata } from 'next';
 import BookDetail from '@/components/book/BookDetail';
 import ReviewList from '@/components/book/ReviewList';
 import WriteReviewButton from '@/components/book/WriteReviewButton';
-import { mockBooks } from '@/lib/mock-data';
 
 type Props = {
   params: { id: string };
@@ -17,11 +16,8 @@ export function generateMetadata({ params }: Props): Metadata {
   };
 }
 
-export const generateStaticParams = () => {
-  return mockBooks.map(book => ({
-    id: book.id,
-  }));
-};
+// 静的生成のパラメータは一旦削除（実際のデータを使用するため）
+// 本番環境では必要に応じてISRや動的レンダリングに置き換える
 
 export default function BookPage({ params }: { params: { id: string } }) {
   const { id } = params;
