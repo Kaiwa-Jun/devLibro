@@ -3,13 +3,14 @@
 import { motion } from 'framer-motion';
 import { BookOpen, ExternalLink, Info, Share2, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockBooks } from '@/lib/mock-data';
+import { getBookByIdFromDB, saveBookToDB } from '@/lib/supabase/books';
 import { getDifficultyInfo } from '@/lib/utils';
 import { Book } from '@/types';
 
@@ -20,19 +21,66 @@ type BookDetailProps = {
 export default function BookDetail({ id }: BookDetailProps) {
   const [loading, setLoading] = useState(true);
   const [book, setBook] = useState<Book | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 実際の実装ではここでAPI呼び出し
-    const timer = setTimeout(() => {
-      const foundBook = mockBooks.find(b => b.id === id) || mockBooks[0];
-      setBook(foundBook);
-      setLoading(false);
-    }, 1000);
+    // Supabaseから書籍データを取得
+    const fetchBook = async () => {
+      setLoading(true);
+      setError(null);
 
-    return () => clearTimeout(timer);
+      try {
+        console.log('書籍情報を取得します。ID:', id);
+        const bookData = await getBookByIdFromDB(id);
+
+        if (bookData) {
+          console.log('取得した書籍データ:', bookData);
+          setBook(bookData);
+          return; // 成功したので終了
+        }
+
+        console.error('Supabaseからの書籍データ取得に失敗しました: ID =', id);
+        setError(`書籍データが見つかりませんでした (ID: ${id})`);
+
+        // セッションストレージからの復元を試みる
+        try {
+          const storedBook = sessionStorage.getItem(`book_${id}`);
+          if (storedBook) {
+            const parsedBook = JSON.parse(storedBook);
+            console.log('セッションストレージから書籍を復元:', parsedBook);
+            setBook(parsedBook);
+            setError(null); // エラーをクリア
+
+            // セッションストレージから取得できたら、DBへの保存も試みる
+            try {
+              const savedBook = await saveBookToDB(parsedBook);
+              if (savedBook) {
+                console.log('セッションストレージの書籍をDBに保存しました:', savedBook);
+                // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)
+                setBook(savedBook);
+              }
+            } catch (saveError) {
+              console.error('セッションストレージの書籍のDB保存エラー:', saveError);
+            }
+          }
+        } catch (storageError) {
+          console.error('セッションストレージからの復元に失敗:', storageError);
+        }
+      } catch (e) {
+        console.error('書籍の取得中にエラーが発生:', e);
+        setError('書籍データの取得中にエラーが発生しました');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchBook();
+    }
   }, [id]);
 
-  if (loading || !book) {
+  // 書籍情報が取得できるまでローディング表示
+  if (loading) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -48,6 +96,29 @@ export default function BookDetail({ id }: BookDetailProps) {
                 <Skeleton className="h-10 w-32" />
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // エラー発生時またはデータなしの場合のフォールバック表示
+  if (!book || error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <Info className="h-5 w-5" />
+              <h3 className="font-medium">書籍情報の取得に失敗しました</h3>
+            </div>
+            {error && <p className="text-sm text-muted-foreground">{error}</p>}
+            <p className="text-sm text-muted-foreground">
+              お手数ですが、トップページに戻って再度お試しください。
+            </p>
+            <Button variant="outline" asChild>
+              <Link href="/">トップページに戻る</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

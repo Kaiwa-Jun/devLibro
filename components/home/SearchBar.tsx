@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/useDebounce';
 import { searchBooksWithSuggestions } from '@/lib/api/books';
+import { saveBookToDB } from '@/lib/supabase/books';
 import { Book } from '@/types';
 
 export default function SearchBar() {
@@ -142,7 +143,59 @@ export default function SearchBar() {
                     key={book.id}
                     href={`/book/${book.id}`}
                     className="flex items-center gap-3 p-3 hover:bg-muted transition-colors"
-                    onClick={() => setShowSuggestions(false)}
+                    onClick={async e => {
+                      e.preventDefault(); // デフォルトのリンク遷移を防止
+                      setShowSuggestions(false);
+                      setIsLoading(true); // 処理中はローディング表示
+
+                      try {
+                        console.log('選択された書籍:', book);
+
+                        // セッションストレージに書籍データを保存（フォールバック用）
+                        try {
+                          sessionStorage.setItem(`book_${book.id}`, JSON.stringify(book));
+                          console.log('書籍情報をセッションストレージに保存しました');
+                        } catch (storageError) {
+                          console.error('セッションストレージへの保存に失敗:', storageError);
+                        }
+
+                        // 選択された書籍をDBに確実に保存
+                        const savedBook = await saveBookToDB(book);
+
+                        if (savedBook) {
+                          console.log('保存された書籍:', savedBook);
+
+                          // 保存に成功した場合、改めてセッションストレージにも最新データを保存
+                          try {
+                            sessionStorage.setItem(
+                              `book_${savedBook.id}`,
+                              JSON.stringify(savedBook)
+                            );
+                          } catch (storageError) {
+                            console.error(
+                              '更新されたデータのセッションストレージへの保存に失敗:',
+                              storageError
+                            );
+                          }
+
+                          // 保存に成功したらSupabaseに割り当てられたIDで遷移
+                          router.push(`/book/${savedBook.id}`);
+                          setIsLoading(false);
+                        } else {
+                          console.error(
+                            '書籍の保存に失敗しました。セッションストレージのデータを使用します。'
+                          );
+                          // 失敗しても元のIDで遷移
+                          router.push(`/book/${book.id}`);
+                          setIsLoading(false);
+                        }
+                      } catch (error) {
+                        console.error('検索結果クリック時エラー:', error);
+                        // エラーが発生しても遷移を試みる
+                        router.push(`/book/${book.id}`);
+                        setIsLoading(false);
+                      }
+                    }}
                   >
                     <div className="relative h-12 w-9 flex-shrink-0">
                       <Image
