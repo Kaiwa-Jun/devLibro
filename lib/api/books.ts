@@ -96,6 +96,10 @@ export const searchBooksByTitle = async ({
   hasMore: boolean;
 }> => {
   try {
+    console.log(
+      `📚 [Google Books API] "${query}" を検索中... (開始位置: ${startIndex}, 最大結果数: ${maxResults})`
+    );
+
     const params = new URLSearchParams({
       q: `intitle:${query}`,
       startIndex: startIndex.toString(),
@@ -119,13 +123,17 @@ export const searchBooksByTitle = async ({
     // 次のページがあるかどうかを判定
     const hasMore = startIndex + books.length < totalItems;
 
+    console.log(
+      `📗 [Google Books API] 検索結果: ${books.length}件取得 (全${totalItems}件中, 次ページ: ${hasMore ? 'あり' : 'なし'})`
+    );
+
     return {
       books,
       totalItems,
       hasMore,
     };
   } catch (error) {
-    console.error('Error searching books by title:', error);
+    console.error('❌ [Google Books APIエラー] 書籍検索中にエラーが発生:', error);
     return {
       books: [],
       totalItems: 0,
@@ -143,6 +151,8 @@ export const searchBooksByTitleLegacy = async (title: string): Promise<Book[]> =
 // ISBNによる書籍検索
 export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
   try {
+    console.log(`📘 [ISBN検索開始] ISBN "${isbn}" をGoogle Books APIで検索中...`);
+
     const params = new URLSearchParams({
       q: `isbn:${isbn}`,
     });
@@ -160,12 +170,15 @@ export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
     const data: GoogleBooksResponse = await response.json();
 
     if (!data.items || data.items.length === 0) {
+      console.log(`ℹ️ [ISBN検索] ISBN "${isbn}" に一致する書籍は見つかりませんでした`);
       return null;
     }
 
-    return mapGoogleBookToBook(data.items[0]);
+    const book = mapGoogleBookToBook(data.items[0]);
+    console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の書籍が見つかりました: "${book.title}"`);
+    return book;
   } catch (error) {
-    console.error('Error searching book by ISBN:', error);
+    console.error(`❌ [ISBN検索エラー] ISBN "${isbn}" の検索中にエラーが発生:`, error);
     return null;
   }
 };
@@ -175,9 +188,11 @@ export const searchBooksFromDatabase = async (title: string): Promise<Book[]> =>
   if (!title || title.length < 2) return [];
 
   try {
-    return await searchBooksByTitleInDB(title);
+    const results = await searchBooksByTitleInDB(title);
+    console.log(`🔎 [DB検索詳細] "${title}": ${results.length}件の結果`);
+    return results;
   } catch (error) {
-    console.error('Error searching books from database:', error);
+    console.error('❌ [DB検索エラー] データベースからの検索中にエラーが発生:', error);
     return [];
   }
 };
@@ -190,29 +205,43 @@ export const searchBooksWithSuggestions = async (query: string): Promise<Book[]>
 
   try {
     // 1. まず自分のDBから検索
+    console.log(`🔍 [検索開始] "${query}" をDBで検索します...`);
     const dbResults = await searchBooksFromDatabase(query);
 
-    // 2. DBで結果が見つからなければGoogle Books APIを使用
-    if (dbResults.length === 0) {
-      const { books: apiResults } = await searchBooksByTitle({
-        query,
-        maxResults: 10, // サジェストは10件に制限
-      });
-
-      // 3. 将来的な検索のために結果をDBに保存
-      if (apiResults.length > 0) {
-        // 非同期で保存（レスポンスを待たない）
-        Promise.all(apiResults.map(book => saveBookToDB(book))).catch(error => {
-          console.error('Error saving books to DB:', error);
-        });
-      }
-
-      return apiResults;
+    if (dbResults.length > 0) {
+      console.log(
+        `✅ [DB検索成功] "${query}" の検索結果: ${dbResults.length}件の書籍をDBから取得しました`
+      );
+      return dbResults;
     }
 
-    return dbResults;
+    // 2. DBで結果が見つからなければGoogle Books APIを使用
+    console.log(`ℹ️ [DB検索] "${query}" に一致する書籍はDBに見つかりませんでした`);
+    console.log(`🔍 [API検索開始] "${query}" をGoogle Books APIで検索します...`);
+
+    const { books: apiResults } = await searchBooksByTitle({
+      query,
+      maxResults: 10, // サジェストは10件に制限
+    });
+
+    if (apiResults.length > 0) {
+      console.log(
+        `✅ [API検索成功] "${query}" の検索結果: ${apiResults.length}件の書籍をAPIから取得しました`
+      );
+
+      // 3. 将来的な検索のために結果をDBに保存
+      console.log(`💾 APIで取得した書籍情報をDBに保存します...`);
+      // 非同期で保存（レスポンスを待たない）
+      Promise.all(apiResults.map(book => saveBookToDB(book))).catch(error => {
+        console.error('❌ [DB保存エラー] 書籍のDB保存中にエラーが発生:', error);
+      });
+    } else {
+      console.log(`ℹ️ [API検索] "${query}" に一致する書籍はAPIにも見つかりませんでした`);
+    }
+
+    return apiResults;
   } catch (error) {
-    console.error('Error in searchBooksWithSuggestions:', error);
+    console.error('❌ [検索エラー] searchBooksWithSuggestionsでエラーが発生:', error);
     return [];
   }
 };
