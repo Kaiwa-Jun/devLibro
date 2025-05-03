@@ -6,18 +6,27 @@ import { useEffect, useState } from 'react';
 import BookCard from '@/components/home/BookCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAllBooksFromDB } from '@/lib/supabase/books';
+import { useSearchStore } from '@/store/searchStore';
 import { Book } from '@/types';
 
 export default function BookGrid() {
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<Book[]>([]);
+  const [allBooks, setAllBooks] = useState<Book[]>([]);
+
+  // 検索ストアから状態を取得
+  const { searchTerm, searchResults, isLoading: searchLoading } = useSearchStore();
+
+  // 検索結果か全書籍のどちらを表示するか決定
+  const isSearchActive = searchTerm.length >= 2;
+  const displayedBooks = isSearchActive ? searchResults : allBooks;
+  const isDisplayLoading = isSearchActive ? searchLoading : loading;
 
   useEffect(() => {
     // データベースから書籍を取得
     const fetchBooks = async () => {
       try {
         const fetchedBooks = await getAllBooksFromDB();
-        setBooks(fetchedBooks);
+        setAllBooks(fetchedBooks);
         setLoading(false);
       } catch (error) {
         console.error('書籍データの取得に失敗しました:', error);
@@ -43,7 +52,8 @@ export default function BookGrid() {
     show: { opacity: 1, y: 0 },
   };
 
-  if (loading) {
+  // ローディング表示
+  if (isDisplayLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
@@ -57,8 +67,17 @@ export default function BookGrid() {
     );
   }
 
+  // 検索結果が空の場合のメッセージ
+  if (isSearchActive && displayedBooks.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">「{searchTerm}」に一致する書籍が見つかりませんでした。</p>
+      </div>
+    );
+  }
+
   // 書籍がない場合のメッセージ
-  if (books.length === 0) {
+  if (displayedBooks.length === 0) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">書籍が見つかりませんでした。</p>
@@ -67,17 +86,27 @@ export default function BookGrid() {
   }
 
   return (
-    <motion.div
-      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-      variants={container}
-      initial="hidden"
-      animate="show"
-    >
-      {books.map(book => (
-        <motion.div key={book.id} variants={item}>
-          <BookCard book={book} />
-        </motion.div>
-      ))}
-    </motion.div>
+    <>
+      {isSearchActive && (
+        <div className="mb-4">
+          <p className="text-muted-foreground">
+            「{searchTerm}」の検索結果: {displayedBooks.length}件
+          </p>
+        </div>
+      )}
+
+      <motion.div
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
+        {displayedBooks.map(book => (
+          <motion.div key={book.id} variants={item}>
+            <BookCard book={book} />
+          </motion.div>
+        ))}
+      </motion.div>
+    </>
   );
 }
