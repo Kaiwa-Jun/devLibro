@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/useDebounce';
-import { searchBooksWithSuggestions } from '@/lib/api/books';
 import { useSearchStore } from '@/store/searchStore';
 
 export default function SearchBar() {
@@ -18,48 +17,28 @@ export default function SearchBar() {
   const router = useRouter();
 
   // 検索ストアから状態と更新関数を取得
-  const {
-    setSearchTerm: setGlobalSearchTerm,
-    setSearchResults,
-    setSearchLoading,
-  } = useSearchStore();
+  const { setSearchTerm: setGlobalSearchTerm, resetPagination, clearSearch } = useSearchStore();
 
-  // 検索語がある場合はAPIを呼び出す
+  // 検索語がある場合は検索ストアに設定
   useEffect(() => {
-    const fetchResults = async () => {
-      if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
-        setGlobalSearchTerm('');
-        setSearchResults([]);
-        setSearchLoading(false);
-        return;
-      }
+    if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
+      setGlobalSearchTerm('');
+      return;
+    }
 
-      setIsLocalLoading(true);
-      setSearchLoading(true);
-      setGlobalSearchTerm(debouncedSearchTerm);
-
-      try {
-        const results = await searchBooksWithSuggestions(debouncedSearchTerm);
-        setSearchResults(results);
-      } catch (error) {
-        console.error('Error fetching search results:', error);
-        setSearchResults([]);
-      } finally {
-        setIsLocalLoading(false);
-        setSearchLoading(false);
-      }
-    };
-
-    fetchResults();
-  }, [debouncedSearchTerm, setGlobalSearchTerm, setSearchLoading, setSearchResults]);
+    setIsLocalLoading(true);
+    setGlobalSearchTerm(debouncedSearchTerm);
+    setIsLocalLoading(false);
+  }, [debouncedSearchTerm, setGlobalSearchTerm]);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       // 検索語が空の場合は検索結果をクリア
-      setGlobalSearchTerm('');
-      setSearchResults([]);
+      clearSearch();
       return;
     }
+    // 検索語をセット（実際の検索はBookGridが実行）
+    setGlobalSearchTerm(searchTerm.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -70,8 +49,7 @@ export default function SearchBar() {
 
   const handleClear = () => {
     setSearchTerm('');
-    setGlobalSearchTerm('');
-    setSearchResults([]);
+    clearSearch();
   };
 
   return (
