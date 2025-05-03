@@ -5,20 +5,27 @@ import { useEffect, useState } from 'react';
 
 import BookCard from '@/components/home/BookCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockBooks } from '@/lib/mock-data';
+import { getAllBooksFromDB } from '@/lib/supabase/books';
+import { Book } from '@/types';
 
 export default function BookGrid() {
   const [loading, setLoading] = useState(true);
-  const [books, setBooks] = useState<typeof mockBooks>([]);
+  const [books, setBooks] = useState<Book[]>([]);
 
   useEffect(() => {
-    // 実際の実装ではここでAPI呼び出し
-    const timer = setTimeout(() => {
-      setBooks(mockBooks);
-      setLoading(false);
-    }, 1000);
+    // データベースから書籍を取得
+    const fetchBooks = async () => {
+      try {
+        const fetchedBooks = await getAllBooksFromDB();
+        setBooks(fetchedBooks);
+        setLoading(false);
+      } catch (error) {
+        console.error('書籍データの取得に失敗しました:', error);
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchBooks();
   }, []);
 
   const container = {
@@ -46,6 +53,15 @@ export default function BookGrid() {
             <Skeleton className="h-4 w-2/3" />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  // 書籍がない場合のメッセージ
+  if (books.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">書籍が見つかりませんでした。</p>
       </div>
     );
   }
