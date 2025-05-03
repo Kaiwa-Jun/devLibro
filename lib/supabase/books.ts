@@ -266,3 +266,30 @@ function formatBookFromDB(data: Record<string, unknown>): Book {
     avg_difficulty: typeof data.avg_difficulty === 'number' ? data.avg_difficulty : 0,
   };
 }
+
+// すべての書籍をデータベースから取得
+export const getAllBooksFromDB = async (): Promise<Book[]> => {
+  try {
+    const supabase = getSupabaseClient();
+
+    console.log('すべての書籍をデータベースから取得しています...');
+
+    const { data, error } = await supabase
+      .from('books')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error('すべての書籍の取得エラー:', error);
+      return [];
+    }
+
+    console.log(`${data?.length || 0}件の書籍を取得しました`);
+    // 取得したデータを適切な形式に変換
+    return (data || []).map(book => formatBookFromDB(book));
+  } catch (error) {
+    console.error('getAllBooksFromDB内でエラー発生:', error);
+    return [];
+  }
+};
