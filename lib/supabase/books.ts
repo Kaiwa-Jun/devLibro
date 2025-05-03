@@ -16,18 +16,18 @@ const getSupabaseClient = () => {
 };
 
 // データベースから書籍をタイトルで検索
-export const searchBooksByTitleInDB = async (title: string): Promise<Book[]> => {
+export const searchBooksByTitleInDB = async (title: string, limit = 10): Promise<Book[]> => {
   try {
     const supabase = getSupabaseClient();
 
-    console.log('タイトルで書籍を検索:', title);
+    console.log(`タイトルで書籍を検索: "${title}" (最大${limit}件)`);
 
     // ilike を使用して部分一致検索（大文字小文字を区別しない）
     const { data, error } = await supabase
       .from('books')
       .select('*')
       .ilike('title', `%${title}%`)
-      .limit(10);
+      .limit(limit);
 
     if (error) {
       console.error('タイトルでの書籍検索エラー:', error);
@@ -71,17 +71,39 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
   try {
     const supabase = getSupabaseClient();
 
-    // 既存の書籍をタイトルで確認
-    const { data: existingBooks, error: searchError } = await supabase
-      .from('books')
-      .select('*')
-      .eq('title', book.title);
+    // 重複チェック（複数条件で検索）
+    const duplicateChecks = [];
 
-    if (searchError) {
-      console.error('既存書籍の検索エラー:', searchError);
-    } else if (existingBooks && existingBooks.length > 0) {
-      console.log('タイトルが一致する既存書籍を発見:', existingBooks[0]);
-      return formatBookFromDB(existingBooks[0]);
+    // 1. Google Books IDで検索（最も正確な識別子）
+    if (book.id) {
+      const gbidPattern = `[GBID:${book.id}]`;
+      duplicateChecks.push(
+        supabase.from('books').select('*').ilike('description', `%${gbidPattern}%`).limit(1)
+      );
+    }
+
+    // 2. ISBNで検索（存在する場合）
+    if (book.isbn) {
+      duplicateChecks.push(supabase.from('books').select('*').eq('isbn', book.isbn).limit(1));
+    }
+
+    // 3. タイトルで検索（最後の手段、同名書籍の可能性あり）
+    duplicateChecks.push(supabase.from('books').select('*').eq('title', book.title).limit(1));
+
+    // 重複チェックを実行
+    const checkResults = await Promise.all(duplicateChecks);
+
+    // 重複検出
+    for (const result of checkResults) {
+      if (result.error) {
+        console.error('重複チェックエラー:', result.error);
+        continue;
+      }
+
+      if (result.data && result.data.length > 0) {
+        console.log('既存の書籍を発見:', result.data[0]);
+        return formatBookFromDB(result.data[0]);
+      }
     }
 
     // テーブル構造に合わせたデータを準備

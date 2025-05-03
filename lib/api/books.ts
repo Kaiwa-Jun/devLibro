@@ -184,11 +184,11 @@ export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
 };
 
 // Supabaseデータベースから書籍を検索する関数
-export const searchBooksFromDatabase = async (title: string): Promise<Book[]> => {
+export const searchBooksFromDatabase = async (title: string, limit = 10): Promise<Book[]> => {
   if (!title || title.length < 2) return [];
 
   try {
-    const results = await searchBooksByTitleInDB(title);
+    const results = await searchBooksByTitleInDB(title, limit);
     console.log(`🔎 [DB検索詳細] "${title}": ${results.length}件の結果`);
     return results;
   } catch (error) {
@@ -197,31 +197,53 @@ export const searchBooksFromDatabase = async (title: string): Promise<Book[]> =>
   }
 };
 
-// 検索とサジェスト用の総合関数
-export const searchBooksWithSuggestions = async (query: string): Promise<Book[]> => {
+// 検索とサジェスト用の総合関数（ページネーション対応）
+export const searchBooksWithSuggestions = async (
+  query: string,
+  startIndex = 0,
+  maxResults = 20
+): Promise<{
+  books: Book[];
+  hasMore: boolean;
+  totalItems: number;
+}> => {
   if (!query || query.length < 2) {
-    return [];
+    return { books: [], hasMore: false, totalItems: 0 };
   }
 
   try {
-    // 1. まず自分のDBから検索
-    console.log(`🔍 [検索開始] "${query}" をDBで検索します...`);
-    const dbResults = await searchBooksFromDatabase(query);
+    // パラメータの調整
+    const apiStartIndex = startIndex > 0 ? startIndex : 0;
+    const dbLimit = startIndex === 0 ? maxResults : 0; // 最初のページのみDBから取得
 
-    if (dbResults.length > 0) {
+    let dbResults: Book[] = [];
+    let dbTotal = 0;
+
+    // 1. 最初のページの場合のみDBから検索
+    if (startIndex === 0) {
+      console.log(`🔍 [検索開始] "${query}" をDBで検索します...`);
+      dbResults = await searchBooksFromDatabase(query);
+      dbTotal = dbResults.length;
       console.log(
         `✅ [DB検索成功] "${query}" の検索結果: ${dbResults.length}件の書籍をDBから取得しました`
       );
-      return dbResults;
     }
 
-    // 2. DBで結果が見つからなければGoogle Books APIを使用
-    console.log(`ℹ️ [DB検索] "${query}" に一致する書籍はDBに見つかりませんでした`);
-    console.log(`🔍 [API検索開始] "${query}" をGoogle Books APIで検索します...`);
+    // DBの書籍のIDをセットで保持（重複防止用）
+    const existingBookIds = new Set(dbResults.map(book => book.id));
 
-    const { books: apiResults } = await searchBooksByTitle({
+    // 2. API検索を実行
+    console.log(
+      `🔍 [API検索開始] "${query}" をGoogle Books APIで検索します... (開始位置: ${apiStartIndex})`
+    );
+    const {
+      books: apiResults,
+      totalItems,
+      hasMore,
+    } = await searchBooksByTitle({
       query,
-      maxResults: 10, // サジェストは10件に制限
+      startIndex: apiStartIndex,
+      maxResults,
     });
 
     if (apiResults.length > 0) {
@@ -229,19 +251,34 @@ export const searchBooksWithSuggestions = async (query: string): Promise<Book[]>
         `✅ [API検索成功] "${query}" の検索結果: ${apiResults.length}件の書籍をAPIから取得しました`
       );
 
-      // 3. 将来的な検索のために結果をDBに保存
-      console.log(`💾 APIで取得した書籍情報をDBに保存します...`);
-      // 非同期で保存（レスポンスを待たない）
-      Promise.all(apiResults.map(book => saveBookToDB(book))).catch(error => {
-        console.error('❌ [DB保存エラー] 書籍のDB保存中にエラーが発生:', error);
-      });
-    } else {
-      console.log(`ℹ️ [API検索] "${query}" に一致する書籍はAPIにも見つかりませんでした`);
-    }
+      // 3. 重複を除いたAPI検索結果を選別
+      const newApiBooks = apiResults.filter(apiBook => !existingBookIds.has(apiBook.id));
+      console.log(`✓ 重複除外後の新規API検索結果: ${newApiBooks.length}件`);
 
-    return apiResults;
+      // 4. 新しい書籍をDBに保存（バックグラウンドで処理、最初のページのみ）
+      if (startIndex === 0 && newApiBooks.length > 0) {
+        console.log(`💾 ${newApiBooks.length}件の新規書籍をDBに保存します...`);
+        Promise.all(newApiBooks.map(book => saveBookToDB(book))).catch(error => {
+          console.error('❌ [DB保存エラー] 書籍のDB保存中にエラーが発生:', error);
+        });
+      }
+
+      // 5. 結果を結合して返す
+      return {
+        books: startIndex === 0 ? [...dbResults, ...newApiBooks] : newApiBooks,
+        hasMore,
+        totalItems: Math.max(dbTotal, totalItems), // DBとAPIの合計数の大きい方を使用
+      };
+    } else {
+      console.log(`ℹ️ [API検索] "${query}" に一致する書籍はAPIに見つかりませんでした`);
+      return {
+        books: dbResults,
+        hasMore: false,
+        totalItems: dbTotal,
+      };
+    }
   } catch (error) {
     console.error('❌ [検索エラー] searchBooksWithSuggestionsでエラーが発生:', error);
-    return [];
+    return { books: [], hasMore: false, totalItems: 0 };
   }
 };
