@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useCallback } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { getDifficultyInfo } from '@/lib/utils';
@@ -16,8 +17,19 @@ export default function BookCard({ book }: BookCardProps) {
   const difficultyInfo = getDifficultyInfo(book.avg_difficulty);
   const DifficultyIcon = difficultyInfo.icon;
 
+  // 詳細ページへの遷移前に書籍データをセッションストレージに保存
+  const saveBookToSession = useCallback(() => {
+    try {
+      // セッションストレージに書籍情報を保存
+      sessionStorage.setItem(`book_${book.id}`, JSON.stringify(book));
+      console.log(`📚 書籍情報をセッションストレージに保存: ${book.title}`);
+    } catch (error) {
+      console.error('セッションストレージへの保存エラー:', error);
+    }
+  }, [book]);
+
   return (
-    <Link href={`/book/${book.id}`}>
+    <Link href={`/book/${book.id}`} onClick={saveBookToSession}>
       <motion.div
         className="group relative rounded-lg overflow-hidden border border-border bg-card transition-colors"
         whileHover={{ y: -5 }}

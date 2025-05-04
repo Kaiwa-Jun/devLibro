@@ -51,16 +51,18 @@ export default function BookDetail({ id }: BookDetailProps) {
             setBook(parsedBook);
             setError(null); // エラーをクリア
 
-            // セッションストレージから取得できたら、DBへの保存も試みる
+            // 重要: セッションストレージから取得できた場合は、
+            // 詳細ページにアクセスしたということなので、必ずDBに保存する
             try {
+              console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
               const savedBook = await saveBookToDB(parsedBook);
               if (savedBook) {
-                console.log('セッションストレージの書籍をDBに保存しました:', savedBook);
+                console.log('書籍をDBに保存しました:', savedBook);
                 // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)
                 setBook(savedBook);
               }
             } catch (saveError) {
-              console.error('セッションストレージの書籍のDB保存エラー:', saveError);
+              console.error('書籍のDB保存エラー:', saveError);
             }
           }
         } catch (storageError) {
