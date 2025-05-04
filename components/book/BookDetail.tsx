@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, ExternalLink, Info, Share2, ShoppingCart } from 'lucide-react';
+import { Info, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -13,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { getBookByIdFromDB, saveBookToDB } from '@/lib/supabase/books';
 import { getDifficultyInfo } from '@/lib/utils';
 import { Book } from '@/types';
+
+import PurchaseLinks from './PurchaseLinks';
 
 type BookDetailProps = {
   id: string;
@@ -194,37 +196,13 @@ export default function BookDetail({ id }: BookDetailProps) {
               {book.description}
             </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="flex flex-wrap gap-2 pt-2"
-            >
-              <Button variant="outline" className="gap-2" asChild>
-                <a href="https://amazon.co.jp" target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                  <span>Amazon</span>
-                </a>
-              </Button>
-              <Button variant="outline" className="gap-2" asChild>
-                <a href="https://books.rakuten.co.jp" target="_blank" rel="noopener noreferrer">
-                  <BookOpen className="h-4 w-4" />
-                  <span>楽天Books</span>
-                </a>
-              </Button>
-            </motion.div>
+            <PurchaseLinks isbn={book.isbn} />
 
             <div className="mt-4 flex items-center justify-between">
               <div className="flex space-x-2">
                 <Button size="sm" variant="outline">
                   <Share2 className="mr-2 h-4 w-4" />
                   シェア
-                </Button>
-                <Button size="sm" variant="outline" asChild>
-                  <a href="https://example.com/amazon" target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Amazonで購入
-                  </a>
                 </Button>
               </div>
               <Button size="sm" variant="outline" asChild>
