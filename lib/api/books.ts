@@ -1,4 +1,4 @@
-import { saveBookToDB, searchBooksByTitleInDB } from '@/lib/supabase/books';
+import { searchBooksByTitleInDB } from '@/lib/supabase/books';
 import { Book } from '@/types';
 
 const GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes';
@@ -257,10 +257,13 @@ export const searchBooksWithSuggestions = async (
 
       // 4. 新しい書籍をDBに保存（バックグラウンドで処理、最初のページのみ）
       if (startIndex === 0 && newApiBooks.length > 0) {
-        console.log(`💾 ${newApiBooks.length}件の新規書籍をDBに保存します...`);
-        Promise.all(newApiBooks.map(book => saveBookToDB(book))).catch(error => {
-          console.error('❌ [DB保存エラー] 書籍のDB保存中にエラーが発生:', error);
-        });
+        console.log(
+          `💾 ${newApiBooks.length}件の新規書籍をDBに保存する代わりに、一時的に結果を返します...`
+        );
+        // DBへの自動保存を停止
+        // Promise.all(newApiBooks.map(book => saveBookToDB(book))).catch(error => {
+        //   console.error('❌ [DB保存エラー] 書籍のDB保存中にエラーが発生:', error);
+        // });
       }
 
       // 5. 結果を結合して返す
