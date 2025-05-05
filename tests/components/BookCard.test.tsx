@@ -64,19 +64,19 @@ describe('BookCard Component', () => {
     expect(image).toHaveAttribute('src', '/test-image.jpg');
 
     // 難易度表示の確認
-    expect(screen.getByText('普通だった')).toBeInTheDocument();
+    expect(screen.getByText('普通')).toBeInTheDocument();
   });
 
   it('renders correct difficulty badge for different levels', () => {
     const easyBook = { ...mockBook, avg_difficulty: 1 };
     const { rerender } = render(<BookCard book={easyBook} />);
 
-    expect(screen.getByText('とても簡単だった')).toBeInTheDocument();
+    expect(screen.getByText('簡単')).toBeInTheDocument();
 
     const hardBook = { ...mockBook, avg_difficulty: 5 };
     rerender(<BookCard book={hardBook} />);
 
-    expect(screen.getByText('とても難しかった')).toBeInTheDocument();
+    expect(screen.getByText('難しい')).toBeInTheDocument();
 
     const unknownBook = { ...mockBook, avg_difficulty: 0 };
     rerender(<BookCard book={unknownBook} />);

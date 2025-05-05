@@ -19,35 +19,35 @@ export type DifficultyInfo = {
   color: string;
 };
 
-export function getDifficultyInfo(difficulty: number): DifficultyInfo {
+export function getDifficultyInfo(difficulty: number, context?: 'review'): DifficultyInfo {
   switch (difficulty) {
     case 1:
       return {
-        label: 'とても簡単だった',
+        label: context === 'review' ? '簡単だった' : '簡単',
         icon: Smile,
         color: 'difficulty-easy',
       };
     case 2:
       return {
-        label: '簡単だった',
+        label: context === 'review' ? 'やや簡単だった' : 'やや簡単',
         icon: Smile,
         color: 'difficulty-somewhat-easy',
       };
     case 3:
       return {
-        label: '普通だった',
+        label: context === 'review' ? '普通だった' : '普通',
         icon: Meh,
         color: 'difficulty-normal',
       };
     case 4:
       return {
-        label: '難しかった',
+        label: context === 'review' ? 'やや難しかった' : 'やや難しい',
         icon: Frown,
         color: 'difficulty-somewhat-hard',
       };
     case 5:
       return {
-        label: 'とても難しかった',
+        label: context === 'review' ? '難しかった' : '難しい',
         icon: Frown,
         color: 'difficulty-hard',
       };
@@ -60,6 +60,6 @@ export function getDifficultyInfo(difficulty: number): DifficultyInfo {
   }
 }
 
-export function getDifficultyLabel(difficulty: number): string {
-  return getDifficultyInfo(difficulty).label;
+export function getDifficultyLabel(difficulty: number, context?: 'review'): string {
+  return getDifficultyInfo(difficulty, context).label;
 }
