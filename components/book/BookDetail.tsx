@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import WriteReviewButton from '@/components/book/WriteReviewButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,7 @@ export default function BookDetail({ id }: BookDetailProps) {
   const [loading, setLoading] = useState(true);
   const [book, setBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [internalBookId, setInternalBookId] = useState<string | null>(null); // 明示的にDB IDを保持
 
   useEffect(() => {
     // Supabaseから書籍データを取得
@@ -38,6 +40,42 @@ export default function BookDetail({ id }: BookDetailProps) {
         if (bookData) {
           console.log('取得した書籍データ:', bookData);
           setBook(bookData);
+
+          // 重要: 内部DB IDを抽出して保存
+          // bookData自体にはsupabaseの内部IDが含まれている場合があるが、
+          // これは直接アクセスできないため、代わりにobjとして扱い抽出する
+          const bookObj = bookData as Record<string, unknown>;
+          if (bookObj && typeof bookObj === 'object') {
+            // まず数値IDを探す（これが内部DB ID）
+            if ('internal_id' in bookObj && bookObj.internal_id) {
+              console.log('internal_idを使用:', bookObj.internal_id);
+              setInternalBookId(String(bookObj.internal_id));
+            }
+            // rawData内部に含まれている可能性も確認
+            else if (
+              'rawData' in bookObj &&
+              bookObj.rawData &&
+              typeof bookObj.rawData === 'object' &&
+              bookObj.rawData !== null &&
+              'id' in (bookObj.rawData as Record<string, unknown>) &&
+              typeof (bookObj.rawData as Record<string, unknown>).id === 'number'
+            ) {
+              const rawId = (bookObj.rawData as Record<string, unknown>).id;
+              console.log('rawData.idを使用:', rawId);
+              setInternalBookId(String(rawId));
+            }
+            // 実際はGoogle Books IDなどの場合があるが、数値だけの場合はそのまま使用
+            else if (typeof bookObj.id === 'string' && !isNaN(Number(bookObj.id))) {
+              console.log('数値文字列IDを使用:', bookObj.id);
+              setInternalBookId(bookObj.id);
+            }
+            // それでも見つからない場合はnullのまま
+            else {
+              console.log('内部IDが見つかりません。表示ID:', id);
+              setInternalBookId(null);
+            }
+          }
+
           return; // 成功したので終了
         }
 
@@ -62,6 +100,29 @@ export default function BookDetail({ id }: BookDetailProps) {
                 console.log('書籍をDBに保存しました:', savedBook);
                 // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)
                 setBook(savedBook);
+
+                // 保存された内部IDを抽出
+                const savedObj = savedBook as Record<string, unknown>;
+                if (savedObj && typeof savedObj === 'object') {
+                  if (
+                    'rawData' in savedObj &&
+                    savedObj.rawData &&
+                    typeof savedObj.rawData === 'object' &&
+                    savedObj.rawData !== null &&
+                    'id' in (savedObj.rawData as Record<string, unknown>)
+                  ) {
+                    const rawId = (savedObj.rawData as Record<string, unknown>).id;
+                    console.log('保存後のrawData.idを使用:', rawId);
+                    setInternalBookId(String(rawId));
+                  } else if (
+                    'id' in savedObj &&
+                    (typeof savedObj.id === 'number' ||
+                      (typeof savedObj.id === 'string' && !isNaN(Number(savedObj.id))))
+                  ) {
+                    console.log('保存後のIDを使用:', savedObj.id);
+                    setInternalBookId(String(savedObj.id));
+                  }
+                }
               }
             } catch (saveError) {
               console.error('書籍のDB保存エラー:', saveError);
@@ -212,8 +273,22 @@ export default function BookDetail({ id }: BookDetailProps) {
                 </a>
               </Button>
             </div>
+
+            {/* レビュー投稿ボタンを配置（内部DB IDを確実に渡す） */}
+            <div className="mt-6">
+              <WriteReviewButton bookId={internalBookId || id} />
+            </div>
           </div>
         </div>
+
+        {/* デバッグ情報（開発時のみ表示、本番では削除） */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-2 bg-muted/20 rounded text-xs">
+            <p>表示ID: {id}</p>
+            <p>内部DB ID: {internalBookId || '未設定'}</p>
+            <p>GoogleBooks ID: {book.id}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

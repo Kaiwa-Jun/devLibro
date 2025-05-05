@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { addReview } from '@/lib/supabase/reviews';
 import { getDifficultyInfo } from '@/lib/utils';
 
 interface ReviewModalProps {
@@ -23,6 +25,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
   const [postType, setPostType] = useState<'named' | 'anonymous'>('named');
   const [userName, setUserName] = useState('jun_kaiwa'); // 実際の実装ではログインユーザー名を設定
   const maxLength = 200;
+  const { user } = useAuth();
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -33,18 +36,52 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
 
   const handleSaveReview = async () => {
     if (!comment.trim()) return;
+    if (!user) {
+      toast.error('レビューを投稿するにはログインしてください');
+      return;
+    }
 
     try {
-      // APIを呼び出す代わりにモック処理
-      // 実際の実装では、ここで保存APIを呼び出す
-      console.log(
-        `保存するレビュー: bookId=${bookId}, difficulty=${difficulty}, comment=${comment}, userName=${postType === 'named' ? userName : '匿名'}`
-      );
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const displayType = postType === 'named' ? 'custom' : 'anon';
+
+      const { error } = await addReview({
+        bookId,
+        userId: user.id,
+        difficulty,
+        comment,
+        displayType,
+        customPenName: postType === 'named' ? userName : undefined,
+      });
+
+      if (error) {
+        console.error('レビュー保存中にエラーが発生しました:', error);
+
+        // エラーメッセージの内容によって適切なメッセージを表示
+        const errorMsg =
+          typeof error === 'object' && error !== null && 'message' in error
+            ? String(error.message)
+            : 'レビュー保存中にエラーが発生しました';
+
+        // 特定のエラーメッセージを分かりやすく表示
+        if (errorMsg.includes('すでにこの書籍のレビュー')) {
+          toast.error('すでにこの書籍のレビューを投稿しています');
+        } else if (errorMsg.includes('該当する書籍が見つかり')) {
+          toast.error('該当する書籍が見つかりません');
+        } else if (
+          errorMsg.includes('duplicate key value') ||
+          errorMsg.includes('unique constraint')
+        ) {
+          toast.error('すでにこの書籍のレビューを投稿しています');
+        } else {
+          toast.error(`エラーが発生しました: ${errorMsg}`);
+        }
+        return;
+      }
 
       toast.success('レビューを保存しました');
       onClose();
     } catch (error: unknown) {
+      console.error('レビュー保存中に例外が発生しました:', error);
       const errorMessage = error instanceof Error ? error.message : '不明なエラー';
       toast.error(`エラーが発生しました: ${errorMessage}`);
     }
