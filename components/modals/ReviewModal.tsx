@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { REVIEW_ADDED, reviewEvents } from '@/lib/events/reviewEvents';
+import { getUserProfile } from '@/lib/supabase/client';
 import { addReview } from '@/lib/supabase/reviews';
 import { getDifficultyInfo } from '@/lib/utils';
 
@@ -23,9 +25,42 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
   const [difficulty, setDifficulty] = useState(3);
   const [comment, setComment] = useState('');
   const [postType, setPostType] = useState<'named' | 'anonymous'>('named');
-  const [userName, setUserName] = useState('jun_kaiwa'); // 実際の実装ではログインユーザー名を設定
+  const [userName, setUserName] = useState('');
   const maxLength = 200;
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ユーザープロフィール情報の取得
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+
+      setIsLoading(true);
+      try {
+        // ユーザー名の初期設定
+        const displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー';
+        setUserName(displayName);
+
+        // Supabaseからプロフィール情報を取得
+        const { data, error } = await getUserProfile(user.id);
+        if (error) {
+          console.error('プロフィール取得エラー:', error);
+          return;
+        }
+
+        // プロフィール情報があれば反映
+        if (data && data.display_name) {
+          setUserName(String(data.display_name));
+        }
+      } catch (error) {
+        console.error('プロフィール取得中にエラーが発生しました:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -51,7 +86,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
     try {
       const displayType = postType === 'named' ? 'custom' : 'anon';
 
-      const { error } = await addReview({
+      const { data, error } = await addReview({
         bookId,
         userId: user.id,
         difficulty,
@@ -86,6 +121,10 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
       }
 
       toast.success('レビューを保存しました');
+
+      // レビュー追加イベントを発行
+      reviewEvents.emit(REVIEW_ADDED, { bookId });
+
       onClose();
     } catch (error: unknown) {
       console.error('レビュー保存中に例外が発生しました:', error);
@@ -119,8 +158,11 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
               value={userName}
               onChange={e => setUserName(e.target.value)}
               placeholder="表示名を入力"
+              disabled={isLoading}
             />
-            <p className="text-sm text-muted-foreground">表示名プレビュー：{userName}</p>
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? '読み込み中...' : `表示名プレビュー：${userName}`}
+            </p>
           </div>
         )}
       </div>
@@ -167,7 +209,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
         />
       </div>
 
-      <Button className="w-full" onClick={handleSaveReview}>
+      <Button className="w-full" onClick={handleSaveReview} disabled={isLoading}>
         レビューを保存
       </Button>
     </div>

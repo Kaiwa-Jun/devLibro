@@ -172,6 +172,20 @@ export const addReview = async (reviewData: ReviewInput) => {
       };
     }
 
+    // ユーザーの経験年数を取得
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('experience_years')
+      .eq('id', reviewData.userId)
+      .single();
+
+    if (userError) {
+      console.error('ユーザー情報取得エラー:', userError);
+    }
+
+    const experienceYears = userData?.experience_years || 0;
+    console.log('ユーザーの経験年数:', experienceYears);
+
     // テーブル構造に合わせたデータを準備
     const reviewToSave = {
       book_id: actualBookId,
@@ -181,6 +195,7 @@ export const addReview = async (reviewData: ReviewInput) => {
       display_type: reviewData.displayType,
       custom_pen_name: reviewData.displayType === 'custom' ? reviewData.customPenName : null,
       helpful_votes: 0,
+      experience_years: experienceYears,
     };
 
     console.log('保存するレビューデータ:', reviewToSave);

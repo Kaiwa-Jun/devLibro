@@ -9,12 +9,18 @@ import { formatDate, getDifficultyInfo } from '@/lib/utils';
 import { Review } from '@/types';
 
 type ReviewItemProps = {
-  review: Review;
+  review: Review & {
+    experienceLabel?: string;
+    anonymous?: boolean;
+  };
 };
 
 export default function ReviewItem({ review }: ReviewItemProps) {
   const difficultyInfo = getDifficultyInfo(review.difficulty);
   const DifficultyIcon = difficultyInfo.icon;
+
+  // 匿名ユーザーかどうかの判定
+  const isAnonymous = review.anonymous === true;
 
   return (
     <motion.div
@@ -25,16 +31,16 @@ export default function ReviewItem({ review }: ReviewItemProps) {
     >
       <div className="flex items-start gap-3">
         <Avatar>
-          <AvatarFallback className="bg-primary/10">
-            <User className="h-4 w-4 text-primary" />
+          <AvatarFallback className={isAnonymous ? 'bg-gray-200' : 'bg-primary/10'}>
+            <User className={`h-4 w-4 ${isAnonymous ? 'text-gray-500' : 'text-primary'}`} />
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium">{review.user_name}</p>
+            <p className="font-medium">{isAnonymous ? '匿名' : review.user_name}</p>
             <Badge variant="outline" className="border">
-              経験 {review.experience_years} 年
+              経験 {review.experienceLabel || `${review.experience_years}年`}
             </Badge>
             <Badge
               variant="outline"

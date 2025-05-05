@@ -25,6 +25,8 @@ export type Review = {
   experience_years: number;
   comment: string;
   created_at: string;
+  experienceLabel?: string;
+  anonymous?: boolean;
 };
 
 export type UserBook = {
