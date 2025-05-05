@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { REVIEW_ADDED, reviewEvents } from '@/lib/events/reviewEvents';
 import { addReview } from '@/lib/supabase/reviews';
 import { getDifficultyInfo } from '@/lib/utils';
 
@@ -51,7 +52,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
     try {
       const displayType = postType === 'named' ? 'custom' : 'anon';
 
-      const { error } = await addReview({
+      const { data, error } = await addReview({
         bookId,
         userId: user.id,
         difficulty,
@@ -86,6 +87,10 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
       }
 
       toast.success('レビューを保存しました');
+
+      // レビュー追加イベントを発行
+      reviewEvents.emit(REVIEW_ADDED, { bookId });
+
       onClose();
     } catch (error: unknown) {
       console.error('レビュー保存中に例外が発生しました:', error);

@@ -9,7 +9,7 @@ import { formatDate, getDifficultyInfo } from '@/lib/utils';
 import { Review } from '@/types';
 
 type ReviewItemProps = {
-  review: Review;
+  review: Review & { experienceLabel?: string };
 };
 
 export default function ReviewItem({ review }: ReviewItemProps) {
@@ -34,7 +34,7 @@ export default function ReviewItem({ review }: ReviewItemProps) {
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-medium">{review.user_name}</p>
             <Badge variant="outline" className="border">
-              経験 {review.experience_years} 年
+              経験 {review.experienceLabel || `${review.experience_years}年`}
             </Badge>
             <Badge
               variant="outline"
