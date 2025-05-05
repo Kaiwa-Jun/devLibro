@@ -1,4 +1,4 @@
-import { Smile, Meh, Frown } from 'lucide-react';
+import { Frown, Meh, Smile } from 'lucide-react';
 
 import { getDifficultyInfo, getDifficultyLabel } from '@/lib/utils';
 
@@ -14,21 +14,21 @@ jest.mock('date-fns/locale', () => ({
 describe('getDifficultyInfo', () => {
   it('returns correct info for difficulty level 1', () => {
     const info = getDifficultyInfo(1);
-    expect(info.label).toBe('簡単');
+    expect(info.label).toBe('とても簡単だった');
     expect(info.icon).toBe(Smile);
     expect(info.color).toBe('difficulty-easy');
   });
 
   it('returns correct info for difficulty level 3', () => {
     const info = getDifficultyInfo(3);
-    expect(info.label).toBe('普通');
+    expect(info.label).toBe('普通だった');
     expect(info.icon).toBe(Meh);
     expect(info.color).toBe('difficulty-normal');
   });
 
   it('returns correct info for difficulty level 5', () => {
     const info = getDifficultyInfo(5);
-    expect(info.label).toBe('難しい');
+    expect(info.label).toBe('とても難しかった');
     expect(info.icon).toBe(Frown);
     expect(info.color).toBe('difficulty-hard');
   });
@@ -43,11 +43,11 @@ describe('getDifficultyInfo', () => {
 
 describe('getDifficultyLabel', () => {
   it('returns correct labels for different difficulty levels', () => {
-    expect(getDifficultyLabel(1)).toBe('簡単');
-    expect(getDifficultyLabel(2)).toBe('やや簡単');
-    expect(getDifficultyLabel(3)).toBe('普通');
-    expect(getDifficultyLabel(4)).toBe('やや難しい');
-    expect(getDifficultyLabel(5)).toBe('難しい');
+    expect(getDifficultyLabel(1)).toBe('とても簡単だった');
+    expect(getDifficultyLabel(2)).toBe('簡単だった');
+    expect(getDifficultyLabel(3)).toBe('普通だった');
+    expect(getDifficultyLabel(4)).toBe('難しかった');
+    expect(getDifficultyLabel(5)).toBe('とても難しかった');
     expect(getDifficultyLabel(0)).toBe('不明'); // 無効な値
   });
 });

@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { addReview } from '@/lib/supabase/reviews';
 import { getDifficultyInfo } from '@/lib/utils';
@@ -31,13 +31,20 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
     const text = e.target.value;
     if (text.length <= maxLength) {
       setComment(text);
+    } else {
+      // 最大文字数を超える場合は切り詰める
+      setComment(text.slice(0, maxLength));
     }
   };
 
   const handleSaveReview = async () => {
-    if (!comment.trim()) return;
     if (!user) {
       toast.error('レビューを投稿するにはログインしてください');
+      return;
+    }
+
+    if (!comment.trim()) {
+      toast.error('コメントを入力してください');
       return;
     }
 
@@ -87,17 +94,6 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
     }
   };
 
-  const difficultyOptions = [1, 2, 3, 4, 5].map(level => {
-    const info = getDifficultyInfo(level);
-    const DifficultyIcon = info.icon;
-    return {
-      value: level,
-      label: info.label,
-      icon: DifficultyIcon,
-      color: info.color,
-    };
-  });
-
   return (
     <div className="space-y-6 py-4">
       <div className="space-y-4">
@@ -129,33 +125,28 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         <Label>難易度</Label>
-        <div className="flex gap-2">
-          {difficultyOptions.map(option => {
-            const Icon = option.icon;
-            const isSelected = difficulty === option.value;
-            return (
-              <motion.button
-                key={option.value}
-                onClick={() => setDifficulty(option.value)}
-                whileTap={{ scale: 0.95 }}
-                className="focus:outline-none flex-1"
-              >
-                <Badge
-                  variant={isSelected ? 'default' : 'outline'}
-                  className={`w-full gap-1.5 border ${isSelected ? 'bg-background border-white/10' : 'border-white/20'}`}
-                  style={{
-                    color: `var(--${option.color})`,
-                    backgroundColor: isSelected ? `var(--${option.color})15` : undefined,
-                  }}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="truncate">{option.label}</span>
-                </Badge>
-              </motion.button>
-            );
-          })}
+        <div className="space-y-6">
+          <Slider
+            value={[difficulty]}
+            onValueChange={value => setDifficulty(value[0])}
+            min={1}
+            max={5}
+            step={1}
+            className="my-4"
+          />
+          <div className="flex justify-center">
+            <Badge
+              className="gap-1.5"
+              style={{
+                color: `var(--${getDifficultyInfo(difficulty).color})`,
+                backgroundColor: `var(--${getDifficultyInfo(difficulty).color})15`,
+              }}
+            >
+              {getDifficultyInfo(difficulty).label}
+            </Badge>
+          </div>
         </div>
       </div>
 

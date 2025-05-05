@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Smile, Meh, Frown } from 'lucide-react';
+import { Frown, Meh, Smile } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -23,31 +23,31 @@ export function getDifficultyInfo(difficulty: number): DifficultyInfo {
   switch (difficulty) {
     case 1:
       return {
-        label: '簡単',
+        label: 'とても簡単だった',
         icon: Smile,
         color: 'difficulty-easy',
       };
     case 2:
       return {
-        label: 'やや簡単',
+        label: '簡単だった',
         icon: Smile,
         color: 'difficulty-somewhat-easy',
       };
     case 3:
       return {
-        label: '普通',
+        label: '普通だった',
         icon: Meh,
         color: 'difficulty-normal',
       };
     case 4:
       return {
-        label: 'やや難しい',
+        label: '難しかった',
         icon: Frown,
         color: 'difficulty-somewhat-hard',
       };
     case 5:
       return {
-        label: '難しい',
+        label: 'とても難しかった',
         icon: Frown,
         color: 'difficulty-hard',
       };
