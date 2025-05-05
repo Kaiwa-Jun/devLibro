@@ -49,14 +49,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         const client = supabase as ReturnType<typeof createClient>;
         const { data } = await client.auth.getSession();
 
-        // デバッグ用：ユーザー情報をコンソールに表示
-        if (data.session?.user) {
-          console.log('User data:', data.session.user);
-        }
-
         setUser(data.session?.user || null);
       } catch (error) {
-        console.error('セッション取得エラー:', error);
+        // エラー処理
       } finally {
         setLoading(false);
       }
@@ -69,9 +64,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((event, session) => {
-      // デバッグ用：認証イベントとユーザー情報をコンソールに表示
-      console.log('Auth event:', event, session?.user);
-
       setUser(session?.user || null);
       setLoading(false);
     });

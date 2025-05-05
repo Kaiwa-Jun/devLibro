@@ -29,15 +29,45 @@ export const updateUserProfile = async (
   data: { display_name?: string; experience_years?: number }
 ) => {
   const client = getSupabaseClient();
-  const { error } = await client.from('users').update(data).eq('id', userId);
-  return { error };
+
+  try {
+    // まずユーザーが存在するか確認
+    const { data: existingUser, error: checkError } = await client
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    // ユーザーが存在しない場合は作成
+    if (!existingUser && !checkError) {
+      const { error: insertError } = await client.from('users').insert({ id: userId, ...data });
+
+      if (insertError) {
+        return { error: insertError };
+      }
+      return { error: null };
+    }
+
+    // 既存ユーザーの更新
+    const { error } = await client.from('users').update(data).eq('id', userId);
+
+    return { error };
+  } catch (error) {
+    return { error };
+  }
 };
 
 // ユーザープロフィールを取得する関数
 export const getUserProfile = async (userId: string) => {
   const client = getSupabaseClient();
-  const { data, error } = await client.from('users').select('*').eq('id', userId).single();
-  return { data, error };
+
+  try {
+    const { data, error } = await client.from('users').select('*').eq('id', userId).single();
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
 };
 
 // ユーザー認証関連の関数
