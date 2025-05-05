@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
 }
 
 // クライアントが初期化されていない場合のフォールバック
-const getSupabaseClient = () => {
+export const getSupabaseClient = () => {
   if (!supabase) {
     throw new Error(
       'Supabase client not initialized. Make sure you are using this client only on the client side.'
