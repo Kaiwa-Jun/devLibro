@@ -26,6 +26,7 @@ export type Review = {
   comment: string;
   created_at: string;
   experienceLabel?: string;
+  anonymous?: boolean;
 };
 
 export type UserBook = {

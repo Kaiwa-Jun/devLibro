@@ -66,25 +66,31 @@ export default function ReviewList({ bookId }: ReviewListProps) {
         // 各レビューデータを処理して適切な形式に変換
         for (const item of data) {
           try {
+            // 匿名投稿かどうか判定
+            const isAnonymous = item.display_type === 'anon';
+
             // ユーザー名の取得（デフォルトは匿名）
             let userName = '匿名ユーザー';
 
-            // カスタム表示名がある場合それを使用
-            if (item.display_type === 'custom' && item.custom_pen_name) {
-              userName = String(item.custom_pen_name);
-            } else {
-              // users情報を使おうとしたが型の問題があるので、代わりに安全なアプローチを使用
-              try {
-                // まずunknownとして扱い、必要なプロパティの存在を確認
-                const usersObj = item.users as unknown;
-                if (usersObj && typeof usersObj === 'object') {
-                  const userObject = usersObj as { display_name?: unknown };
-                  if ('display_name' in userObject && userObject.display_name) {
-                    userName = String(userObject.display_name);
+            // 匿名でない場合のみ、ユーザー名を設定
+            if (!isAnonymous) {
+              // カスタム表示名がある場合それを使用
+              if (item.display_type === 'custom' && item.custom_pen_name) {
+                userName = String(item.custom_pen_name);
+              } else {
+                // users情報を使おうとしたが型の問題があるので、代わりに安全なアプローチを使用
+                try {
+                  // まずunknownとして扱い、必要なプロパティの存在を確認
+                  const usersObj = item.users as unknown;
+                  if (usersObj && typeof usersObj === 'object') {
+                    const userObject = usersObj as { display_name?: unknown };
+                    if ('display_name' in userObject && userObject.display_name) {
+                      userName = String(userObject.display_name);
+                    }
                   }
+                } catch (e) {
+                  // 何もしない - デフォルトのユーザー名を使用
                 }
-              } catch (e) {
-                // 何もしない - デフォルトのユーザー名を使用
               }
             }
 
@@ -98,6 +104,7 @@ export default function ReviewList({ bookId }: ReviewListProps) {
               comment: String(item.comment || ''),
               created_at: String(item.created_at || new Date().toISOString()),
               user_name: userName,
+              anonymous: isAnonymous, // 匿名投稿かどうかのフラグを設定
             };
 
             formattedReviews.push(reviewItem);
