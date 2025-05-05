@@ -182,11 +182,11 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
             <Badge
               className="gap-1.5"
               style={{
-                color: `var(--${getDifficultyInfo(difficulty).color})`,
-                backgroundColor: `var(--${getDifficultyInfo(difficulty).color})15`,
+                color: `var(--${getDifficultyInfo(difficulty, 'review').color})`,
+                backgroundColor: `var(--${getDifficultyInfo(difficulty, 'review').color})15`,
               }}
             >
-              {getDifficultyInfo(difficulty).label}
+              {getDifficultyInfo(difficulty, 'review').label}
             </Badge>
           </div>
         </div>

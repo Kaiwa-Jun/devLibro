@@ -16,7 +16,7 @@ type ReviewItemProps = {
 };
 
 export default function ReviewItem({ review }: ReviewItemProps) {
-  const difficultyInfo = getDifficultyInfo(review.difficulty);
+  const difficultyInfo = getDifficultyInfo(review.difficulty, 'review');
   const DifficultyIcon = difficultyInfo.icon;
 
   // 匿名ユーザーかどうかの判定
