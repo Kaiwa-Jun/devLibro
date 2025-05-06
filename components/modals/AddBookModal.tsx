@@ -3,11 +3,13 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Loader2, Search } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -19,13 +21,20 @@ import { Book } from '@/types';
 
 type BookStatus = 'unread' | 'reading' | 'done';
 
-export default function AddBookModal() {
+interface AddBookModalProps {
+  onClose?: () => void;
+}
+
+export default function AddBookModal({ onClose }: AddBookModalProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<BookStatus>('unread');
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [dialogCloseRef, setDialogCloseRef] = useState<HTMLButtonElement | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -36,6 +45,9 @@ export default function AddBookModal() {
         const { user } = await getUser();
         if (user) {
           setUserId(user.id);
+          console.log('ユーザーID取得成功:', user.id);
+        } else {
+          console.error('ユーザーが見つかりません');
         }
       } catch (error) {
         console.error('ユーザー情報取得エラー:', error);
@@ -102,29 +114,49 @@ export default function AddBookModal() {
 
   const handleSelectBook = (book: Book) => {
     setSelectedBook(book);
+    console.log('選択した書籍:', book);
   };
 
   const handleAddBook = async () => {
     if (!selectedBook || !userId) {
       toast.error('書籍が選択されていないか、ユーザーが認証されていません');
+      console.error('Book or UserID missing', { book: selectedBook, userId });
       return;
     }
 
+    setIsAdding(true);
     try {
+      console.log('書籍追加開始:', { userId, book: selectedBook, status: selectedStatus });
       const result = await addBookToUserShelf(userId, selectedBook, selectedStatus);
 
       if (result) {
         toast.success('蔵書に追加しました');
-        // フォームをリセット
-        setSearchTerm('');
-        setSearchResults([]);
-        setSelectedBook(null);
+        console.log('書籍追加成功:', result);
+
+        // モーダルを閉じる
+        if (onClose) {
+          onClose();
+        } else if (dialogCloseRef) {
+          dialogCloseRef.click();
+        }
+
+        // プロフィールページにリダイレクト
+        router.push('/profile');
+        router.refresh();
       } else {
         toast.error('書籍の追加に失敗しました');
+        console.error('書籍追加失敗: 戻り値がnull');
       }
     } catch (error) {
       console.error('書籍追加エラー:', error);
-      toast.error('書籍の追加中にエラーが発生しました');
+      // エラーの詳細情報を表示
+      if (error instanceof Error) {
+        toast.error(`エラー: ${error.message}`);
+      } else {
+        toast.error('書籍の追加中に不明なエラーが発生しました');
+      }
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -156,6 +188,9 @@ export default function AddBookModal() {
 
   return (
     <div className="space-y-6 py-2">
+      {/* 非表示の DialogClose ボタン（プログラムからモーダルを閉じるために使用） */}
+      <DialogClose ref={setDialogCloseRef} className="hidden" />
+
       <div className="space-y-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -214,8 +249,10 @@ export default function AddBookModal() {
                     <div>
                       <h4 className="font-medium line-clamp-1">{book.title}</h4>
                       <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
-                      {book.isbn && (
+                      {book.isbn && !book.isbn.startsWith('N-') ? (
                         <p className="text-xs text-muted-foreground">ISBN: {book.isbn}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">ISBN情報なし</p>
                       )}
                     </div>
                   </CardContent>
@@ -248,10 +285,12 @@ export default function AddBookModal() {
                   <div className="text-center">
                     <h4 className="font-medium text-lg">{selectedBook.title}</h4>
                     <p className="text-sm text-muted-foreground">{selectedBook.author}</p>
-                    {selectedBook.isbn && (
+                    {selectedBook.isbn && !selectedBook.isbn.startsWith('N-') ? (
                       <p className="text-xs text-muted-foreground mt-1">
                         ISBN: {selectedBook.isbn}
                       </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1 italic">ISBN情報なし</p>
                     )}
                   </div>
                 </div>
@@ -276,8 +315,15 @@ export default function AddBookModal() {
               <Button variant="outline" className="flex-1" onClick={() => setSelectedBook(null)}>
                 キャンセル
               </Button>
-              <Button className="flex-1" onClick={handleAddBook}>
-                追加する
+              <Button className="flex-1" onClick={handleAddBook} disabled={isAdding}>
+                {isAdding ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    追加中...
+                  </>
+                ) : (
+                  '追加する'
+                )}
               </Button>
             </div>
           </motion.div>
