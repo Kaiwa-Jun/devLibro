@@ -40,7 +40,7 @@ export default function BookshelfItem({ userBook }: BookshelfItemProps) {
   const getStatusText = () => {
     switch (userBook.status) {
       case 'unread':
-        return '未読';
+        return 'これから読む';
       case 'reading':
         return '読書中';
       case 'done':
@@ -85,7 +85,7 @@ export default function BookshelfItem({ userBook }: BookshelfItemProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>未読に設定</DropdownMenuItem>
+                    <DropdownMenuItem>これから読むに設定</DropdownMenuItem>
                     <DropdownMenuItem>読書中に設定</DropdownMenuItem>
                     <DropdownMenuItem>読了に設定</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive">本棚から削除</DropdownMenuItem>
