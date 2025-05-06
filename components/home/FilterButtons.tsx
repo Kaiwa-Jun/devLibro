@@ -558,7 +558,7 @@ export default function FilterButtons() {
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-2"
               >
-                <div className="relative w-8 h-8 flex-shrink-0">
+                <div className="relative w-5 h-5 flex-shrink-0">
                   <Image
                     src={fwOption.icon}
                     alt={value}
