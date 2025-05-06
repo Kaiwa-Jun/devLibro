@@ -106,6 +106,10 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
       }
     }
 
+    // プログラミング言語とフレームワークを検出
+    const programmingLanguages = await detectProgrammingLanguagesFromBook(book);
+    const frameworks = await detectFrameworksFromBook(book);
+
     // テーブル構造に合わせたデータを準備
     const bookToSave = {
       isbn: book.isbn || '',
@@ -117,6 +121,9 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
       description: book.description || '',
       // Google Books IDを説明文に含めておく（検索用）
       ...(book.id && { description: `[GBID:${book.id}] ${book.description || ''}` }),
+      // 新フィールド
+      programming_languages: programmingLanguages,
+      frameworks: frameworks,
     };
 
     console.log('保存する書籍データ:', bookToSave);
@@ -286,6 +293,10 @@ function formatBookFromDB(data: Record<string, unknown>): Book {
     img_url: String(data.img_url || ''),
     description: cleanDescription,
     avg_difficulty: typeof data.avg_difficulty === 'number' ? data.avg_difficulty : 0,
+    programmingLanguages: Array.isArray(data.programming_languages)
+      ? data.programming_languages.map(String)
+      : [],
+    frameworks: Array.isArray(data.frameworks) ? data.frameworks.map(String) : [],
   };
 }
 
@@ -315,3 +326,147 @@ export const getAllBooksFromDB = async (): Promise<Book[]> => {
     return [];
   }
 };
+
+// プログラミング言語を検出する関数
+async function detectProgrammingLanguagesFromBook(book: Book): Promise<string[]> {
+  // プログラミング言語リスト
+  const languages = [
+    'JavaScript',
+    'TypeScript',
+    'Python',
+    'Java',
+    'C++',
+    'C#',
+    'Go',
+    'Rust',
+    'Ruby',
+    'PHP',
+    'Swift',
+    'Kotlin',
+    'Dart',
+    'Scala',
+    'Haskell',
+    'Perl',
+    'R',
+    'COBOL',
+    'Fortran',
+    'Assembly',
+    'Lua',
+    'Groovy',
+    'Clojure',
+    'F#',
+    'Julia',
+    'Shell',
+    'PowerShell',
+    'SQL',
+  ];
+
+  const detectedLanguages = new Set<string>();
+
+  // タイトルから検出
+  for (const lang of languages) {
+    if (book.title.includes(lang)) {
+      detectedLanguages.add(lang);
+    }
+  }
+
+  // カテゴリから検出
+  for (const category of book.categories) {
+    for (const lang of languages) {
+      if (category.includes(lang)) {
+        detectedLanguages.add(lang);
+      }
+    }
+  }
+
+  // 説明文から検出
+  if (book.description) {
+    for (const lang of languages) {
+      if (book.description.includes(lang)) {
+        detectedLanguages.add(lang);
+      }
+    }
+  }
+
+  return Array.from(detectedLanguages);
+}
+
+// フレームワークを検出する関数
+async function detectFrameworksFromBook(book: Book): Promise<string[]> {
+  // フレームワークリスト
+  const frameworks = [
+    // JavaScript/TypeScriptフレームワーク
+    'React',
+    'Angular',
+    'Vue',
+    'Next.js',
+    'Nuxt.js',
+    'Express',
+    'Nest.js',
+    'Node.js',
+    'Svelte',
+    'Ember.js',
+    'Astro',
+    'jQuery',
+    // Pythonフレームワーク
+    'Django',
+    'Flask',
+    'FastAPI',
+    'Pyramid',
+    'Tornado',
+    // Javaフレームワーク
+    'Spring',
+    'Spring Boot',
+    'Jakarta EE',
+    'Hibernate',
+    'Quarkus',
+    // PHPフレームワーク
+    'Laravel',
+    'Symfony',
+    'CodeIgniter',
+    'CakePHP',
+    'Yii',
+    // Rubyフレームワーク
+    'Ruby on Rails',
+    'Sinatra',
+    'Hanami',
+    'Grape',
+    // その他
+    'ASP.NET',
+    '.NET Core',
+    'Flutter',
+    'SwiftUI',
+    'Vapor',
+    'Gin',
+    'Echo',
+  ];
+
+  const detectedFrameworks = new Set<string>();
+
+  // タイトルから検出
+  for (const framework of frameworks) {
+    if (book.title.includes(framework)) {
+      detectedFrameworks.add(framework);
+    }
+  }
+
+  // カテゴリから検出
+  for (const category of book.categories) {
+    for (const framework of frameworks) {
+      if (category.includes(framework)) {
+        detectedFrameworks.add(framework);
+      }
+    }
+  }
+
+  // 説明文から検出
+  if (book.description) {
+    for (const framework of frameworks) {
+      if (book.description.includes(framework)) {
+        detectedFrameworks.add(framework);
+      }
+    }
+  }
+
+  return Array.from(detectedFrameworks);
+}

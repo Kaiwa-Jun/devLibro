@@ -8,6 +8,8 @@ export type Book = {
   img_url: string;
   avg_difficulty: number;
   description?: string;
+  programmingLanguages?: string[];
+  frameworks?: string[];
 };
 
 export type User = {

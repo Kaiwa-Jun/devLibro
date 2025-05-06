@@ -1,14 +1,12 @@
 // 既存のマイグレーションの適用とプログラミング言語データの更新を行うスクリプト
 // Node.js環境で実行することを想定しています
 
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-
+const { createClient } = require('@supabase/supabase-js');
 // 環境変数の読み込み
-dotenv.config();
+require('dotenv').config();
 
 // Supabaseクライアントの初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
