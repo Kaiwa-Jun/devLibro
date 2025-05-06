@@ -112,7 +112,10 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
 
     // テーブル構造に合わせたデータを準備
     const bookToSave = {
-      isbn: book.isbn || '',
+      // ISBNがない場合は短い一意識別子を生成（20文字以内）
+      isbn:
+        book.isbn ||
+        'N-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 6),
       title: book.title,
       author: book.author || '不明',
       language: book.language || '日本語',
