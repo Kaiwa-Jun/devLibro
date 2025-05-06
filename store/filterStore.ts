@@ -4,36 +4,41 @@ interface FilterState {
   difficulty: string[];
   language: string[];
   category: string[];
+  framework: string[];
 
   setDifficultyFilter: (difficulties: string[]) => void;
   setLanguageFilter: (languages: string[]) => void;
   setCategoryFilter: (categories: string[]) => void;
-  addFilter: (type: 'difficulty' | 'language' | 'category', value: string) => void;
-  removeFilter: (type: 'difficulty' | 'language' | 'category', value: string) => void;
+  setFrameworkFilter: (frameworks: string[]) => void;
+  addFilter: (type: 'difficulty' | 'language' | 'category' | 'framework', value: string) => void;
+  removeFilter: (type: 'difficulty' | 'language' | 'category' | 'framework', value: string) => void;
   clearFilters: () => void;
-  clearFiltersByType: (type: 'difficulty' | 'language' | 'category') => void;
+  clearFiltersByType: (type: 'difficulty' | 'language' | 'category' | 'framework') => void;
 }
 
 export const useFilterStore = create<FilterState>(set => ({
   difficulty: [],
   language: [],
   category: [],
+  framework: [],
 
   setDifficultyFilter: difficulties => set({ difficulty: difficulties }),
   setLanguageFilter: languages => set({ language: languages }),
   setCategoryFilter: categories => set({ category: categories }),
+  setFrameworkFilter: frameworks => set({ framework: frameworks }),
 
   addFilter: (type, value) =>
     set(state => {
-      // 言語の場合は大文字小文字を区別しないように特別処理
-      if (type === 'language') {
-        const isAlreadyIncluded = state.language.some(
+      // 言語とフレームワークの場合は大文字小文字を区別しないように特別処理
+      if (type === 'language' || type === 'framework') {
+        const targetArray = state[type];
+        const isAlreadyIncluded = targetArray.some(
           item => item.toLowerCase() === value.toLowerCase()
         );
         if (isAlreadyIncluded) {
           return state; // 既に存在する場合は何もしない
         }
-        return { language: [...state.language, value] };
+        return { [type]: [...targetArray, value] };
       }
 
       // 難易度とカテゴリの場合は元の処理
@@ -44,10 +49,10 @@ export const useFilterStore = create<FilterState>(set => ({
 
   removeFilter: (type, value) =>
     set(state => {
-      // 言語の場合は大文字小文字を区別しないように特別処理
-      if (type === 'language') {
+      // 言語とフレームワークの場合は大文字小文字を区別しないように特別処理
+      if (type === 'language' || type === 'framework') {
         return {
-          language: state.language.filter(item => item.toLowerCase() !== value.toLowerCase()),
+          [type]: state[type].filter(item => item.toLowerCase() !== value.toLowerCase()),
         };
       }
 
@@ -57,7 +62,7 @@ export const useFilterStore = create<FilterState>(set => ({
       };
     }),
 
-  clearFilters: () => set({ difficulty: [], language: [], category: [] }),
+  clearFilters: () => set({ difficulty: [], language: [], category: [], framework: [] }),
 
   clearFiltersByType: type =>
     set(state => ({

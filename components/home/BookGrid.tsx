@@ -37,8 +37,9 @@ export default function BookGrid() {
   } = useSearchStore();
 
   // フィルターストアから状態を取得
-  const { difficulty, language, category } = useFilterStore();
-  const hasActiveFilters = difficulty.length > 0 || language.length > 0 || category.length > 0;
+  const { difficulty, language, category, framework } = useFilterStore();
+  const hasActiveFilters =
+    difficulty.length > 0 || language.length > 0 || category.length > 0 || framework.length > 0;
 
   // 検索結果か全書籍のどちらを表示するか決定
   const isSearchActive = searchTerm.length >= 2;
@@ -133,7 +134,7 @@ export default function BookGrid() {
       let filtered = [...displayedBooks];
 
       console.log('フィルタリング前の書籍数:', filtered.length);
-      console.log('アクティブなフィルター:', { difficulty, language, category });
+      console.log('アクティブなフィルター:', { difficulty, language, category, framework });
 
       // 言語判定のヘルパー関数
       const detectLanguageInText = (text: string, langNames: string[]): boolean => {
@@ -181,18 +182,6 @@ export default function BookGrid() {
           }
         }
 
-        // DB上のframeworksフィールドを確認
-        if (book.frameworks && book.frameworks.length > 0) {
-          if (
-            book.frameworks.some(framework =>
-              langNames.some(l => framework.toLowerCase().includes(l.toLowerCase()))
-            )
-          ) {
-            console.log(`${book.title}: frameworksでマッチ`, book.frameworks);
-            return true;
-          }
-        }
-
         // タイトルに言語名が含まれているか確認
         if (detectLanguageInText(book.title, langNames)) {
           console.log(`${book.title}: タイトルでマッチ`);
@@ -218,6 +207,47 @@ export default function BookGrid() {
         }
 
         // いずれにも該当しない場合はfalse
+        return false;
+      };
+
+      // 書籍が特定のフレームワークに関連しているかを判定
+      const hasFramework = (book: Book, frameworkNames: string[]): boolean => {
+        // DB上のframeworksフィールドを確認
+        if (book.frameworks && book.frameworks.length > 0) {
+          if (
+            book.frameworks.some(fw =>
+              frameworkNames.some(f => fw.toLowerCase() === f.toLowerCase())
+            )
+          ) {
+            console.log(`${book.title}: frameworksでマッチ`, book.frameworks);
+            return true;
+          }
+        }
+
+        // タイトルにフレームワーク名が含まれているか確認
+        if (detectLanguageInText(book.title, frameworkNames)) {
+          console.log(`${book.title}: タイトル(フレームワーク)でマッチ`);
+          return true;
+        }
+
+        // カテゴリにフレームワーク名が含まれているか確認
+        if (
+          book.categories &&
+          book.categories.length > 0 &&
+          book.categories.some(cat =>
+            frameworkNames.some(f => cat.toLowerCase().includes(f.toLowerCase()))
+          )
+        ) {
+          console.log(`${book.title}: カテゴリ(フレームワーク)でマッチ`, book.categories);
+          return true;
+        }
+
+        // 説明文にフレームワーク名が含まれているか確認
+        if (book.description && detectLanguageInText(book.description, frameworkNames)) {
+          console.log(`${book.title}: 説明文(フレームワーク)でマッチ`);
+          return true;
+        }
+
         return false;
       };
 
@@ -266,11 +296,30 @@ export default function BookGrid() {
         console.log('カテゴリフィルター後の書籍数:', filtered.length);
       }
 
+      // フレームワークでフィルタリング
+      if (framework.length > 0) {
+        console.log('フレームワークフィルター適用前:', framework);
+        filtered = filtered.filter(book => {
+          // 選択されたフレームワーク（大文字小文字を区別しないように配列を準備）
+          const searchFrameworks = framework.map(f => f.toLowerCase());
+
+          // フレームワーク判定ロジックを使用
+          const matches = hasFramework(book, searchFrameworks);
+          console.log(`${book.title} - フレームワークマッチ:`, matches, {
+            searchFor: searchFrameworks,
+            bookFrameworks: book.frameworks || [],
+            categories: book.categories,
+          });
+          return matches;
+        });
+        console.log('フレームワークフィルター後の書籍数:', filtered.length);
+      }
+
       setFilteredBooks(filtered);
     };
 
     applyFilters();
-  }, [displayedBooks, difficulty, language, category, hasActiveFilters]);
+  }, [displayedBooks, difficulty, language, category, framework, hasActiveFilters]);
 
   // 追加の書籍を読み込む関数
   const loadMoreBooks = async () => {
