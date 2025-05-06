@@ -104,22 +104,138 @@ export default function BookGrid() {
     const applyFilters = () => {
       let filtered = [...displayedBooks];
 
+      console.log('フィルタリング前の書籍数:', filtered.length);
+      console.log('アクティブなフィルター:', { difficulty, language, category });
+
+      // 言語判定のヘルパー関数
+      const detectLanguageInText = (text: string, langNames: string[]): boolean => {
+        if (!text) return false;
+        const lowerText = text.toLowerCase();
+
+        // 言語名と一致するか、言語名+空白や句読点などで区切られているかをチェック
+        return langNames.some(lang => {
+          const lowerLang = lang.toLowerCase();
+          // 完全一致または単語境界でのマッチをチェック
+          return (
+            lowerText.includes(lowerLang) &&
+            // 単語の境界をチェック（前後に文字がない、または特定の区切り文字がある）
+            (lowerText === lowerLang ||
+              lowerText.includes(` ${lowerLang} `) ||
+              lowerText.includes(`.${lowerLang} `) ||
+              lowerText.includes(` ${lowerLang}.`) ||
+              lowerText.includes(`「${lowerLang}」`) ||
+              lowerText.includes(`『${lowerLang}』`) ||
+              lowerText.includes(`(${lowerLang})`) ||
+              lowerText.includes(`（${lowerLang}）`) ||
+              lowerText.includes(`${lowerLang}:`) ||
+              lowerText.includes(`${lowerLang}：`) ||
+              lowerText.includes(`${lowerLang}/`) ||
+              lowerText.includes(`/${lowerLang}`) ||
+              lowerText.includes(`${lowerLang}、`) ||
+              lowerText.includes(`、${lowerLang}`) ||
+              lowerText.startsWith(`${lowerLang} `) ||
+              lowerText.endsWith(` ${lowerLang}`))
+          );
+        });
+      };
+
+      // 書籍が特定の言語に関連しているかを判定
+      const hasLanguage = (book: Book, langNames: string[]): boolean => {
+        // DB上のprogrammingLanguagesフィールドを確認
+        if (book.programmingLanguages && book.programmingLanguages.length > 0) {
+          if (
+            book.programmingLanguages.some(lang =>
+              langNames.some(l => lang.toLowerCase() === l.toLowerCase())
+            )
+          ) {
+            console.log(`${book.title}: programmingLanguagesでマッチ`, book.programmingLanguages);
+            return true;
+          }
+        }
+
+        // DB上のframeworksフィールドを確認
+        if (book.frameworks && book.frameworks.length > 0) {
+          if (
+            book.frameworks.some(framework =>
+              langNames.some(l => framework.toLowerCase().includes(l.toLowerCase()))
+            )
+          ) {
+            console.log(`${book.title}: frameworksでマッチ`, book.frameworks);
+            return true;
+          }
+        }
+
+        // タイトルに言語名が含まれているか確認
+        if (detectLanguageInText(book.title, langNames)) {
+          console.log(`${book.title}: タイトルでマッチ`);
+          return true;
+        }
+
+        // カテゴリに言語名が含まれているか確認
+        if (
+          book.categories &&
+          book.categories.length > 0 &&
+          book.categories.some(cat =>
+            langNames.some(l => cat.toLowerCase().includes(l.toLowerCase()))
+          )
+        ) {
+          console.log(`${book.title}: カテゴリでマッチ`, book.categories);
+          return true;
+        }
+
+        // 説明文に言語名が含まれているか確認
+        if (book.description && detectLanguageInText(book.description, langNames)) {
+          console.log(`${book.title}: 説明文でマッチ`);
+          return true;
+        }
+
+        // いずれにも該当しない場合はfalse
+        return false;
+      };
+
+      // 各書籍のプログラミング言語とフレームワークの情報をログ
+      console.log('書籍データのプログラミング言語情報:');
+      filtered.forEach(book => {
+        console.log(`書籍: ${book.title}`, {
+          language: book.language,
+          programmingLanguages: book.programmingLanguages || [],
+          frameworks: book.frameworks || [],
+          categories: book.categories,
+        });
+      });
+
       // 難易度でフィルタリング
       if (difficulty.length > 0) {
         filtered = filtered.filter(book => {
           const bookDifficultyLevel = Math.round(book.avg_difficulty);
           return difficulty.includes(bookDifficultyLevel.toString());
         });
+        console.log('難易度フィルター後の書籍数:', filtered.length);
       }
 
       // 言語でフィルタリング
       if (language.length > 0) {
-        filtered = filtered.filter(book => language.includes(book.language));
+        console.log('言語フィルター適用前:', language);
+        filtered = filtered.filter(book => {
+          // 選択された言語（大文字小文字を区別しないように配列を準備）
+          const searchLanguages = language.map(l => l.toLowerCase());
+
+          // 改善された判定ロジックを使用
+          const matches = hasLanguage(book, searchLanguages);
+          console.log(`${book.title} - 言語マッチ:`, matches, {
+            searchFor: searchLanguages,
+            bookLanguages: book.programmingLanguages || [],
+            categories: book.categories,
+          });
+          return matches;
+        });
+        console.log('言語フィルター後の書籍数:', filtered.length);
       }
 
       // カテゴリでフィルタリング
       if (category.length > 0) {
         filtered = filtered.filter(book => book.categories.some(cat => category.includes(cat)));
+        console.log('カテゴリフィルター後の書籍数:', filtered.length);
       }
 
       setFilteredBooks(filtered);

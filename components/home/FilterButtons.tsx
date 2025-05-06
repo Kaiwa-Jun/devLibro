@@ -54,23 +54,46 @@ export default function FilterButtons() {
   // 全フィルター数を計算
   const filterCount = difficulty.length + language.length + category.length;
 
-  const handleFilterSelect = (category: FilterCategory, option: string) => {
-    if (category === 'difficulty') {
+  const handleFilterSelect = (filterType: FilterCategory, option: string) => {
+    // 引数名を変更して衝突を避ける（変数名と引数名の衝突防止）
+    console.log(`フィルター選択: フィルタータイプ=${filterType}, オプション=${option}`);
+
+    // 現在の状態をログ出力
+    console.log('現在のフィルター状態:', {
+      difficulty,
+      language,
+      category,
+    });
+
+    // 選択したオプションを大文字小文字を区別せずに検索
+    if (filterType === 'difficulty') {
       if (difficulty.includes(option)) {
+        console.log(`難易度から削除: ${option}`);
         removeFilter('difficulty', option);
       } else {
+        console.log(`難易度に追加: ${option}`);
         addFilter('difficulty', option);
       }
-    } else if (category === 'language') {
-      if (language.includes(option)) {
-        removeFilter('language', option);
+    } else if (filterType === 'language') {
+      // 大文字小文字を区別せずに比較する（lower caseに正規化して比較）
+      const isSelected = language.some(lang => lang.toLowerCase() === option.toLowerCase());
+      if (isSelected) {
+        console.log(`言語から削除: ${option}`);
+        // 完全一致のアイテムを探して削除
+        const exactItem = language.find(lang => lang.toLowerCase() === option.toLowerCase());
+        if (exactItem) {
+          removeFilter('language', exactItem);
+        }
       } else {
+        console.log(`言語に追加: ${option}`);
         addFilter('language', option);
       }
-    } else if (category === 'category') {
+    } else if (filterType === 'category') {
       if (category.includes(option)) {
+        console.log(`カテゴリから削除: ${option}`);
         removeFilter('category', option);
       } else {
+        console.log(`カテゴリに追加: ${option}`);
         addFilter('category', option);
       }
     }
@@ -142,10 +165,15 @@ export default function FilterButtons() {
               {filterOptions.language.map(lang => (
                 <Button
                   key={lang.value}
-                  variant={language.includes(lang.value) ? 'default' : 'outline'}
+                  variant={
+                    language.some(l => l.toLowerCase() === lang.value.toLowerCase())
+                      ? 'default'
+                      : 'outline'
+                  }
                   className={cn(
                     'justify-start text-left font-normal h-auto py-3',
-                    language.includes(lang.value) && 'bg-primary text-primary-foreground'
+                    language.some(l => l.toLowerCase() === lang.value.toLowerCase()) &&
+                      'bg-primary text-primary-foreground'
                   )}
                   onClick={() => handleFilterSelect('language', lang.value)}
                 >
@@ -254,7 +282,9 @@ export default function FilterButtons() {
       {language.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {language.map(value => {
-            const langOption = filterOptions.language.find(lang => lang.value === value);
+            const langOption = filterOptions.language.find(
+              lang => lang.value.toLowerCase() === value.toLowerCase()
+            );
             if (!langOption) return null;
 
             return (
