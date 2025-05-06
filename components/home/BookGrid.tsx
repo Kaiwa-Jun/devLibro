@@ -94,6 +94,34 @@ export default function BookGrid() {
     }
   }, [isSearchActive]);
 
+  // 検索語が変更されたときに検索を実行
+  useEffect(() => {
+    const performSearch = async () => {
+      // 検索語が2文字未満の場合は検索しない
+      if (!searchTerm || searchTerm.length < 2) {
+        return;
+      }
+
+      setSearchLoading(true);
+      try {
+        const { books, hasMore, totalItems } = await searchBooksWithSuggestions(
+          searchTerm,
+          0,
+          PAGE_SIZE
+        );
+        setSearchResults(books, true); // 検索結果を置き換え
+        setHasMore(hasMore);
+        setTotalItems(totalItems);
+      } catch (error) {
+        console.error('検索中にエラーが発生しました:', error);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    performSearch();
+  }, [searchTerm, setSearchLoading, setSearchResults, setHasMore, setTotalItems]);
+
   // フィルターが変更されたときに書籍をフィルタリング
   useEffect(() => {
     if (!hasActiveFilters) {
