@@ -56,44 +56,30 @@ export default function FilterButtons() {
 
   const handleFilterSelect = (filterType: FilterCategory, option: string) => {
     // 引数名を変更して衝突を避ける（変数名と引数名の衝突防止）
-    console.log(`フィルター選択: フィルタータイプ=${filterType}, オプション=${option}`);
-
-    // 現在の状態をログ出力
-    console.log('現在のフィルター状態:', {
-      difficulty,
-      language,
-      category,
-    });
 
     // 選択したオプションを大文字小文字を区別せずに検索
     if (filterType === 'difficulty') {
       if (difficulty.includes(option)) {
-        console.log(`難易度から削除: ${option}`);
         removeFilter('difficulty', option);
       } else {
-        console.log(`難易度に追加: ${option}`);
         addFilter('difficulty', option);
       }
     } else if (filterType === 'language') {
       // 大文字小文字を区別せずに比較する（lower caseに正規化して比較）
       const isSelected = language.some(lang => lang.toLowerCase() === option.toLowerCase());
       if (isSelected) {
-        console.log(`言語から削除: ${option}`);
         // 完全一致のアイテムを探して削除
         const exactItem = language.find(lang => lang.toLowerCase() === option.toLowerCase());
         if (exactItem) {
           removeFilter('language', exactItem);
         }
       } else {
-        console.log(`言語に追加: ${option}`);
         addFilter('language', option);
       }
     } else if (filterType === 'category') {
       if (category.includes(option)) {
-        console.log(`カテゴリから削除: ${option}`);
         removeFilter('category', option);
       } else {
-        console.log(`カテゴリに追加: ${option}`);
         addFilter('category', option);
       }
     }
