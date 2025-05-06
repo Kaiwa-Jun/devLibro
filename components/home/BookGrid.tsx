@@ -8,6 +8,7 @@ import BookCard from '@/components/home/BookCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { searchBooksWithSuggestions } from '@/lib/api/books';
 import { getAllBooksFromDB } from '@/lib/supabase/books';
+import { useFilterStore } from '@/store/filterStore';
 import { useSearchStore } from '@/store/searchStore';
 import { Book } from '@/types';
 
@@ -35,96 +36,101 @@ export default function BookGrid() {
     setTotalItems,
   } = useSearchStore();
 
+  // フィルターストアから状態を取得
+  const { difficulty, language, category } = useFilterStore();
+  const hasActiveFilters = difficulty.length > 0 || language.length > 0 || category.length > 0;
+
   // 検索結果か全書籍のどちらを表示するか決定
   const isSearchActive = searchTerm.length >= 2;
   const displayedBooks = isSearchActive ? searchResults : allBooks;
   const isDisplayLoading = isSearchActive ? searchLoading : loading;
-  const hasMore = isSearchActive ? hasMoreSearch : hasMoreAllBooks;
+
+  // フィルター適用後の書籍
+  const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+
+  // フィルターを適用した結果と「もっと見る」が可能かどうかを計算
+  const finalBooks = hasActiveFilters ? filteredBooks : displayedBooks;
+  const hasMore = isSearchActive
+    ? hasMoreSearch && !hasActiveFilters
+    : hasMoreAllBooks && !hasActiveFilters;
 
   // Intersection Observerの参照
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // 無限スクロールのトリガーとなる要素の参照
+  // ローディング参照の設定
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isLoadingMore) return;
-
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver(entries => {
-        // 表示領域に入ったら次のページを読み込む
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        if (entries[0].isIntersecting && hasMore) {
           loadMoreBooks();
         }
       });
 
-      if (node) {
-        observerRef.current.observe(node);
-      }
+      if (node) observerRef.current.observe(node);
     },
     [isLoadingMore, hasMore]
   );
 
-  // 初回の全書籍読み込み
+  // 全書籍を取得
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchAllBooks = async () => {
+      setLoading(true);
       try {
         const fetchedBooks = await getAllBooksFromDB();
         setAllBooks(fetchedBooks);
+        setHasMoreAllBooks(false); // 現在の実装では全書籍を一度に取得
         setLoading(false);
-
-        // 取得した数が上限に達していればまだあると判断
-        setHasMoreAllBooks(fetchedBooks.length >= 100);
       } catch (error) {
-        console.error('書籍データの取得に失敗しました:', error);
+        console.error('書籍の取得中にエラーが発生しました:', error);
         setLoading(false);
       }
     };
 
-    fetchBooks();
-  }, []);
-
-  // 検索キーワードが変わったらAPIで検索を実行
-  useEffect(() => {
-    // 検索語がある場合のみ
-    if (isSearchActive && searchPage === 0) {
-      const performSearch = async () => {
-        setSearchLoading(true);
-
-        try {
-          const { books, hasMore, totalItems } = await searchBooksWithSuggestions(
-            searchTerm,
-            0,
-            PAGE_SIZE
-          );
-
-          setSearchResults(books, true); // 結果を置き換え
-          setHasMore(hasMore);
-          setTotalItems(totalItems);
-        } catch (error) {
-          console.error('検索中にエラーが発生しました:', error);
-        } finally {
-          setSearchLoading(false);
-        }
-      };
-
-      performSearch();
+    if (!isSearchActive) {
+      fetchAllBooks();
     }
-  }, [
-    searchTerm,
-    isSearchActive,
-    searchPage,
-    setSearchLoading,
-    setSearchResults,
-    setHasMore,
-    setTotalItems,
-  ]);
+  }, [isSearchActive]);
+
+  // フィルターが変更されたときに書籍をフィルタリング
+  useEffect(() => {
+    if (!hasActiveFilters) {
+      setFilteredBooks([]);
+      return;
+    }
+
+    const applyFilters = () => {
+      let filtered = [...displayedBooks];
+
+      // 難易度でフィルタリング
+      if (difficulty.length > 0) {
+        filtered = filtered.filter(book => {
+          const bookDifficultyLevel = Math.round(book.avg_difficulty);
+          return difficulty.includes(bookDifficultyLevel.toString());
+        });
+      }
+
+      // 言語でフィルタリング
+      if (language.length > 0) {
+        filtered = filtered.filter(book => language.includes(book.language));
+      }
+
+      // カテゴリでフィルタリング
+      if (category.length > 0) {
+        filtered = filtered.filter(book => book.categories.some(cat => category.includes(cat)));
+      }
+
+      setFilteredBooks(filtered);
+    };
+
+    applyFilters();
+  }, [displayedBooks, difficulty, language, category, hasActiveFilters]);
 
   // 追加の書籍を読み込む関数
   const loadMoreBooks = async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || !hasMore || hasActiveFilters) return;
 
     setIsLoadingMore(true);
 
@@ -172,7 +178,7 @@ export default function BookGrid() {
   };
 
   // ローディング表示
-  if (isDisplayLoading && !displayedBooks.length) {
+  if (isDisplayLoading && !finalBooks.length) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
@@ -187,7 +193,7 @@ export default function BookGrid() {
   }
 
   // 検索結果が空の場合のメッセージ
-  if (isSearchActive && displayedBooks.length === 0) {
+  if (isSearchActive && !finalBooks.length) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">「{searchTerm}」に一致する書籍が見つかりませんでした。</p>
@@ -195,8 +201,19 @@ export default function BookGrid() {
     );
   }
 
+  // フィルター適用後に書籍が見つからない場合
+  if (hasActiveFilters && !finalBooks.length) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">
+          選択したフィルター条件に一致する書籍が見つかりませんでした。
+        </p>
+      </div>
+    );
+  }
+
   // 書籍がない場合のメッセージ
-  if (displayedBooks.length === 0) {
+  if (!finalBooks.length) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">書籍が見つかりませんでした。</p>
@@ -209,8 +226,14 @@ export default function BookGrid() {
       {isSearchActive && (
         <div className="mb-4">
           <p className="text-muted-foreground">
-            「{searchTerm}」の検索結果: {displayedBooks.length}件
+            「{searchTerm}」の検索結果: {finalBooks.length}件
           </p>
+        </div>
+      )}
+
+      {hasActiveFilters && (
+        <div className="mb-4">
+          <p className="text-muted-foreground">フィルター適用結果: {finalBooks.length}件</p>
         </div>
       )}
 
@@ -220,7 +243,7 @@ export default function BookGrid() {
         initial="hidden"
         animate="show"
       >
-        {displayedBooks.map(book => (
+        {finalBooks.map(book => (
           <motion.div key={book.id} variants={item}>
             <BookCard book={book} />
           </motion.div>
@@ -242,7 +265,7 @@ export default function BookGrid() {
       )}
 
       {/* すべて表示したことを示すメッセージ */}
-      {!hasMore && displayedBooks.length > 10 && (
+      {!hasMore && finalBooks.length > 10 && (
         <p className="text-center text-sm text-muted-foreground py-8">
           すべての{isSearchActive ? '検索結果' : '書籍'}を表示しました
         </p>
