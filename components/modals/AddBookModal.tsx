@@ -16,8 +16,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { searchBooksByTitle as searchGoogleBooks } from '@/lib/api/google-books';
 import { searchBooksByTitleInDB } from '@/lib/supabase/books';
 import { getUser } from '@/lib/supabase/client';
-import { addBookToUserShelf } from '@/lib/supabase/user-books';
-import { Book } from '@/types';
+import { addBookToUserShelf, getUserBooks } from '@/lib/supabase/user-books';
+import { Book, UserBook } from '@/types';
 
 type BookStatus = 'unread' | 'reading' | 'done';
 
@@ -35,6 +35,8 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [dialogCloseRef, setDialogCloseRef] = useState<HTMLButtonElement | null>(null);
+  const [userBooks, setUserBooks] = useState<UserBook[]>([]);
+  const [isLoadingUserBooks, setIsLoadingUserBooks] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -46,6 +48,8 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
         if (user) {
           setUserId(user.id);
           console.log('ユーザーID取得成功:', user.id);
+          // ユーザーIDが取得できたら、そのユーザーの書籍リストも取得
+          fetchUserBooks(user.id);
         } else {
           console.error('ユーザーが見つかりません');
         }
@@ -57,6 +61,20 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
     fetchUserId();
   }, []);
 
+  // ユーザーの書籍リストを取得
+  const fetchUserBooks = async (userId: string) => {
+    setIsLoadingUserBooks(true);
+    try {
+      const books = await getUserBooks(userId);
+      setUserBooks(books);
+      console.log(`ユーザーの書籍リスト取得成功: ${books.length}冊`);
+    } catch (error) {
+      console.error('ユーザーの書籍リスト取得エラー:', error);
+    } finally {
+      setIsLoadingUserBooks(false);
+    }
+  };
+
   // 検索キーワードが変更されたら自動的に検索を実行
   useEffect(() => {
     if (debouncedSearchTerm) {
@@ -65,6 +83,21 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
       setSearchResults([]);
     }
   }, [debouncedSearchTerm]);
+
+  // 書籍がユーザーの本棚に既に存在するかチェック
+  const isBookInUserLibrary = (book: Book): boolean => {
+    return userBooks.some(userBook => {
+      // ISBNがある場合はISBNでマッチング
+      if (book.isbn && userBook.book.isbn) {
+        return book.isbn === userBook.book.isbn;
+      }
+      // ISBNがない場合はタイトルと著者でマッチング
+      return (
+        book.title.toLowerCase() === userBook.book.title.toLowerCase() &&
+        book.author.toLowerCase() === userBook.book.author.toLowerCase()
+      );
+    });
+  };
 
   const handleSearch = async () => {
     if (!debouncedSearchTerm) return;
@@ -103,7 +136,14 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
         }
       });
 
-      setSearchResults(combinedResults);
+      // ユーザーの本棚に既に存在する書籍を除外
+      const filteredResults = combinedResults.filter(book => !isBookInUserLibrary(book));
+
+      setSearchResults(filteredResults);
+
+      if (filteredResults.length === 0 && combinedResults.length > 0) {
+        toast.info('検索結果はありますが、すべての書籍が既にあなたの本棚に追加されています');
+      }
     } catch (error) {
       console.error('書籍検索エラー:', error);
       toast.error('検索中にエラーが発生しました');
@@ -121,6 +161,12 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
     if (!selectedBook || !userId) {
       toast.error('書籍が選択されていないか、ユーザーが認証されていません');
       console.error('Book or UserID missing', { book: selectedBook, userId });
+      return;
+    }
+
+    // 念のため再確認（UI上では表示されないはずだが）
+    if (isBookInUserLibrary(selectedBook)) {
+      toast.error('この書籍は既にあなたの本棚に存在します');
       return;
     }
 
@@ -181,6 +227,12 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
         frameworks: [],
       };
 
+      // 本棚にすでに存在するかチェック
+      if (isBookInUserLibrary(mockScannedBook)) {
+        toast.error('この書籍は既にあなたの本棚に存在します');
+        return;
+      }
+
       setSelectedBook(mockScannedBook);
       toast.success('書籍情報を取得しました');
     }, 2000);
@@ -208,6 +260,7 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
             size="icon"
             onClick={handleScanBarcode}
             title="バーコードをスキャン"
+            disabled={isLoadingUserBooks}
           >
             <Camera className="h-4 w-4" />
           </Button>
@@ -259,6 +312,19 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
                 </Card>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {searchResults.length === 0 && debouncedSearchTerm && !isSearching && !selectedBook && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="py-8 text-center"
+          >
+            <p className="text-muted-foreground">
+              検索結果がありません。別のキーワードで検索してみてください。
+            </p>
           </motion.div>
         )}
 
