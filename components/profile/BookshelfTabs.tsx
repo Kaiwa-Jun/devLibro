@@ -1,8 +1,8 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import AddBookModal from '@/components/modals/AddBookModal';
 import BookshelfItem from '@/components/profile/BookshelfItem';
@@ -71,7 +71,7 @@ export default function BookshelfTabs() {
 
       <Tabs defaultValue="unread">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="unread">未読 ({unreadBooks.length})</TabsTrigger>
+          <TabsTrigger value="unread">これから読む ({unreadBooks.length})</TabsTrigger>
           <TabsTrigger value="reading">読書中 ({readingBooks.length})</TabsTrigger>
           <TabsTrigger value="done">読了 ({doneBooks.length})</TabsTrigger>
         </TabsList>
@@ -82,7 +82,7 @@ export default function BookshelfTabs() {
               {unreadBooks.length > 0 ? (
                 unreadBooks.map(userBook => <BookshelfItem key={userBook.id} userBook={userBook} />)
               ) : (
-                <p className="text-center text-muted-foreground py-8">未読の本はありません</p>
+                <p className="text-center text-muted-foreground py-8">これから読む本はありません</p>
               )}
             </motion.div>
           </AnimatePresence>
