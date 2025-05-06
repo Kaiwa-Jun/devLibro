@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn, getDifficultyInfo } from '@/lib/utils';
+import { useFilterStore } from '@/store/filterStore';
 
 type FilterCategory = 'difficulty' | 'language' | 'category';
 
@@ -44,34 +45,44 @@ const filterOptions = {
 };
 
 export default function FilterButtons() {
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({
-    difficulty: [],
-    language: [],
-    category: [],
-  });
   const [activeSheet, setActiveSheet] = useState<FilterCategory | null>(null);
 
-  const filterCount = Object.values(activeFilters).flat().length;
+  // フィルターストアから状態とアクションを取得
+  const { difficulty, language, category, addFilter, removeFilter, clearFilters } =
+    useFilterStore();
 
-  const handleFilterSelect = (category: FilterCategory, option: string) => {
-    setActiveFilters(prev => {
-      const updatedCategory = prev[category].includes(option)
-        ? prev[category].filter(item => item !== option)
-        : [...prev[category], option];
+  // 全フィルター数を計算
+  const filterCount = difficulty.length + language.length + category.length;
 
-      return {
-        ...prev,
-        [category]: updatedCategory,
-      };
-    });
-  };
+  const handleFilterSelect = (filterType: FilterCategory, option: string) => {
+    // 引数名を変更して衝突を避ける（変数名と引数名の衝突防止）
 
-  const clearFilters = () => {
-    setActiveFilters({
-      difficulty: [],
-      language: [],
-      category: [],
-    });
+    // 選択したオプションを大文字小文字を区別せずに検索
+    if (filterType === 'difficulty') {
+      if (difficulty.includes(option)) {
+        removeFilter('difficulty', option);
+      } else {
+        addFilter('difficulty', option);
+      }
+    } else if (filterType === 'language') {
+      // 大文字小文字を区別せずに比較する（lower caseに正規化して比較）
+      const isSelected = language.some(lang => lang.toLowerCase() === option.toLowerCase());
+      if (isSelected) {
+        // 完全一致のアイテムを探して削除
+        const exactItem = language.find(lang => lang.toLowerCase() === option.toLowerCase());
+        if (exactItem) {
+          removeFilter('language', exactItem);
+        }
+      } else {
+        addFilter('language', option);
+      }
+    } else if (filterType === 'category') {
+      if (category.includes(option)) {
+        removeFilter('category', option);
+      } else {
+        addFilter('category', option);
+      }
+    }
   };
 
   return (
@@ -96,11 +107,10 @@ export default function FilterButtons() {
                 return (
                   <Button
                     key={diff.value}
-                    variant={activeFilters.difficulty.includes(diff.value) ? 'default' : 'outline'}
+                    variant={difficulty.includes(diff.value) ? 'default' : 'outline'}
                     className={cn(
                       'justify-start text-left font-normal h-auto py-3',
-                      activeFilters.difficulty.includes(diff.value) &&
-                        'bg-primary text-primary-foreground'
+                      difficulty.includes(diff.value) && 'bg-primary text-primary-foreground'
                     )}
                     onClick={() => handleFilterSelect('difficulty', diff.value)}
                   >
@@ -141,10 +151,14 @@ export default function FilterButtons() {
               {filterOptions.language.map(lang => (
                 <Button
                   key={lang.value}
-                  variant={activeFilters.language.includes(lang.value) ? 'default' : 'outline'}
+                  variant={
+                    language.some(l => l.toLowerCase() === lang.value.toLowerCase())
+                      ? 'default'
+                      : 'outline'
+                  }
                   className={cn(
                     'justify-start text-left font-normal h-auto py-3',
-                    activeFilters.language.includes(lang.value) &&
+                    language.some(l => l.toLowerCase() === lang.value.toLowerCase()) &&
                       'bg-primary text-primary-foreground'
                   )}
                   onClick={() => handleFilterSelect('language', lang.value)}
@@ -186,11 +200,10 @@ export default function FilterButtons() {
                 return (
                   <Button
                     key={cat.value}
-                    variant={activeFilters.category.includes(cat.value) ? 'default' : 'outline'}
+                    variant={category.includes(cat.value) ? 'default' : 'outline'}
                     className={cn(
                       'justify-start text-left font-normal h-auto py-3',
-                      activeFilters.category.includes(cat.value) &&
-                        'bg-primary text-primary-foreground'
+                      category.includes(cat.value) && 'bg-primary text-primary-foreground'
                     )}
                     onClick={() => handleFilterSelect('category', cat.value)}
                   >
@@ -224,54 +237,89 @@ export default function FilterButtons() {
         )}
       </div>
 
-      {Object.entries(activeFilters).map(
-        ([category, selected]) =>
-          selected.length > 0 && (
-            <div key={category} className="flex flex-wrap gap-2">
-              {selected.map(option => {
-                const diffOption =
-                  category === 'difficulty'
-                    ? filterOptions.difficulty.find(diff => diff.value === option)
-                    : null;
-                const langOption =
-                  category === 'language'
-                    ? filterOptions.language.find(lang => lang.value === option)
-                    : null;
-                const catOption =
-                  category === 'category'
-                    ? filterOptions.category.find(cat => cat.value === option)
-                    : null;
+      {/* 選択されたフィルターを表示 */}
+      {difficulty.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {difficulty.map(value => {
+            const diffOption = filterOptions.difficulty.find(diff => diff.value === value);
+            if (!diffOption) return null;
+            const Icon = diffOption.icon;
 
-                return (
-                  <motion.div
-                    key={option}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-2"
-                  >
-                    {diffOption && (
-                      <diffOption.icon
-                        className="h-4 w-4"
-                        style={{ color: `var(--${diffOption.color})` }}
-                      />
-                    )}
-                    {langOption && (
-                      <div className="relative w-4 h-4">
-                        <Image src={langOption.icon} alt={option} fill className="object-contain" />
-                      </div>
-                    )}
-                    {catOption && <catOption.icon className="h-4 w-4" />}
-                    <span>{diffOption?.label || option}</span>
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => handleFilterSelect(category as FilterCategory, option)}
-                    />
-                  </motion.div>
-                );
-              })}
-            </div>
-          )
+            return (
+              <motion.div
+                key={value}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-2"
+              >
+                <Icon className="h-4 w-4" style={{ color: `var(--${diffOption.color})` }} />
+                <span>{diffOption.label}</span>
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => handleFilterSelect('difficulty', value)}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {language.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {language.map(value => {
+            const langOption = filterOptions.language.find(
+              lang => lang.value.toLowerCase() === value.toLowerCase()
+            );
+            if (!langOption) return null;
+
+            return (
+              <motion.div
+                key={value}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-2"
+              >
+                <div className="relative w-4 h-4">
+                  <Image src={langOption.icon} alt={value} fill className="object-contain" />
+                </div>
+                <span>{value}</span>
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => handleFilterSelect('language', value)}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {category.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {category.map(value => {
+            const catOption = filterOptions.category.find(cat => cat.value === value);
+            if (!catOption) return null;
+            const Icon = catOption.icon;
+
+            return (
+              <motion.div
+                key={value}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center gap-2"
+              >
+                <Icon className="h-4 w-4" />
+                <span>{value}</span>
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => handleFilterSelect('category', value)}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

@@ -8,6 +8,7 @@ import BookCard from '@/components/home/BookCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { searchBooksWithSuggestions } from '@/lib/api/books';
 import { getAllBooksFromDB } from '@/lib/supabase/books';
+import { useFilterStore } from '@/store/filterStore';
 import { useSearchStore } from '@/store/searchStore';
 import { Book } from '@/types';
 
@@ -35,96 +36,245 @@ export default function BookGrid() {
     setTotalItems,
   } = useSearchStore();
 
+  // フィルターストアから状態を取得
+  const { difficulty, language, category } = useFilterStore();
+  const hasActiveFilters = difficulty.length > 0 || language.length > 0 || category.length > 0;
+
   // 検索結果か全書籍のどちらを表示するか決定
   const isSearchActive = searchTerm.length >= 2;
   const displayedBooks = isSearchActive ? searchResults : allBooks;
   const isDisplayLoading = isSearchActive ? searchLoading : loading;
-  const hasMore = isSearchActive ? hasMoreSearch : hasMoreAllBooks;
+
+  // フィルター適用後の書籍
+  const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+
+  // フィルターを適用した結果と「もっと見る」が可能かどうかを計算
+  const finalBooks = hasActiveFilters ? filteredBooks : displayedBooks;
+  const hasMore = isSearchActive
+    ? hasMoreSearch && !hasActiveFilters
+    : hasMoreAllBooks && !hasActiveFilters;
 
   // Intersection Observerの参照
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // 無限スクロールのトリガーとなる要素の参照
+  // ローディング参照の設定
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isLoadingMore) return;
-
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver(entries => {
-        // 表示領域に入ったら次のページを読み込む
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        if (entries[0].isIntersecting && hasMore) {
           loadMoreBooks();
         }
       });
 
-      if (node) {
-        observerRef.current.observe(node);
-      }
+      if (node) observerRef.current.observe(node);
     },
     [isLoadingMore, hasMore]
   );
 
-  // 初回の全書籍読み込み
+  // 全書籍を取得
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchAllBooks = async () => {
+      setLoading(true);
       try {
         const fetchedBooks = await getAllBooksFromDB();
         setAllBooks(fetchedBooks);
+        setHasMoreAllBooks(false); // 現在の実装では全書籍を一度に取得
         setLoading(false);
-
-        // 取得した数が上限に達していればまだあると判断
-        setHasMoreAllBooks(fetchedBooks.length >= 100);
       } catch (error) {
-        console.error('書籍データの取得に失敗しました:', error);
+        console.error('書籍の取得中にエラーが発生しました:', error);
         setLoading(false);
       }
     };
 
-    fetchBooks();
-  }, []);
+    if (!isSearchActive) {
+      fetchAllBooks();
+    }
+  }, [isSearchActive]);
 
-  // 検索キーワードが変わったらAPIで検索を実行
+  // 検索語が変更されたときに検索を実行
   useEffect(() => {
-    // 検索語がある場合のみ
-    if (isSearchActive && searchPage === 0) {
-      const performSearch = async () => {
-        setSearchLoading(true);
+    const performSearch = async () => {
+      // 検索語が2文字未満の場合は検索しない
+      if (!searchTerm || searchTerm.length < 2) {
+        return;
+      }
 
-        try {
-          const { books, hasMore, totalItems } = await searchBooksWithSuggestions(
-            searchTerm,
-            0,
-            PAGE_SIZE
+      setSearchLoading(true);
+      try {
+        const { books, hasMore, totalItems } = await searchBooksWithSuggestions(
+          searchTerm,
+          0,
+          PAGE_SIZE
+        );
+        setSearchResults(books, true); // 検索結果を置き換え
+        setHasMore(hasMore);
+        setTotalItems(totalItems);
+      } catch (error) {
+        console.error('検索中にエラーが発生しました:', error);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    performSearch();
+  }, [searchTerm, setSearchLoading, setSearchResults, setHasMore, setTotalItems]);
+
+  // フィルターが変更されたときに書籍をフィルタリング
+  useEffect(() => {
+    if (!hasActiveFilters) {
+      setFilteredBooks([]);
+      return;
+    }
+
+    const applyFilters = () => {
+      let filtered = [...displayedBooks];
+
+      console.log('フィルタリング前の書籍数:', filtered.length);
+      console.log('アクティブなフィルター:', { difficulty, language, category });
+
+      // 言語判定のヘルパー関数
+      const detectLanguageInText = (text: string, langNames: string[]): boolean => {
+        if (!text) return false;
+        const lowerText = text.toLowerCase();
+
+        // 言語名と一致するか、言語名+空白や句読点などで区切られているかをチェック
+        return langNames.some(lang => {
+          const lowerLang = lang.toLowerCase();
+          // 完全一致または単語境界でのマッチをチェック
+          return (
+            lowerText.includes(lowerLang) &&
+            // 単語の境界をチェック（前後に文字がない、または特定の区切り文字がある）
+            (lowerText === lowerLang ||
+              lowerText.includes(` ${lowerLang} `) ||
+              lowerText.includes(`.${lowerLang} `) ||
+              lowerText.includes(` ${lowerLang}.`) ||
+              lowerText.includes(`「${lowerLang}」`) ||
+              lowerText.includes(`『${lowerLang}』`) ||
+              lowerText.includes(`(${lowerLang})`) ||
+              lowerText.includes(`（${lowerLang}）`) ||
+              lowerText.includes(`${lowerLang}:`) ||
+              lowerText.includes(`${lowerLang}：`) ||
+              lowerText.includes(`${lowerLang}/`) ||
+              lowerText.includes(`/${lowerLang}`) ||
+              lowerText.includes(`${lowerLang}、`) ||
+              lowerText.includes(`、${lowerLang}`) ||
+              lowerText.startsWith(`${lowerLang} `) ||
+              lowerText.endsWith(` ${lowerLang}`))
           );
-
-          setSearchResults(books, true); // 結果を置き換え
-          setHasMore(hasMore);
-          setTotalItems(totalItems);
-        } catch (error) {
-          console.error('検索中にエラーが発生しました:', error);
-        } finally {
-          setSearchLoading(false);
-        }
+        });
       };
 
-      performSearch();
-    }
-  }, [
-    searchTerm,
-    isSearchActive,
-    searchPage,
-    setSearchLoading,
-    setSearchResults,
-    setHasMore,
-    setTotalItems,
-  ]);
+      // 書籍が特定の言語に関連しているかを判定
+      const hasLanguage = (book: Book, langNames: string[]): boolean => {
+        // DB上のprogrammingLanguagesフィールドを確認
+        if (book.programmingLanguages && book.programmingLanguages.length > 0) {
+          if (
+            book.programmingLanguages.some(lang =>
+              langNames.some(l => lang.toLowerCase() === l.toLowerCase())
+            )
+          ) {
+            console.log(`${book.title}: programmingLanguagesでマッチ`, book.programmingLanguages);
+            return true;
+          }
+        }
+
+        // DB上のframeworksフィールドを確認
+        if (book.frameworks && book.frameworks.length > 0) {
+          if (
+            book.frameworks.some(framework =>
+              langNames.some(l => framework.toLowerCase().includes(l.toLowerCase()))
+            )
+          ) {
+            console.log(`${book.title}: frameworksでマッチ`, book.frameworks);
+            return true;
+          }
+        }
+
+        // タイトルに言語名が含まれているか確認
+        if (detectLanguageInText(book.title, langNames)) {
+          console.log(`${book.title}: タイトルでマッチ`);
+          return true;
+        }
+
+        // カテゴリに言語名が含まれているか確認
+        if (
+          book.categories &&
+          book.categories.length > 0 &&
+          book.categories.some(cat =>
+            langNames.some(l => cat.toLowerCase().includes(l.toLowerCase()))
+          )
+        ) {
+          console.log(`${book.title}: カテゴリでマッチ`, book.categories);
+          return true;
+        }
+
+        // 説明文に言語名が含まれているか確認
+        if (book.description && detectLanguageInText(book.description, langNames)) {
+          console.log(`${book.title}: 説明文でマッチ`);
+          return true;
+        }
+
+        // いずれにも該当しない場合はfalse
+        return false;
+      };
+
+      // 各書籍のプログラミング言語とフレームワークの情報をログ
+      console.log('書籍データのプログラミング言語情報:');
+      filtered.forEach(book => {
+        console.log(`書籍: ${book.title}`, {
+          language: book.language,
+          programmingLanguages: book.programmingLanguages || [],
+          frameworks: book.frameworks || [],
+          categories: book.categories,
+        });
+      });
+
+      // 難易度でフィルタリング
+      if (difficulty.length > 0) {
+        filtered = filtered.filter(book => {
+          const bookDifficultyLevel = Math.round(book.avg_difficulty);
+          return difficulty.includes(bookDifficultyLevel.toString());
+        });
+        console.log('難易度フィルター後の書籍数:', filtered.length);
+      }
+
+      // 言語でフィルタリング
+      if (language.length > 0) {
+        console.log('言語フィルター適用前:', language);
+        filtered = filtered.filter(book => {
+          // 選択された言語（大文字小文字を区別しないように配列を準備）
+          const searchLanguages = language.map(l => l.toLowerCase());
+
+          // 改善された判定ロジックを使用
+          const matches = hasLanguage(book, searchLanguages);
+          console.log(`${book.title} - 言語マッチ:`, matches, {
+            searchFor: searchLanguages,
+            bookLanguages: book.programmingLanguages || [],
+            categories: book.categories,
+          });
+          return matches;
+        });
+        console.log('言語フィルター後の書籍数:', filtered.length);
+      }
+
+      // カテゴリでフィルタリング
+      if (category.length > 0) {
+        filtered = filtered.filter(book => book.categories.some(cat => category.includes(cat)));
+        console.log('カテゴリフィルター後の書籍数:', filtered.length);
+      }
+
+      setFilteredBooks(filtered);
+    };
+
+    applyFilters();
+  }, [displayedBooks, difficulty, language, category, hasActiveFilters]);
 
   // 追加の書籍を読み込む関数
   const loadMoreBooks = async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || !hasMore || hasActiveFilters) return;
 
     setIsLoadingMore(true);
 
@@ -172,7 +322,7 @@ export default function BookGrid() {
   };
 
   // ローディング表示
-  if (isDisplayLoading && !displayedBooks.length) {
+  if (isDisplayLoading && !finalBooks.length) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
@@ -187,7 +337,7 @@ export default function BookGrid() {
   }
 
   // 検索結果が空の場合のメッセージ
-  if (isSearchActive && displayedBooks.length === 0) {
+  if (isSearchActive && !finalBooks.length) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">「{searchTerm}」に一致する書籍が見つかりませんでした。</p>
@@ -195,8 +345,19 @@ export default function BookGrid() {
     );
   }
 
+  // フィルター適用後に書籍が見つからない場合
+  if (hasActiveFilters && !finalBooks.length) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">
+          選択したフィルター条件に一致する書籍が見つかりませんでした。
+        </p>
+      </div>
+    );
+  }
+
   // 書籍がない場合のメッセージ
-  if (displayedBooks.length === 0) {
+  if (!finalBooks.length) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">書籍が見つかりませんでした。</p>
@@ -209,8 +370,14 @@ export default function BookGrid() {
       {isSearchActive && (
         <div className="mb-4">
           <p className="text-muted-foreground">
-            「{searchTerm}」の検索結果: {displayedBooks.length}件
+            「{searchTerm}」の検索結果: {finalBooks.length}件
           </p>
+        </div>
+      )}
+
+      {hasActiveFilters && (
+        <div className="mb-4">
+          <p className="text-muted-foreground">フィルター適用結果: {finalBooks.length}件</p>
         </div>
       )}
 
@@ -220,7 +387,7 @@ export default function BookGrid() {
         initial="hidden"
         animate="show"
       >
-        {displayedBooks.map(book => (
+        {finalBooks.map(book => (
           <motion.div key={book.id} variants={item}>
             <BookCard book={book} />
           </motion.div>
@@ -242,7 +409,7 @@ export default function BookGrid() {
       )}
 
       {/* すべて表示したことを示すメッセージ */}
-      {!hasMore && displayedBooks.length > 10 && (
+      {!hasMore && finalBooks.length > 10 && (
         <p className="text-center text-sm text-muted-foreground py-8">
           すべての{isSearchActive ? '検索結果' : '書籍'}を表示しました
         </p>
