@@ -95,7 +95,16 @@ export default function BookDetail({ id }: BookDetailProps) {
             // 詳細ページにアクセスしたということなので、必ずDBに保存する
             try {
               console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
-              const savedBook = await saveBookToDB(parsedBook);
+
+              // フレームワークとプログラミング言語フィールドが無い場合は空の配列を追加
+              const bookToSave = {
+                ...parsedBook,
+                programming_languages:
+                  parsedBook.programming_languages || parsedBook.programmingLanguages || [],
+                frameworks: parsedBook.frameworks || [],
+              };
+
+              const savedBook = await saveBookToDB(bookToSave);
               if (savedBook) {
                 console.log('書籍をDBに保存しました:', savedBook);
                 // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)

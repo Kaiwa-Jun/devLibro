@@ -258,7 +258,7 @@ export const searchBooksWithSuggestions = async (
       // 4. 新しい書籍をDBに保存（バックグラウンドで処理、最初のページのみ）
       if (startIndex === 0 && newApiBooks.length > 0) {
         console.log(
-          `💾 ${newApiBooks.length}件の新規書籍をDBに保存する代わりに、一時的に結果を返します...`
+          `💾 ${newApiBooks.length}件の新規書籍をDBには保存せず、表示のみ行います。ユーザーがクリックした書籍のみを保存します。`
         );
         // DBへの自動保存を停止
         // Promise.all(newApiBooks.map(book => saveBookToDB(book))).catch(error => {
