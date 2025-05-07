@@ -225,3 +225,59 @@ export const getUserBooks = async (userId: string): Promise<UserBook[]> => {
     return [];
   }
 };
+
+// 書籍のステータスを更新する関数
+export const updateUserBookStatus = async (
+  userBookId: string,
+  newStatus: 'unread' | 'reading' | 'done'
+): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+
+    console.log(`書籍ステータスを更新します: ${userBookId} → ${newStatus}`);
+
+    const now = new Date().toISOString();
+    const updateData: {
+      status: 'unread' | 'reading' | 'done';
+      finished_at: string | null;
+    } = {
+      status: newStatus,
+      finished_at: newStatus === 'done' ? now : null,
+    };
+
+    const { error } = await supabase.from('user_books').update(updateData).eq('id', userBookId);
+
+    if (error) {
+      console.error('書籍ステータスの更新エラー:', error);
+      return false;
+    }
+
+    console.log('書籍ステータスを正常に更新しました');
+    return true;
+  } catch (error) {
+    console.error('updateUserBookStatus内でエラー発生:', error);
+    return false;
+  }
+};
+
+// 書籍を本棚から削除する関数
+export const deleteUserBook = async (userBookId: string): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+
+    console.log(`本棚から書籍を削除します: ${userBookId}`);
+
+    const { error } = await supabase.from('user_books').delete().eq('id', userBookId);
+
+    if (error) {
+      console.error('書籍削除エラー:', error);
+      return false;
+    }
+
+    console.log('書籍を本棚から正常に削除しました');
+    return true;
+  } catch (error) {
+    console.error('deleteUserBook内でエラー発生:', error);
+    return false;
+  }
+};
