@@ -176,7 +176,7 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
       const result = await addBookToUserShelf(userId, selectedBook, selectedStatus);
 
       if (result) {
-        toast.success('蔵書に追加しました');
+        toast.success('本棚に追加しました');
         console.log('書籍追加成功:', result);
 
         // モーダルを閉じる

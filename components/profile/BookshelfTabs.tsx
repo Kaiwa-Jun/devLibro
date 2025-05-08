@@ -170,12 +170,7 @@ export default function BookshelfTabs() {
   function renderContent() {
     return (
       <div className="mt-6">
-        <div className="flex justify-between mb-4">
-          <Button variant="outline" size="sm" onClick={() => refreshUserBooks(true)}>
-            <LucideIcons.RefreshCw className="h-4 w-4 mr-2" />
-            <span>更新</span>
-          </Button>
-
+        <div className="flex justify-end mb-4">
           <Dialog open={isAddBookOpen} onOpenChange={setIsAddBookOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
