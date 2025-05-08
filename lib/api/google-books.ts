@@ -28,6 +28,17 @@ interface GoogleBooksResponse {
 const GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes';
 
 /**
+ * Google Booksの画像URLを高解像度版に変換する関数
+ */
+const getHighResImageUrl = (imageUrl: string | undefined): string => {
+  if (!imageUrl) return '/images/book-placeholder.png';
+
+  // zoom=1のサムネイルURLを高解像度に変換
+  // 例: zoom=1 → zoom=3
+  return imageUrl.replace('zoom=1', 'zoom=3').replace('&edge=curl', '');
+};
+
+/**
  * Google Books APIで書籍を検索
  */
 export const searchBooksByTitle = async (title: string, limit = 10): Promise<Book[]> => {
@@ -73,7 +84,9 @@ export const searchBooksByTitle = async (title: string, limit = 10): Promise<Boo
         author: (volumeInfo.authors || []).join(', ') || '不明な著者',
         language: volumeInfo.language || 'ja',
         categories,
-        img_url: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || '',
+        img_url: getHighResImageUrl(
+          volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail
+        ),
         description: volumeInfo.description || '',
         avg_difficulty: 0, // Google Books APIにはこの情報がないので初期値を設定
         programmingLanguages: [], // 後で処理
@@ -133,7 +146,9 @@ export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
       author: (volumeInfo.authors || []).join(', ') || '不明な著者',
       language: volumeInfo.language || 'ja',
       categories,
-      img_url: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || '',
+      img_url: getHighResImageUrl(
+        volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail
+      ),
       description: volumeInfo.description || '',
       avg_difficulty: 0,
       programmingLanguages: [],

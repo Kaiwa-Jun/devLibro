@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Info, Share2 } from 'lucide-react';
+import { Info } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -268,36 +268,11 @@ export default function BookDetail({ id }: BookDetailProps) {
 
             <PurchaseLinks isbn={book.isbn} />
 
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
-                  <Share2 className="mr-2 h-4 w-4" />
-                  シェア
-                </Button>
-              </div>
-              <Button size="sm" variant="outline" asChild>
-                <a href="https://example.com/more" target="_blank" rel="noopener noreferrer">
-                  <Info className="mr-2 h-4 w-4" />
-                  詳細情報
-                </a>
-              </Button>
-            </div>
-
-            {/* レビュー投稿ボタンを配置（内部DB IDを確実に渡す） */}
             <div className="mt-6">
               <WriteReviewButton bookId={internalBookId || id} />
             </div>
           </div>
         </div>
-
-        {/* デバッグ情報（開発時のみ表示、本番では削除） */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 p-2 bg-muted/20 rounded text-xs">
-            <p>表示ID: {id}</p>
-            <p>内部DB ID: {internalBookId || '未設定'}</p>
-            <p>GoogleBooks ID: {book.id}</p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
