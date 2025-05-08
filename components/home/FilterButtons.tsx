@@ -23,7 +23,7 @@ const filterOptions = {
     };
   }),
   language: [
-    // プログラミング言語
+    // JavaScript関連
     {
       value: 'JavaScript',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
@@ -34,87 +34,6 @@ const filterOptions = {
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
       type: 'language',
     },
-    {
-      value: 'Python',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Java',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Go',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Rust',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'PHP',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Ruby',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'C',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'C++',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'C#',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Swift',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/swift/swift-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Kotlin',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Scala',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scala/scala-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'R',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/r/r-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Dart',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dart/dart-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'HTML/CSS',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg',
-      type: 'language',
-    },
-    {
-      value: 'Shell',
-      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
-      type: 'language',
-    },
-    // フレームワーク
     {
       value: 'React',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
@@ -150,6 +69,12 @@ const filterOptions = {
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg',
       type: 'framework',
     },
+    // Python関連
+    {
+      value: 'Python',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
+      type: 'language',
+    },
     {
       value: 'Django',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/django/django-plain.svg',
@@ -160,29 +85,146 @@ const filterOptions = {
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg',
       type: 'framework',
     },
+    // Java関連
+    {
+      value: 'Java',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
+      type: 'language',
+    },
     {
       value: 'Spring Boot',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spring/spring-original.svg',
       type: 'framework',
+    },
+    // Ruby関連
+    {
+      value: 'Ruby',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg',
+      type: 'language',
     },
     {
       value: 'Ruby on Rails',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rails/rails-original-wordmark.svg',
       type: 'framework',
     },
+    // PHP関連
+    {
+      value: 'PHP',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg',
+      type: 'language',
+    },
     {
       value: 'Laravel',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/laravel/laravel-original.svg',
       type: 'framework',
+    },
+    // C言語関連
+    {
+      value: 'C',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'C++',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'C#',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg',
+      type: 'language',
     },
     {
       value: 'ASP.NET',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dot-net/dot-net-original.svg',
       type: 'framework',
     },
+    // モバイル関連
+    {
+      value: 'Swift',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/swift/swift-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'Kotlin',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'Dart',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/dart/dart-original.svg',
+      type: 'language',
+    },
     {
       value: 'Flutter',
       icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flutter/flutter-original.svg',
+      type: 'framework',
+    },
+    // その他の言語
+    {
+      value: 'Go',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'Rust',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'Scala',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scala/scala-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'R',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/r/r-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'HTML/CSS',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'Shell',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
+      type: 'language',
+    },
+    // 追加項目
+    {
+      value: 'SQL',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg',
+      type: 'language',
+    },
+    {
+      value: 'Docker',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
+      type: 'framework',
+    },
+    {
+      value: 'Git',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg',
+      type: 'framework',
+    },
+    {
+      value: 'テスト',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jest/jest-plain.svg',
+      type: 'framework',
+    },
+    {
+      value: 'UI/UX',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/figma/figma-original.svg',
+      type: 'framework',
+    },
+    {
+      value: 'セキュリティ',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ssh/ssh-original.svg',
+      type: 'framework',
+    },
+    {
+      value: 'プロジェクトマネジメント',
+      icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/trello/trello-plain.svg',
       type: 'framework',
     },
   ],
@@ -318,74 +360,40 @@ export default function FilterButtons() {
         >
           <SheetTrigger asChild>
             <Button variant="outline" className="rounded-full flex-shrink-0">
-              言語・フレームワーク
+              ジャンル
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="h-[70vh]">
             <SheetHeader>
-              <SheetTitle>言語・フレームワーク</SheetTitle>
+              <SheetTitle>ジャンル</SheetTitle>
             </SheetHeader>
             <div className="mt-4 overflow-y-auto max-h-[calc(70vh-160px)] pr-1 pb-24">
-              <h3 className="text-sm font-medium mb-2">プログラミング言語</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
-                {filterOptions.language
-                  .filter(item => item.type === 'language')
-                  .map(lang => (
-                    <Button
-                      key={lang.value}
-                      variant={
-                        isSelectedLanguageOrFramework(lang.value, lang.type) ? 'default' : 'outline'
-                      }
-                      className={cn(
-                        'flex-col justify-center items-center h-auto py-4 px-2 hover:bg-primary/5',
-                        isSelectedLanguageOrFramework(lang.value, lang.type) &&
-                          'bg-primary text-primary-foreground'
-                      )}
-                      onClick={() => handleFilterSelect('language', lang.value, lang.type)}
-                    >
-                      <div className="relative w-8 h-8 mb-2">
-                        <Image
-                          src={lang.icon}
-                          alt={lang.value}
-                          fill
-                          className="object-contain"
-                          unoptimized
-                        />
-                      </div>
-                      <span className="text-center text-sm">{lang.value}</span>
-                    </Button>
-                  ))}
-              </div>
-
-              <h3 className="text-sm font-medium mb-2">フレームワーク</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {filterOptions.language
-                  .filter(item => item.type === 'framework')
-                  .map(fw => (
-                    <Button
-                      key={fw.value}
-                      variant={
-                        isSelectedLanguageOrFramework(fw.value, fw.type) ? 'default' : 'outline'
-                      }
-                      className={cn(
-                        'flex-col justify-center items-center h-auto py-4 px-2 hover:bg-primary/5',
-                        isSelectedLanguageOrFramework(fw.value, fw.type) &&
-                          'bg-primary text-primary-foreground'
-                      )}
-                      onClick={() => handleFilterSelect('language', fw.value, fw.type)}
-                    >
-                      <div className="relative w-8 h-8 mb-2">
-                        <Image
-                          src={fw.icon}
-                          alt={fw.value}
-                          fill
-                          className="object-contain"
-                          unoptimized
-                        />
-                      </div>
-                      <span className="text-center text-sm">{fw.value}</span>
-                    </Button>
-                  ))}
+                {filterOptions.language.map(item => (
+                  <Button
+                    key={item.value}
+                    variant={
+                      isSelectedLanguageOrFramework(item.value, item.type) ? 'default' : 'outline'
+                    }
+                    className={cn(
+                      'flex-col justify-center items-center h-auto py-4 px-2 hover:bg-primary/5',
+                      isSelectedLanguageOrFramework(item.value, item.type) &&
+                        'bg-primary text-primary-foreground'
+                    )}
+                    onClick={() => handleFilterSelect('language', item.value, item.type)}
+                  >
+                    <div className="relative w-8 h-8 mb-2">
+                      <Image
+                        src={item.icon}
+                        alt={item.value}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <span className="text-center text-sm">{item.value}</span>
+                  </Button>
+                ))}
               </div>
             </div>
 
