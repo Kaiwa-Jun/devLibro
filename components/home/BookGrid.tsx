@@ -168,21 +168,122 @@ export default function BookGrid() {
         });
       };
 
+      // 書籍のタイトルから主要なプログラミング言語を特定する関数
+      const getPrimaryLanguageFromTitle = (title: string): string | null => {
+        const lowerTitle = title.toLowerCase();
+
+        // 言語判定の優先順位（タイトルに明示的に言及されている言語）
+        if (
+          lowerTitle.includes('react') ||
+          lowerTitle.includes('vue.js') ||
+          lowerTitle.includes('next.js') ||
+          lowerTitle.includes('node.js')
+        ) {
+          return 'JavaScript';
+        }
+        if (lowerTitle.includes('javascript')) return 'JavaScript';
+        if (lowerTitle.includes('typescript')) return 'TypeScript';
+        if (lowerTitle.includes('python')) return 'Python';
+        if (lowerTitle.includes('ruby')) return 'Ruby';
+        if (lowerTitle.includes('php')) return 'PHP';
+        if (lowerTitle.includes('c#') || lowerTitle.includes('c シャープ')) return 'C#';
+        if (lowerTitle.includes('c++')) return 'C++';
+        if (
+          lowerTitle.includes('c言語') ||
+          lowerTitle.includes('cプログラミング') ||
+          lowerTitle.includes('c プログラミング')
+        )
+          return 'C';
+        if (
+          lowerTitle.includes('r言語') ||
+          lowerTitle.includes('rプログラミング') ||
+          lowerTitle.includes('r プログラミング')
+        )
+          return 'R';
+        if (lowerTitle.includes('java') && !lowerTitle.includes('javascript')) return 'Java';
+        if (lowerTitle.includes('go ') || lowerTitle.includes('go言語')) return 'Go';
+        if (lowerTitle.includes('swift')) return 'Swift';
+        if (lowerTitle.includes('kotlin')) return 'Kotlin';
+        if (lowerTitle.includes('rust')) return 'Rust';
+        if (lowerTitle.includes('sql')) return 'SQL';
+        if (lowerTitle.includes('html') || lowerTitle.includes('css')) return 'HTML/CSS';
+
+        return null;
+      };
+
       // 書籍が特定の言語に関連しているかを判定
       const hasLanguage = (book: Book, langNames: string[]): boolean => {
-        // DB上のprogrammingLanguagesフィールドを確認
+        const bookTitle = book.title.toLowerCase();
+
+        // 書籍のタイトルから主要な言語を特定
+        const primaryLanguage = getPrimaryLanguageFromTitle(book.title);
+
+        // デバッグログ
+        console.log(`書籍「${book.title}」の言語情報:`, {
+          タイトルから判定した言語: primaryLanguage,
+          DBに保存された言語: book.programmingLanguages,
+          フィルター条件: langNames,
+        });
+
+        // タイトルから判定した言語とフィルター条件を比較
+        if (
+          primaryLanguage &&
+          langNames.some(l => l.toLowerCase() === primaryLanguage.toLowerCase())
+        ) {
+          console.log(
+            `書籍「${book.title}」: タイトルから判定した言語「${primaryLanguage}」でマッチしました`
+          );
+          return true;
+        }
+
+        // CとRに関する特別処理
+        const filterForC = langNames.some(lang => lang.toLowerCase() === 'c');
+        const filterForR = langNames.some(lang => lang.toLowerCase() === 'r');
+
+        // C言語のフィルタリング（Cが選択されている場合）
+        if (filterForC) {
+          // C言語の書籍のみを対象にする
+          const isCLanguageBook =
+            bookTitle.includes('c言語') ||
+            bookTitle.includes('cプログラミング') ||
+            bookTitle.includes('c プログラミング') ||
+            bookTitle.includes('c++');
+
+          // C言語が単独で選択されている場合
+          if (langNames.length === 1 && langNames[0].toLowerCase() === 'c') {
+            console.log(`書籍「${book.title}」: C言語書籍判定=${isCLanguageBook}`);
+            return isCLanguageBook;
+          }
+        }
+
+        // R言語のフィルタリング（Rが選択されている場合）
+        if (filterForR) {
+          // R言語の書籍のみを対象にする
+          const isRLanguageBook =
+            bookTitle.includes('r言語') ||
+            bookTitle.includes('rプログラミング') ||
+            bookTitle.includes('r プログラミング');
+
+          // R言語が単独で選択されている場合
+          if (langNames.length === 1 && langNames[0].toLowerCase() === 'r') {
+            console.log(`書籍「${book.title}」: R言語書籍判定=${isRLanguageBook}`);
+            return isRLanguageBook;
+          }
+        }
+
+        // 従来のDB検索ロジック（セーフティネット）
         if (book.programmingLanguages && book.programmingLanguages.length > 0) {
-          if (
-            book.programmingLanguages.some(lang =>
-              langNames.some(l => lang.toLowerCase() === l.toLowerCase())
-            )
-          ) {
-            console.log(`${book.title}: programmingLanguagesでマッチ`, book.programmingLanguages);
+          const matched = book.programmingLanguages.some(lang =>
+            langNames.some(l => lang.toLowerCase() === l.toLowerCase())
+          );
+
+          if (matched) {
+            console.log(`書籍「${book.title}」: programmingLanguagesでマッチしました`);
             return true;
           }
         }
 
-        // タイトルに言語名が含まれているか確認
+        // タイトルに言語名が含まれているか確認（補助的な判定）
         if (detectLanguageInText(book.title, langNames)) {
           console.log(`${book.title}: タイトルでマッチ`);
           return true;
@@ -200,7 +301,7 @@ export default function BookGrid() {
           return true;
         }
 
-        // 説明文に言語名が含まれているか確認
+        // 説明文に言語名が含まれているか確認（補助的な判定）
         if (book.description && detectLanguageInText(book.description, langNames)) {
           console.log(`${book.title}: 説明文でマッチ`);
           return true;
