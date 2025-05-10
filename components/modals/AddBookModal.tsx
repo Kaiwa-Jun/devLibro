@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Loader2, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,14 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
   const [dialogCloseRef, setDialogCloseRef] = useState<HTMLButtonElement | null>(null);
   const [userBooks, setUserBooks] = useState<UserBook[]>([]);
   const [isLoadingUserBooks, setIsLoadingUserBooks] = useState(false);
+
+  // 無限スクロール用の状態
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const resultsContainerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -75,14 +83,42 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
     }
   };
 
-  // 検索キーワードが変更されたら自動的に検索を実行
+  // 検索語が変更されたときにリセットして再検索
   useEffect(() => {
     if (debouncedSearchTerm) {
-      handleSearch();
+      // 検索語が変わったら検索結果をリセット
+      setSearchResults([]);
+      setPage(1);
+      setHasMore(true);
+      handleSearch(1, true);
     } else {
       setSearchResults([]);
+      setHasMore(false);
     }
   }, [debouncedSearchTerm]);
+
+  // Intersection Observerを設定
+  useEffect(() => {
+    if (!hasMore || isSearching || isLoadingMore || !loadingRef.current) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && debouncedSearchTerm) {
+          loadMoreResults();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loadingRef.current);
+    observerRef.current = observer;
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, isSearching, isLoadingMore, debouncedSearchTerm, loadingRef.current]);
 
   // 書籍がユーザーの本棚に既に存在するかチェック
   const isBookInUserLibrary = (book: Book): boolean => {
@@ -99,17 +135,34 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
     });
   };
 
-  const handleSearch = async () => {
+  // 追加結果をロード
+  const loadMoreResults = async () => {
+    if (isLoadingMore || !hasMore || !debouncedSearchTerm) return;
+
+    const nextPage = page + 1;
+    setIsLoadingMore(true);
+    await handleSearch(nextPage, false);
+    setPage(nextPage);
+  };
+
+  // 検索関数（ページ番号と結果リセットフラグを引数に追加）
+  const handleSearch = async (currentPage = 1, resetResults = false) => {
     if (!debouncedSearchTerm) return;
 
-    setIsSearching(true);
-    setSearchResults([]);
+    if (resetResults) {
+      setIsSearching(true);
+    } else {
+      setIsLoadingMore(true);
+    }
 
     try {
+      // 1ページあたりの最大結果数
+      const perPage = 10;
+
       // データベースとGoogle Books APIの両方から検索
       const [dbResults, googleResults] = await Promise.all([
-        searchBooksByTitleInDB(debouncedSearchTerm),
-        searchGoogleBooks(debouncedSearchTerm),
+        searchBooksByTitleInDB(debouncedSearchTerm, perPage * currentPage),
+        searchGoogleBooks(debouncedSearchTerm, perPage * currentPage),
       ]);
 
       // 重複を削除するためにID（またはISBN）ベースで結合
@@ -139,7 +192,23 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
       // ユーザーの本棚に既に存在する書籍を除外
       const filteredResults = combinedResults.filter(book => !isBookInUserLibrary(book));
 
-      setSearchResults(filteredResults);
+      // ページネーション処理
+      // 全部の結果から、現在のページに表示すべき部分を抽出
+      const startIndex = 0;
+      const endIndex = perPage * currentPage;
+      const paginatedResults = filteredResults.slice(startIndex, endIndex);
+
+      // 次のページがあるかどうかを判定
+      setHasMore(filteredResults.length > paginatedResults.length);
+
+      if (resetResults) {
+        setSearchResults(paginatedResults);
+      } else {
+        // 既存の結果と重複を取り除いて結合
+        const existingIds = new Set(searchResults.map(book => book.id));
+        const newResults = paginatedResults.filter(book => !existingIds.has(book.id));
+        setSearchResults(prev => [...prev, ...newResults]);
+      }
 
       if (filteredResults.length === 0 && combinedResults.length > 0) {
         toast.info('検索結果はありますが、すべての書籍が既にあなたの本棚に追加されています');
@@ -148,7 +217,11 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
       console.error('書籍検索エラー:', error);
       toast.error('検索中にエラーが発生しました');
     } finally {
-      setIsSearching(false);
+      if (resetResults) {
+        setIsSearching(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -262,7 +335,7 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
             className="space-y-2 overflow-hidden"
           >
             <h3 className="text-sm font-medium">検索結果</h3>
-            <div className="max-h-60 overflow-y-auto space-y-2">
+            <div className="max-h-60 overflow-y-auto space-y-2" ref={resultsContainerRef}>
               {searchResults.map(book => (
                 <Card
                   key={book.id}
@@ -291,6 +364,17 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* 次のページロード用の検出エリア */}
+              {(hasMore || isLoadingMore) && (
+                <div ref={loadingRef} className="py-2 flex justify-center">
+                  {isLoadingMore ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <div className="h-5 w-5" />
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
