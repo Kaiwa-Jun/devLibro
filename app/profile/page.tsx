@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 
 import BookshelfTabs from '@/components/profile/BookshelfTabs';
-import ShareButton from '@/components/profile/ShareButton';
 import UserInfo from '@/components/profile/UserInfo';
 
 /**
@@ -22,7 +21,8 @@ export default function ProfilePage() {
     <div className="space-y-6 pb-8 pt-2">
       <div className="flex justify-between items-start">
         <UserInfo />
-        <ShareButton />
+        {/* SNS共有ボタンは後で実装するためコメントアウト */}
+        {/* <ShareButton /> */}
       </div>
       <div className="mt-6">
         <BookshelfTabs />
