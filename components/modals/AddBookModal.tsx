@@ -207,35 +207,15 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
   };
 
   const handleScanBarcode = () => {
-    // バーコードスキャン機能のモック
-    toast.info('カメラが起動します');
+    // モーダルを閉じる
+    if (onClose) {
+      onClose();
+    } else if (dialogCloseRef) {
+      dialogCloseRef.click();
+    }
 
-    // 実際の実装ではここでカメラAPIを使う
-    setTimeout(() => {
-      const mockScannedBook = {
-        id: 'book3',
-        title: 'React ハンズオン ラーニング',
-        author: 'Alex Banks, Eve Porcello',
-        img_url:
-          'https://images.pexels.com/photos/256514/pexels-photo-256514.jpeg?auto=compress&cs=tinysrgb&w=800',
-        publisher: "O'Reilly Media",
-        isbn: '9784873119380',
-        language: 'ja',
-        categories: ['Programming', 'Web Development'],
-        avg_difficulty: 0,
-        programmingLanguages: [],
-        frameworks: [],
-      };
-
-      // 本棚にすでに存在するかチェック
-      if (isBookInUserLibrary(mockScannedBook)) {
-        toast.error('この書籍は既にあなたの本棚に存在します');
-        return;
-      }
-
-      setSelectedBook(mockScannedBook);
-      toast.success('書籍情報を取得しました');
-    }, 2000);
+    // バーコードスキャン画面に遷移
+    router.push('/scan');
   };
 
   return (
