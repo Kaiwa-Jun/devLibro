@@ -202,6 +202,53 @@ export default function BookDetail({ id }: BookDetailProps) {
   const difficultyInfo = getDifficultyInfo(book.avg_difficulty);
   const DifficultyIcon = difficultyInfo.icon;
 
+  // タイトルから主要なプログラミング言語を抽出する関数
+  const getPrimaryLanguageFromTitle = (title: string): string | null => {
+    const lowerTitle = title.toLowerCase();
+
+    // 言語判定の優先順位（タイトルに明示的に言及されている言語）
+    if (
+      lowerTitle.includes('react') ||
+      lowerTitle.includes('vue.js') ||
+      lowerTitle.includes('next.js') ||
+      lowerTitle.includes('node.js')
+    ) {
+      return 'JavaScript';
+    }
+    if (lowerTitle.includes('javascript')) return 'JavaScript';
+    if (lowerTitle.includes('typescript')) return 'TypeScript';
+    if (lowerTitle.includes('python')) return 'Python';
+    if (lowerTitle.includes('ruby')) return 'Ruby';
+    if (lowerTitle.includes('php')) return 'PHP';
+    if (lowerTitle.includes('c#') || lowerTitle.includes('c シャープ')) return 'C#';
+    if (lowerTitle.includes('c++')) return 'C++';
+    if (
+      lowerTitle.includes('c言語') ||
+      lowerTitle.includes('cプログラミング') ||
+      lowerTitle.includes('c プログラミング')
+    )
+      return 'C';
+    if (
+      lowerTitle.includes('r言語') ||
+      lowerTitle.includes('rプログラミング') ||
+      lowerTitle.includes('r プログラミング')
+    )
+      return 'R';
+    if (lowerTitle.includes('java') && !lowerTitle.includes('javascript')) return 'Java';
+    if (lowerTitle.includes('go ') || lowerTitle.includes('go言語')) return 'Go';
+    if (lowerTitle.includes('swift')) return 'Swift';
+    if (lowerTitle.includes('kotlin')) return 'Kotlin';
+    if (lowerTitle.includes('rust')) return 'Rust';
+    if (lowerTitle.includes('sql')) return 'SQL';
+    if (lowerTitle.includes('html') || lowerTitle.includes('css')) return 'HTML/CSS';
+
+    return null;
+  };
+
+  // タイトルから抽出した主要な言語
+  const primaryLanguage = getPrimaryLanguageFromTitle(book.title);
+  console.log(`書籍「${book.title}」から抽出した主要言語:`, primaryLanguage);
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -236,17 +283,43 @@ export default function BookDetail({ id }: BookDetailProps) {
               transition={{ delay: 0.3 }}
               className="flex flex-wrap gap-2"
             >
-              <Badge variant="outline" className="border">
-                ISBN: {book.isbn}
-              </Badge>
-              <Badge variant="outline" className="border">
-                {book.language}
-              </Badge>
-              {book.categories.map(category => (
-                <Badge key={category} variant="outline" className="border">
-                  {category}
+              {/* タイトルから抽出した主要な言語のタグ */}
+              {primaryLanguage && (
+                <Badge key={primaryLanguage} variant="outline" className="border">
+                  {primaryLanguage}
                 </Badge>
-              ))}
+              )}
+
+              {/* フレームワークタグ */}
+              {book.frameworks &&
+                book.frameworks.length > 0 &&
+                book.frameworks
+                  .filter(framework => {
+                    // タイトルに含まれるフレームワークのみをフィルタリング
+                    return book.title.toLowerCase().includes(framework.toLowerCase());
+                  })
+                  .map(framework => (
+                    <Badge key={framework} variant="outline" className="border">
+                      {framework}
+                    </Badge>
+                  ))}
+
+              {/* カテゴリタグ */}
+              {book.categories
+                .filter(category => {
+                  // Referenceは表示しない
+                  if (category === 'Reference') {
+                    return false;
+                  }
+                  return true;
+                })
+                .map(category => (
+                  <Badge key={category} variant="outline" className="border">
+                    {category}
+                  </Badge>
+                ))}
+
+              {/* 難易度タグ */}
               <Badge
                 variant="outline"
                 className="gap-1.5 border"
