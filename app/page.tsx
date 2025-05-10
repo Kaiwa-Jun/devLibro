@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 
-import AddBookButton from '@/components/home/AddBookButton';
 import BookGrid from '@/components/home/BookGrid';
 import FilterButtons from '@/components/home/FilterButtons';
 import SearchBar from '@/components/home/SearchBar';
@@ -15,7 +14,6 @@ export default function Home() {
     <div className="space-y-6 pb-8 pt-8">
       <div className="max-w-2xl mx-auto relative">
         <SearchBar />
-        <AddBookButton />
       </div>
       <FilterButtons />
       <BookGrid />
