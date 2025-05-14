@@ -86,7 +86,7 @@ async function updateExistingBooks() {
 
     console.log(`${books.length}冊の書籍を処理します`);
 
-    // 言語リスト
+    // 言語リスト（RとCを除外）
     const languages = [
       'JavaScript',
       'TypeScript',
@@ -104,7 +104,6 @@ async function updateExistingBooks() {
       'Scala',
       'Haskell',
       'Perl',
-      'R',
       'COBOL',
       'Fortran',
       'Assembly',
@@ -164,6 +163,27 @@ async function updateExistingBooks() {
     for (const book of books) {
       const detectedLanguages = [];
       const detectedFrameworks = [];
+
+      // R言語とC言語の特別処理
+      const title = book.title?.toLowerCase() || '';
+
+      // C言語の検出（タイトルに明示的に含まれる場合のみ）
+      if (
+        title.includes('c言語') ||
+        title.includes('cプログラミング') ||
+        title.includes('c プログラミング')
+      ) {
+        detectedLanguages.push('C');
+      }
+
+      // R言語の検出（タイトルに明示的に含まれる場合のみ）
+      if (
+        title.includes('r言語') ||
+        title.includes('rプログラミング') ||
+        title.includes('r プログラミング')
+      ) {
+        detectedLanguages.push('R');
+      }
 
       // タイトルから言語を検出
       for (const lang of languages) {

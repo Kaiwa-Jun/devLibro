@@ -20,11 +20,11 @@ DECLARE
     framework TEXT;
 BEGIN
     -- 言語とフレームワークのマスターリスト
-    -- 言語リスト
+    -- 言語リスト（RとCを除外）
     DECLARE languages TEXT[] := ARRAY[
         'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go',
         'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'Dart', 'Scala', 'Haskell',
-        'Perl', 'R', 'COBOL', 'Fortran', 'Assembly', 'Lua', 'Groovy', 'Clojure',
+        'Perl', 'COBOL', 'Fortran', 'Assembly', 'Lua', 'Groovy', 'Clojure',
         'F#', 'Julia', 'Shell', 'PowerShell', 'SQL'
     ];
 
@@ -50,6 +50,25 @@ BEGIN
     LOOP
         detected_languages := '{}';
         detected_frameworks := '{}';
+
+        -- R言語とC言語の特別処理
+        -- C言語の検出（タイトルに明示的に含まれる場合のみ）
+        IF
+            book_record.title ILIKE '%c言語%' OR
+            book_record.title ILIKE '%cプログラミング%' OR
+            book_record.title ILIKE '%c プログラミング%'
+        THEN
+            detected_languages := array_append(detected_languages, 'C');
+        END IF;
+
+        -- R言語の検出（タイトルに明示的に含まれる場合のみ）
+        IF
+            book_record.title ILIKE '%r言語%' OR
+            book_record.title ILIKE '%rプログラミング%' OR
+            book_record.title ILIKE '%r プログラミング%'
+        THEN
+            detected_languages := array_append(detected_languages, 'R');
+        END IF;
 
         -- タイトルから言語を検出
         FOREACH lang IN ARRAY languages
