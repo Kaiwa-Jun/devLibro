@@ -7,21 +7,13 @@ import Header from '@/components/layout/Header';
 import TabBar from '@/components/layout/TabBar';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { Toaster } from '@/components/ui/sonner';
+import { getDefaultMetadata } from '@/lib/seo/metadata';
 
 import type { Metadata } from 'next';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'DevLibro - 技術書書評アプリ',
-  description: '開発者のための技術書レビュー・管理プラットフォーム',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  openGraph: {
-    title: 'DevLibro - 技術書書評アプリ',
-    description: '開発者のための技術書レビュー・管理プラットフォーム',
-    images: ['/og-image.png'],
-  },
-};
+export const metadata: Metadata = getDefaultMetadata();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
