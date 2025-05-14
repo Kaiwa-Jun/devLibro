@@ -82,13 +82,20 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
       );
     }
 
-    // 2. ISBNで検索（存在する場合）
-    if (book.isbn) {
+    // 2. ISBNで検索（存在する場合、かつ一時的に生成されたものでない場合）
+    if (book.isbn && !book.isbn.startsWith('N-')) {
       duplicateChecks.push(supabase.from('books').select('*').eq('isbn', book.isbn).limit(1));
     }
 
-    // 3. タイトルで検索（最後の手段、同名書籍の可能性あり）
-    duplicateChecks.push(supabase.from('books').select('*').eq('title', book.title).limit(1));
+    // 3. タイトルと著者で検索（より厳密な重複チェック）
+    duplicateChecks.push(
+      supabase
+        .from('books')
+        .select('*')
+        .eq('title', book.title)
+        .eq('author', book.author || '不明')
+        .limit(1)
+    );
 
     // 重複チェックを実行
     const checkResults = await Promise.all(duplicateChecks);
