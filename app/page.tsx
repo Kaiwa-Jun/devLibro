@@ -3,11 +3,14 @@ import { Metadata } from 'next';
 import BookGrid from '@/components/home/BookGrid';
 import FilterButtons from '@/components/home/FilterButtons';
 import SearchBar from '@/components/home/SearchBar';
+import { generatePageMetadata } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  title: 'DevLibro - ホーム',
-  description: '技術書を探して、レビューを閲覧・投稿しよう',
-};
+export const metadata: Metadata = generatePageMetadata({
+  title: 'DevLibro - 技術書書評アプリ',
+  description:
+    '開発者のための技術書レビュー・管理プラットフォーム。技術書の管理、レビュー、共有が簡単に行えます。',
+  path: '/',
+});
 
 export default function Home() {
   return (
