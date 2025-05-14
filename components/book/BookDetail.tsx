@@ -92,49 +92,58 @@ export default function BookDetail({ id }: BookDetailProps) {
             setError(null); // エラーをクリア
 
             // 重要: セッションストレージから取得できた場合は、
-            // 詳細ページにアクセスしたということなので、必ずDBに保存する
-            try {
-              console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
+            // 詳細ページにアクセスしたということなので、DBに保存する
+            // ただし、既に保存済みかどうかを確認するフラグをセットしておく
+            const savedFlag = sessionStorage.getItem(`book_${id}_saved`);
+            if (!savedFlag) {
+              try {
+                console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
 
-              // フレームワークとプログラミング言語フィールドが無い場合は空の配列を追加
-              const bookToSave = {
-                ...parsedBook,
-                programming_languages:
-                  parsedBook.programming_languages || parsedBook.programmingLanguages || [],
-                frameworks: parsedBook.frameworks || [],
-              };
+                // フレームワークとプログラミング言語フィールドが無い場合は空の配列を追加
+                const bookToSave = {
+                  ...parsedBook,
+                  programming_languages:
+                    parsedBook.programming_languages || parsedBook.programmingLanguages || [],
+                  frameworks: parsedBook.frameworks || [],
+                };
 
-              const savedBook = await saveBookToDB(bookToSave);
-              if (savedBook) {
-                console.log('書籍をDBに保存しました:', savedBook);
-                // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)
-                setBook(savedBook);
+                const savedBook = await saveBookToDB(bookToSave);
+                if (savedBook) {
+                  console.log('書籍をDBに保存しました:', savedBook);
+                  // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)
+                  setBook(savedBook);
 
-                // 保存された内部IDを抽出
-                const savedObj = savedBook as Record<string, unknown>;
-                if (savedObj && typeof savedObj === 'object') {
-                  if (
-                    'rawData' in savedObj &&
-                    savedObj.rawData &&
-                    typeof savedObj.rawData === 'object' &&
-                    savedObj.rawData !== null &&
-                    'id' in (savedObj.rawData as Record<string, unknown>)
-                  ) {
-                    const rawId = (savedObj.rawData as Record<string, unknown>).id;
-                    console.log('保存後のrawData.idを使用:', rawId);
-                    setInternalBookId(String(rawId));
-                  } else if (
-                    'id' in savedObj &&
-                    (typeof savedObj.id === 'number' ||
-                      (typeof savedObj.id === 'string' && !isNaN(Number(savedObj.id))))
-                  ) {
-                    console.log('保存後のIDを使用:', savedObj.id);
-                    setInternalBookId(String(savedObj.id));
+                  // 保存された内部IDを抽出
+                  const savedObj = savedBook as Record<string, unknown>;
+                  if (savedObj && typeof savedObj === 'object') {
+                    if (
+                      'rawData' in savedObj &&
+                      savedObj.rawData &&
+                      typeof savedObj.rawData === 'object' &&
+                      savedObj.rawData !== null &&
+                      'id' in (savedObj.rawData as Record<string, unknown>)
+                    ) {
+                      const rawId = (savedObj.rawData as Record<string, unknown>).id;
+                      console.log('保存後のrawData.idを使用:', rawId);
+                      setInternalBookId(String(rawId));
+                    } else if (
+                      'id' in savedObj &&
+                      (typeof savedObj.id === 'number' ||
+                        (typeof savedObj.id === 'string' && !isNaN(Number(savedObj.id))))
+                    ) {
+                      console.log('保存後のIDを使用:', savedObj.id);
+                      setInternalBookId(String(savedObj.id));
+                    }
                   }
+
+                  // 保存済みフラグをセッションストレージに設定
+                  sessionStorage.setItem(`book_${id}_saved`, 'true');
                 }
+              } catch (saveError) {
+                console.error('書籍のDB保存エラー:', saveError);
               }
-            } catch (saveError) {
-              console.error('書籍のDB保存エラー:', saveError);
+            } else {
+              console.log('この書籍はすでに保存済みです。重複保存を回避します。');
             }
           }
         } catch (storageError) {
