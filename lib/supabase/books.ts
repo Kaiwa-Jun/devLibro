@@ -350,7 +350,7 @@ async function detectProgrammingLanguagesFromBook(book: Book): Promise<string[]>
     'Scala',
     'Haskell',
     'Perl',
-    'R',
+    // RとCは特別扱いするため、ここでは削除
     'COBOL',
     'Fortran',
     'Assembly',
@@ -365,6 +365,26 @@ async function detectProgrammingLanguagesFromBook(book: Book): Promise<string[]>
   ];
 
   const detectedLanguages = new Set<string>();
+
+  // R言語とC言語の特別処理
+  const lowerTitle = book.title.toLowerCase();
+  // C言語の条件
+  if (
+    lowerTitle.includes('c言語') ||
+    lowerTitle.includes('cプログラミング') ||
+    lowerTitle.includes('c プログラミング')
+  ) {
+    detectedLanguages.add('C');
+  }
+
+  // R言語の条件
+  if (
+    lowerTitle.includes('r言語') ||
+    lowerTitle.includes('rプログラミング') ||
+    lowerTitle.includes('r プログラミング')
+  ) {
+    detectedLanguages.add('R');
+  }
 
   // タイトルから検出
   for (const lang of languages) {
