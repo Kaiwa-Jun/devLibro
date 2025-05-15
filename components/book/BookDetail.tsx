@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Info } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import WriteReviewButton from '@/components/book/WriteReviewButton';
 import { Badge } from '@/components/ui/badge';
@@ -26,12 +26,19 @@ export default function BookDetail({ id }: BookDetailProps) {
   const [book, setBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [internalBookId, setInternalBookId] = useState<string | null>(null); // 明示的にDB IDを保持
+  const hasAttemptedSave = useRef(false); // 保存を試みたかどうかを追跡
 
   useEffect(() => {
     // Supabaseから書籍データを取得
     const fetchBook = async () => {
+      // StrictModeによる二重実行の場合、2回目は処理をスキップ
+      if (hasAttemptedSave.current) {
+        return;
+      }
+
       setLoading(true);
       setError(null);
+      hasAttemptedSave.current = true; // 処理を開始したことをマーク
 
       try {
         console.log('書籍情報を取得します。ID:', id);
@@ -44,10 +51,13 @@ export default function BookDetail({ id }: BookDetailProps) {
           // 重要: 内部DB IDを抽出して保存
           // bookData自体にはsupabaseの内部IDが含まれている場合があるが、
           // これは直接アクセスできないため、代わりにobjとして扱い抽出する
-          const bookObj = bookData as Record<string, unknown>;
+          const bookObj = bookData as unknown as Record<string, any>;
           if (bookObj && typeof bookObj === 'object') {
             // まず数値IDを探す（これが内部DB ID）
-            if ('internal_id' in bookObj && bookObj.internal_id) {
+            if ('id' in bookObj && typeof bookObj.id === 'number') {
+              console.log('内部IDを使用:', bookObj.id);
+              setInternalBookId(String(bookObj.id));
+            } else if ('internal_id' in bookObj && bookObj.internal_id) {
               console.log('internal_idを使用:', bookObj.internal_id);
               setInternalBookId(String(bookObj.internal_id));
             }
@@ -72,7 +82,7 @@ export default function BookDetail({ id }: BookDetailProps) {
             // それでも見つからない場合はnullのまま
             else {
               console.log('内部IDが見つかりません。表示ID:', id);
-              setInternalBookId(null);
+              setInternalBookId(id); // 表示IDをそのまま使用
             }
           }
 
@@ -95,9 +105,12 @@ export default function BookDetail({ id }: BookDetailProps) {
             // 詳細ページにアクセスしたということなので、DBに保存する
             // ただし、既に保存済みかどうかを確認するフラグをセットしておく
             const savedFlag = sessionStorage.getItem(`book_${id}_saved`);
-            if (!savedFlag) {
+            if (!savedFlag || savedFlag === 'pending') {
               try {
                 console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
+
+                // 書籍の保存を開始する前に「処理中」フラグを設定して、他のコンポーネントが同時に保存しないようにする
+                sessionStorage.setItem(`book_${id}_saved`, 'pending');
 
                 // フレームワークとプログラミング言語フィールドが無い場合は空の配列を追加
                 const bookToSave = {
@@ -107,6 +120,8 @@ export default function BookDetail({ id }: BookDetailProps) {
                   frameworks: parsedBook.frameworks || [],
                 };
 
+                // 保存処理を直接実行
+                console.log('セッションストレージの書籍データをDBに保存します:', bookToSave);
                 const savedBook = await saveBookToDB(bookToSave);
                 if (savedBook) {
                   console.log('書籍をDBに保存しました:', savedBook);
@@ -135,12 +150,14 @@ export default function BookDetail({ id }: BookDetailProps) {
                       setInternalBookId(String(savedObj.id));
                     }
                   }
-
-                  // 保存済みフラグをセッションストレージに設定
-                  sessionStorage.setItem(`book_${id}_saved`, 'true');
                 }
+
+                // 処理成功後、必ず保存済みフラグを設定（成功/失敗に関わらず）
+                sessionStorage.setItem(`book_${id}_saved`, 'true');
               } catch (saveError) {
                 console.error('書籍のDB保存エラー:', saveError);
+                // エラー発生時にも保存済みフラグを設定（再試行を防ぐ）
+                sessionStorage.setItem(`book_${id}_saved`, 'true');
               }
             } else {
               console.log('この書籍はすでに保存済みです。重複保存を回避します。');

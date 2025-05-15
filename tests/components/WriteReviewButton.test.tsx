@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
-import { ReactNode } from 'react';
+import { CSSProperties, ReactNode, RefObject } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import WriteReviewButton from '@/components/book/WriteReviewButton';
@@ -15,21 +15,45 @@ jest.mock('@/components/auth/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));
 
-type MotionProps = {
-  children: ReactNode;
-  className?: string;
-  ref?: React.RefObject<HTMLDivElement>;
-  style?: React.CSSProperties;
-  whileTap?: Record<string, unknown>;
-};
+// framer-motionのモックを改善
+jest.mock('framer-motion', () => {
+  const React = require('react');
 
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: MotionProps) => <div {...props}>{children}</div>,
-  },
-  useScroll: () => ({ scrollY: { get: () => 0 } }),
-  useTransform: () => 1,
-}));
+  // React.forwardRefを使用して正しくrefを処理
+  const MotionDiv = React.forwardRef(
+    (
+      {
+        children,
+        className,
+        style,
+        whileTap,
+        ...props
+      }: {
+        children: ReactNode;
+        className?: string;
+        style?: CSSProperties;
+        whileTap?: Record<string, unknown>;
+        [key: string]: any;
+      },
+      ref: RefObject<HTMLDivElement>
+    ) => (
+      <div className={className} style={style} ref={ref} {...props}>
+        {children}
+      </div>
+    )
+  );
+
+  // コンポーネント名を設定
+  MotionDiv.displayName = 'MotionDiv';
+
+  return {
+    motion: {
+      div: MotionDiv,
+    },
+    useScroll: () => ({ scrollY: { get: () => 0 } }),
+    useTransform: () => 1,
+  };
+});
 
 jest.mock('@/components/ui/use-toast', () => ({
   toast: jest.fn(),

@@ -4,7 +4,14 @@ import { mockBooks } from '@/lib/mock-data';
 import { Book } from '@/types';
 
 // クライアントサイドでのみ Supabase クライアントを初期化
+let supabaseClient: ReturnType<typeof createClient> | null = null;
+
 const getSupabaseClient = () => {
+  // 既存のクライアントがあれば再利用
+  if (supabaseClient) {
+    return supabaseClient;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
@@ -12,7 +19,9 @@ const getSupabaseClient = () => {
     throw new Error('Supabase credentials are not provided in environment variables');
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey);
+  // 新しいクライアントを作成し、保存して再利用
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+  return supabaseClient;
 };
 
 // データベースから書籍をタイトルで検索
@@ -71,66 +80,109 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
   try {
     const supabase = getSupabaseClient();
 
-    // 重複チェック（複数条件で検索）
-    const duplicateChecks = [];
+    // 不正なデータをサニタイズ
+    const sanitizeString = (str: string | undefined | null): string => {
+      if (!str) return '';
+      // 文字列が長すぎる場合は切り詰める（データベースの制約に合わせる）
+      return str.slice(0, 2000);
+    };
 
-    // 1. Google Books IDで検索（最も正確な識別子）
+    // まず、DBでこの書籍が既に存在するか一括で確認
+    let existingBook = null;
+
+    // 書籍IDで検索（Google Books ID）
     if (book.id) {
-      const gbidPattern = `[GBID:${book.id}]`;
-      duplicateChecks.push(
-        supabase.from('books').select('*').ilike('description', `%${gbidPattern}%`).limit(1)
-      );
+      try {
+        // 方法1: [GBID:xxx] パターンで検索
+        const gbidPattern = `[GBID:${book.id}]`;
+        const { data: gbData1, error: gbError1 } = await supabase
+          .from('books')
+          .select('*')
+          .ilike('description', `%${gbidPattern}%`)
+          .limit(1);
+
+        if (!gbError1 && gbData1 && gbData1.length > 0) {
+          console.log('Google Books IDパターンで既存の書籍を発見:', gbData1[0]);
+          return formatBookFromDB(gbData1[0]);
+        }
+
+        // 方法2: より広い検索パターン
+        const { data: gbData2, error: gbError2 } = await supabase
+          .from('books')
+          .select('*')
+          .or(`description.ilike.%${book.id}%`)
+          .limit(1);
+
+        if (!gbError2 && gbData2 && gbData2.length > 0) {
+          console.log('広い検索パターンで既存の書籍を発見:', gbData2[0]);
+          return formatBookFromDB(gbData2[0]);
+        }
+      } catch (error) {
+        console.error('Google Books IDでの検索エラー:', error);
+      }
     }
 
-    // 2. ISBNで検索（存在する場合、かつ一時的に生成されたものでない場合）
+    // ISBNで検索（存在する場合、かつ一時的に生成されたものでない場合）
     if (book.isbn && !book.isbn.startsWith('N-')) {
-      duplicateChecks.push(supabase.from('books').select('*').eq('isbn', book.isbn).limit(1));
+      try {
+        const { data: isbnData, error: isbnError } = await supabase
+          .from('books')
+          .select('*')
+          .eq('isbn', book.isbn)
+          .limit(1);
+
+        if (!isbnError && isbnData && isbnData.length > 0) {
+          console.log('ISBNで既存の書籍を発見:', isbnData[0]);
+          return formatBookFromDB(isbnData[0]);
+        }
+      } catch (error) {
+        console.error('ISBNでの検索エラー:', error);
+      }
     }
 
-    // 3. タイトルと著者で検索（より厳密な重複チェック）
-    duplicateChecks.push(
-      supabase
+    // タイトルと著者で検索（より厳密な重複チェック）
+    try {
+      const { data: titleData, error: titleError } = await supabase
         .from('books')
         .select('*')
         .eq('title', book.title)
         .eq('author', book.author || '不明')
-        .limit(1)
-    );
+        .limit(1);
 
-    // 重複チェックを実行
-    const checkResults = await Promise.all(duplicateChecks);
-
-    // 重複検出
-    for (const result of checkResults) {
-      if (result.error) {
-        console.error('重複チェックエラー:', result.error);
-        continue;
+      if (!titleError && titleData && titleData.length > 0) {
+        console.log('タイトルと著者で既存の書籍を発見:', titleData[0]);
+        return formatBookFromDB(titleData[0]);
       }
-
-      if (result.data && result.data.length > 0) {
-        console.log('既存の書籍を発見:', result.data[0]);
-        return formatBookFromDB(result.data[0]);
-      }
+    } catch (error) {
+      console.error('タイトルと著者での検索エラー:', error);
     }
 
     // プログラミング言語とフレームワークを検出
     const programmingLanguages = await detectProgrammingLanguagesFromBook(book);
     const frameworks = await detectFrameworksFromBook(book);
 
+    // ISBNが無い場合の一意識別子の生成（より確実な方法）
+    const timestamp = Date.now();
+    const uniqueId =
+      'N-' +
+      timestamp.toString().slice(-6) +
+      Math.random().toString(36).slice(2, 6) +
+      (book.id ? book.id.slice(0, 5) : '');
+
     // テーブル構造に合わせたデータを準備
     const bookToSave = {
       // ISBNがない場合は短い一意識別子を生成（20文字以内）
-      isbn:
-        book.isbn ||
-        'N-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 6),
-      title: book.title,
-      author: book.author || '不明',
+      isbn: book.isbn || uniqueId,
+      title: sanitizeString(book.title),
+      author: sanitizeString(book.author) || '不明',
       language: book.language || '日本語',
       categories: book.categories || [],
       img_url: book.img_url || '',
-      description: book.description || '',
+      description: sanitizeString(book.description || ''),
       // Google Books IDを説明文に含めておく（検索用）
-      ...(book.id && { description: `[GBID:${book.id}] ${book.description || ''}` }),
+      ...(book.id && {
+        description: `[GBID:${book.id}] ${sanitizeString(book.description || '')}`,
+      }),
       // 新フィールド
       programming_languages: programmingLanguages,
       frameworks: frameworks,
@@ -217,6 +269,13 @@ export const getBookByIdFromDB = async (id: string): Promise<Book | null> => {
       if (storedBook) {
         storedBookData = JSON.parse(storedBook);
         console.log('セッションストレージからの書籍データ:', storedBookData);
+
+        // 重複防止のため、この時点で保存済みフラグを確認
+        const savedFlag = sessionStorage.getItem(`book_${id}_saved`);
+        if (!savedFlag) {
+          // まだ保存されていないフラグがセットされていなければ設定
+          sessionStorage.setItem(`book_${id}_saved`, 'pending');
+        }
       }
     } catch (storageError) {
       console.error('セッションストレージからの読み込みエラー:', storageError);
@@ -231,6 +290,8 @@ export const getBookByIdFromDB = async (id: string): Promise<Book | null> => {
 
       if (!isbnError && isbnData && isbnData.length > 0) {
         console.log('ISBNで書籍が見つかりました:', isbnData[0]);
+        // 保存済みフラグを確実に設定
+        sessionStorage.setItem(`book_${id}_saved`, 'true');
         return formatBookFromDB(isbnData[0]);
       }
     }
@@ -240,10 +301,13 @@ export const getBookByIdFromDB = async (id: string): Promise<Book | null> => {
       const { data: titleData, error: titleError } = await supabase
         .from('books')
         .select('*')
-        .eq('title', storedBookData.title);
+        .eq('title', storedBookData.title)
+        .eq('author', storedBookData.author || '不明');
 
       if (!titleError && titleData && titleData.length > 0) {
-        console.log('タイトルで書籍が見つかりました:', titleData[0]);
+        console.log('タイトルと著者で書籍が見つかりました:', titleData[0]);
+        // 保存済みフラグを確実に設定
+        sessionStorage.setItem(`book_${id}_saved`, 'true');
         return formatBookFromDB(titleData[0]);
       }
     }
