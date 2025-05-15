@@ -32,10 +32,12 @@ export const searchBooksByTitleInDB = async (title: string, limit = 10): Promise
     console.log(`タイトルで書籍を検索: "${title}" (最大${limit}件)`);
 
     // ilike を使用して部分一致検索（大文字小文字を区別しない）
+    // また、言語が日本語の書籍のみを取得
     const { data, error } = await supabase
       .from('books')
       .select('*')
       .ilike('title', `%${title}%`)
+      .or('language.eq.日本語,language.eq.ja')
       .limit(limit);
 
     if (error) {
@@ -43,7 +45,7 @@ export const searchBooksByTitleInDB = async (title: string, limit = 10): Promise
       return [];
     }
 
-    console.log(`${data?.length || 0}件の書籍が見つかりました`);
+    console.log(`${data?.length || 0}件の日本語書籍が見つかりました`);
     // 取得したデータを適切な形式に変換
     return (data || []).map(book => formatBookFromDB(book));
   } catch (error) {
@@ -384,6 +386,7 @@ export const getAllBooksFromDB = async (): Promise<Book[]> => {
     const { data, error } = await supabase
       .from('books')
       .select('*')
+      .or('language.eq.日本語,language.eq.ja') // 日本語の書籍のみを取得
       .order('id', { ascending: false })
       .limit(100);
 
@@ -392,7 +395,7 @@ export const getAllBooksFromDB = async (): Promise<Book[]> => {
       return [];
     }
 
-    console.log(`${data?.length || 0}件の書籍を取得しました`);
+    console.log(`${data?.length || 0}件の日本語書籍を取得しました`);
     // 取得したデータを適切な形式に変換
     return (data || []).map(book => formatBookFromDB(book));
   } catch (error) {
