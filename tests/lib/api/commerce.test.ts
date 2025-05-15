@@ -1,8 +1,13 @@
 import {
   convertISBN13ToISBN10,
+  formatASIN,
+  generateAmazonDirectURL,
   generateAmazonURL,
+  generateAmazonURLFromASIN,
+  generateRakutenSearchURL,
   generateRakutenURL,
   validateISBN,
+  validateIdentifier,
 } from '@/lib/api/commerce';
 
 describe('ISBNバリデーション関数', () => {
@@ -78,5 +83,105 @@ describe('楽天Books URL生成関数', () => {
   test('無効なISBNの場合はnullを返す', () => {
     const url = generateRakutenURL('invalid-isbn');
     expect(url).toBeNull();
+  });
+});
+
+describe('ASINフォーマット関数', () => {
+  test('有効なASINはそのまま返す', () => {
+    expect(formatASIN('B07DQDMGDK')).toBe('B07DQDMGDK');
+  });
+
+  test('無効なパターンのASINはエラーフラグを返す', () => {
+    expect(formatASIN('B101900209')).toBe('INVALID_ASIN_USE_TITLE_SEARCH');
+    expect(formatASIN('B00000000B')).toBe('INVALID_ASIN_USE_TITLE_SEARCH');
+  });
+
+  test('空文字列の場合は空文字を返す', () => {
+    expect(formatASIN('')).toBe('');
+  });
+});
+
+describe('ASINからのAmazon URL生成関数', () => {
+  test('有効なASINからAmazon URLを生成できる', () => {
+    const url = generateAmazonURLFromASIN('B07DQDMGDK');
+    expect(url).toBe('https://www.amazon.co.jp/exec/obidos/ASIN/B07DQDMGDK');
+  });
+
+  test('アフィリエイトIDを指定してURLを生成できる', () => {
+    const url = generateAmazonURLFromASIN('B07DQDMGDK', { affiliateId: 'devlibro-22' });
+    expect(url).toBe('https://www.amazon.co.jp/exec/obidos/ASIN/B07DQDMGDK/devlibro-22');
+  });
+
+  test('空のASINの場合はnullを返す', () => {
+    const url = generateAmazonURLFromASIN('');
+    expect(url).toBeNull();
+  });
+
+  test('無効なASINパターンの場合はnullを返す', () => {
+    // formatASINがINVALID_ASIN_USE_TITLE_SEARCHを返すケース
+    const url = generateAmazonURLFromASIN('B101900209');
+    expect(url).toBeNull();
+  });
+});
+
+describe('タイトルからのAmazon検索URL生成関数', () => {
+  test('タイトルのみからAmazon検索URLを生成できる', () => {
+    const url = generateAmazonDirectURL('テスト書籍');
+    expect(url).toContain('https://www.amazon.co.jp/s?k=');
+    expect(url).toContain('%22%E3%83%86%E3%82%B9%E3%83%88%E6%9B%B8%E7%B1%8D%22');
+  });
+
+  test('タイトルと著者からAmazon検索URLを生成できる', () => {
+    const url = generateAmazonDirectURL('テスト書籍', 'テスト著者');
+    expect(url).toContain('https://www.amazon.co.jp/s?k=');
+    expect(url).toContain('%22%E3%83%86%E3%82%B9%E3%83%88%E6%9B%B8%E7%B1%8D%22');
+    expect(url).toContain('%E3%83%86%E3%82%B9%E3%83%88%E8%91%97%E8%80%85');
+  });
+
+  test('空のタイトルの場合は空文字を返す', () => {
+    const url = generateAmazonDirectURL('');
+    expect(url).toBe('');
+  });
+});
+
+describe('タイトルからの楽天検索URL生成関数', () => {
+  test('タイトルのみから楽天検索URLを生成できる', () => {
+    const url = generateRakutenSearchURL('テスト書籍');
+    expect(url).toContain('https://books.rakuten.co.jp/search?sitem=');
+    expect(url).toContain('%E3%83%86%E3%82%B9%E3%83%88%E6%9B%B8%E7%B1%8D');
+  });
+
+  test('タイトルと著者から楽天検索URLを生成できる', () => {
+    const url = generateRakutenSearchURL('テスト書籍', 'テスト著者');
+    expect(url).toContain('https://books.rakuten.co.jp/search?sitem=');
+    expect(url).toContain('%E3%83%86%E3%82%B9%E3%83%88%E6%9B%B8%E7%B1%8D');
+    expect(url).toContain('%E3%83%86%E3%82%B9%E3%83%88%E8%91%97%E8%80%85');
+  });
+
+  test('空のタイトルの場合は空文字を返す', () => {
+    const url = generateRakutenSearchURL('');
+    expect(url).toBe('');
+  });
+});
+
+describe('識別子検証関数', () => {
+  test('有効なISBNを検証できる', () => {
+    expect(validateIdentifier('9784873113364')).toBe(true);
+    expect(validateIdentifier('4873113369')).toBe(true);
+  });
+
+  test('有効なASINを検証できる', () => {
+    expect(validateIdentifier('B07DQDMGDK')).toBe(true);
+  });
+
+  test('自動生成された識別子を検証できる', () => {
+    expect(validateIdentifier('N-TestBook-TestA-123456')).toBe(true);
+    expect(validateIdentifier('GB-ABCD1234')).toBe(true);
+  });
+
+  test('無効な識別子を拒否する', () => {
+    expect(validateIdentifier('1234567890')).toBe(false);
+    expect(validateIdentifier('')).toBe(false);
+    expect(validateIdentifier('B00000000B')).toBe(false);
   });
 });
