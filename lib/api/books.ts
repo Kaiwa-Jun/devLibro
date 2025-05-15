@@ -104,6 +104,7 @@ export const searchBooksByTitle = async ({
       q: `intitle:${query}`,
       startIndex: startIndex.toString(),
       maxResults: maxResults.toString(),
+      langRestrict: 'ja', // 日本語書籍のみに限定
     });
 
     if (API_KEY) {
@@ -155,6 +156,7 @@ export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
 
     const params = new URLSearchParams({
       q: `isbn:${isbn}`,
+      langRestrict: 'ja', // 日本語書籍のみに限定
     });
 
     if (API_KEY) {
@@ -175,7 +177,16 @@ export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
     }
 
     const book = mapGoogleBookToBook(data.items[0]);
-    console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の書籍が見つかりました: "${book.title}"`);
+
+    // 日本語の書籍のみ返す
+    if (book.language !== '日本語' && book.language !== 'ja') {
+      console.log(
+        `ℹ️ [ISBN検索] ISBN "${isbn}" の書籍は日本語ではないためスキップします (言語: ${book.language})`
+      );
+      return null;
+    }
+
+    console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の日本語書籍が見つかりました: "${book.title}"`);
     return book;
   } catch (error) {
     console.error(`❌ [ISBN検索エラー] ISBN "${isbn}" の検索中にエラーが発生:`, error);
@@ -223,9 +234,11 @@ export const searchBooksWithSuggestions = async (
     if (startIndex === 0) {
       console.log(`🔍 [検索開始] "${query}" をDBで検索します...`);
       dbResults = await searchBooksFromDatabase(query);
+      // 日本語の書籍のみをフィルタリング
+      dbResults = dbResults.filter(book => book.language === '日本語' || book.language === 'ja');
       dbTotal = dbResults.length;
       console.log(
-        `✅ [DB検索成功] "${query}" の検索結果: ${dbResults.length}件の書籍をDBから取得しました`
+        `✅ [DB検索成功] "${query}" の検索結果: ${dbResults.length}件の日本語書籍をDBから取得しました`
       );
     }
 
@@ -251,14 +264,20 @@ export const searchBooksWithSuggestions = async (
         `✅ [API検索成功] "${query}" の検索結果: ${apiResults.length}件の書籍をAPIから取得しました`
       );
 
+      // 日本語の書籍のみをフィルタリング
+      const japaneseApiResults = apiResults.filter(
+        book => book.language === '日本語' || book.language === 'ja'
+      );
+      console.log(`👍 日本語書籍のフィルタリング結果: ${japaneseApiResults.length}件`);
+
       // 3. 重複を除いたAPI検索結果を選別
-      const newApiBooks = apiResults.filter(apiBook => !existingBookIds.has(apiBook.id));
+      const newApiBooks = japaneseApiResults.filter(apiBook => !existingBookIds.has(apiBook.id));
       console.log(`✓ 重複除外後の新規API検索結果: ${newApiBooks.length}件`);
 
       // 4. 新しい書籍をDBに保存（バックグラウンドで処理、最初のページのみ）
       if (startIndex === 0 && newApiBooks.length > 0) {
         console.log(
-          `💾 ${newApiBooks.length}件の新規書籍をDBには保存せず、表示のみ行います。ユーザーがクリックした書籍のみを保存します。`
+          `💾 ${newApiBooks.length}件の新規日本語書籍をDBには保存せず、表示のみ行います。ユーザーがクリックした書籍のみを保存します。`
         );
         // DBへの自動保存を停止
         // Promise.all(newApiBooks.map(book => saveBookToDB(book))).catch(error => {
