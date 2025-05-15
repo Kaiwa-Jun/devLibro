@@ -58,10 +58,14 @@ jest.mock('framer-motion', () => ({
 // eslint-disable-next-line @next/next/no-img-element
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: { src: string; alt: string; className?: string; fill?: boolean }) => (
+  default: (props: { src: string; alt: string; className?: string; fill?: boolean }) => {
+    // booleanのfill属性を扱うため、残りのpropsとfillを分離する
+    const { fill, ...restProps } = props;
+    // データ属性としてfillの値を渡す（必要な場合）
+    const dataAttrs = fill ? { 'data-fill': 'true' } : {};
     // eslint-disable-next-line @next/next/no-img-element
-    <img {...props} alt={props.alt || ''} />
-  ),
+    return <img {...restProps} {...dataAttrs} alt={props.alt || ''} />;
+  },
 }));
 
 // next/linkのモック
@@ -205,5 +209,109 @@ describe('BookDetail Component - DB保存機能', () => {
     const savedBook = (booksApi.saveBookToDB as jest.Mock).mock.calls[0][0];
     expect(savedBook.programming_languages).toEqual(['JavaScript', 'TypeScript']);
     expect(savedBook.frameworks).toEqual(['React', 'Next.js']);
+  });
+
+  it('保存済みフラグがある場合は、DB保存処理がスキップされる', async () => {
+    // DBから書籍が見つからない状態をシミュレート
+    (booksApi.getBookByIdFromDB as jest.Mock).mockResolvedValue(null);
+
+    // セッションストレージに書籍データを保存
+    window.sessionStorage.setItem(`book_${mockBook.id}`, JSON.stringify(mockBook));
+
+    // 保存済みフラグを設定
+    window.sessionStorage.setItem(`book_${mockBook.id}_saved`, 'true');
+
+    // コンポーネントをレンダリング
+    render(<BookDetail id={mockBook.id} />);
+
+    // ロード中の表示が消えるのを待機
+    await waitFor(() => {
+      expect(screen.queryByText(/読み込み中/i)).not.toBeInTheDocument();
+    });
+
+    // 書籍タイトルが表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByText('テスト書籍')).toBeInTheDocument();
+    });
+
+    // DBからの取得が試みられたことを確認
+    expect(booksApi.getBookByIdFromDB).toHaveBeenCalledWith(mockBook.id);
+
+    // 保存済みフラグがあるため、saveBookToDBが呼ばれないことを確認
+    expect(booksApi.saveBookToDB).not.toHaveBeenCalled();
+  });
+
+  it('pendingフラグがある場合は、DB保存処理が実行される', async () => {
+    // DBから書籍が見つからない状態をシミュレート
+    (booksApi.getBookByIdFromDB as jest.Mock).mockResolvedValue(null);
+
+    // セッションストレージに書籍データを保存
+    window.sessionStorage.setItem(`book_${mockBook.id}`, JSON.stringify(mockBook));
+
+    // pending（処理中）フラグを設定
+    window.sessionStorage.setItem(`book_${mockBook.id}_saved`, 'pending');
+
+    // 保存API成功を模擬
+    (booksApi.saveBookToDB as jest.Mock).mockResolvedValue({ ...mockBook, internal_id: 123 });
+
+    // コンポーネントをレンダリング
+    render(<BookDetail id={mockBook.id} />);
+
+    // ロード中の表示が消えるのを待機
+    await waitFor(() => {
+      expect(screen.queryByText(/読み込み中/i)).not.toBeInTheDocument();
+    });
+
+    // 書籍タイトルが表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByText('テスト書籍')).toBeInTheDocument();
+    });
+
+    // pendingフラグがある場合は、保存処理が再試行されることを確認
+    expect(booksApi.saveBookToDB).toHaveBeenCalled();
+
+    // 処理完了後、保存済みフラグが'true'に設定されることを確認
+    await waitFor(() => {
+      expect(window.sessionStorage.setItem).toHaveBeenCalledWith(
+        `book_${mockBook.id}_saved`,
+        'true'
+      );
+    });
+  });
+
+  it('useRef経由でStrictModeによる二重マウントを防止する', async () => {
+    // DBから書籍が見つからない状態をシミュレート
+    (booksApi.getBookByIdFromDB as jest.Mock).mockResolvedValue(null);
+
+    // セッションストレージに書籍データを保存
+    window.sessionStorage.setItem(`book_${mockBook.id}`, JSON.stringify(mockBook));
+
+    // 保存API成功を模擬
+    (booksApi.saveBookToDB as jest.Mock).mockResolvedValue({ ...mockBook, internal_id: 123 });
+
+    // コンポーネントをレンダリング
+    const { rerender } = render(<BookDetail id={mockBook.id} />);
+
+    // ロード中の表示が消えるのを待機
+    await waitFor(() => {
+      expect(screen.queryByText(/読み込み中/i)).not.toBeInTheDocument();
+    });
+
+    // 書籍タイトルが表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByText('テスト書籍')).toBeInTheDocument();
+    });
+
+    // 最初のレンダリングでDB保存が呼ばれたことを確認
+    expect(booksApi.saveBookToDB).toHaveBeenCalledTimes(1);
+
+    // StrictModeをシミュレートするために同じコンポーネントを再レンダリング
+    jest.clearAllMocks(); // APIコールをリセット
+    rerender(<BookDetail id={mockBook.id} />);
+
+    // 再レンダリング後も処理が実行されないことを確認（useRefによる二重実行防止）
+    await waitFor(() => {
+      expect(booksApi.saveBookToDB).not.toHaveBeenCalled();
+    });
   });
 });
