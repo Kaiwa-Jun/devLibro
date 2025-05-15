@@ -66,12 +66,12 @@ describe('PurchaseLinks コンポーネント', () => {
 
     render(<PurchaseLinks isbn="invalid-isbn" title="Test Book" author="Test Author" />);
 
-    // Amazon検索リンクの確認
-    const amazonLink = screen.getByText('Amazon 検索').closest('a');
+    // Amazonリンクの確認（「検索」の文字なし）
+    const amazonLink = screen.getByText('Amazon').closest('a');
     expect(amazonLink).toHaveAttribute('href', 'https://www.amazon.co.jp/s?k=test+book');
 
-    // 楽天Books検索リンクの確認
-    const rakutenLink = screen.getByText('楽天Books 検索').closest('a');
+    // 楽天Booksリンクの確認（「検索」の文字なし）
+    const rakutenLink = screen.getByText('楽天Books').closest('a');
     expect(rakutenLink).toHaveAttribute(
       'href',
       'https://books.rakuten.co.jp/search?sitem=test+book'

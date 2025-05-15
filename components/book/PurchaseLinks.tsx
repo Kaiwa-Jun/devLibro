@@ -29,7 +29,7 @@ export default function PurchaseLinks({ isbn, title, author, googleBooksId }: Pu
   console.log('PurchaseLinks受け取ったタイトル:', title);
   console.log('PurchaseLinks受け取ったID:', googleBooksId);
 
-  // 変数でリンクの種類を記録（検索用アイコンの表示など用）
+  // 変数でリンクの種類を記録（検索用アイコンの表示のみに使用）
   let isAmazonSearch = false;
   let isRakutenSearch = false;
 
@@ -127,10 +127,7 @@ export default function PurchaseLinks({ isbn, title, author, googleBooksId }: Pu
             ) : (
               <ExternalLink className="h-3.5 w-3.5" />
             )}
-            <span>
-              Amazon
-              {isAmazonSearch ? ' 検索' : ''}
-            </span>
+            <span>Amazon</span>
           </a>
         </Button>
       )}
@@ -153,10 +150,7 @@ export default function PurchaseLinks({ isbn, title, author, googleBooksId }: Pu
             ) : (
               <BookOpen className="h-3.5 w-3.5" />
             )}
-            <span>
-              楽天Books
-              {isRakutenSearch ? ' 検索' : ''}
-            </span>
+            <span>楽天Books</span>
           </a>
         </Button>
       )}
