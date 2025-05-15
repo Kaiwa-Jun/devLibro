@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
-import { CSSProperties, ReactNode, RefObject } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import WriteReviewButton from '@/components/book/WriteReviewButton';
@@ -17,15 +17,14 @@ jest.mock('@/components/auth/AuthProvider', () => ({
 
 // framer-motionのモックを改善
 jest.mock('framer-motion', () => {
-  const React = require('react');
-
-  // React.forwardRefを使用して正しくrefを処理
-  const MotionDiv = React.forwardRef(
-    (
-      {
+  // React.forwardRefの代わりにシンプルな関数を返す
+  return {
+    motion: {
+      div: ({
         children,
         className,
         style,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         whileTap,
         ...props
       }: {
@@ -33,22 +32,12 @@ jest.mock('framer-motion', () => {
         className?: string;
         style?: CSSProperties;
         whileTap?: Record<string, unknown>;
-        [key: string]: any;
-      },
-      ref: RefObject<HTMLDivElement>
-    ) => (
-      <div className={className} style={style} ref={ref} {...props}>
-        {children}
-      </div>
-    )
-  );
-
-  // コンポーネント名を設定
-  MotionDiv.displayName = 'MotionDiv';
-
-  return {
-    motion: {
-      div: MotionDiv,
+        [key: string]: unknown;
+      }) => (
+        <div className={className} style={style} {...props}>
+          {children}
+        </div>
+      ),
     },
     useScroll: () => ({ scrollY: { get: () => 0 } }),
     useTransform: () => 1,
