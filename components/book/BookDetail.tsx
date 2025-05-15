@@ -51,7 +51,7 @@ export default function BookDetail({ id }: BookDetailProps) {
           // 重要: 内部DB IDを抽出して保存
           // bookData自体にはsupabaseの内部IDが含まれている場合があるが、
           // これは直接アクセスできないため、代わりにobjとして扱い抽出する
-          const bookObj = bookData as unknown as Record<string, any>;
+          const bookObj = bookData as unknown as Record<string, unknown>;
           if (bookObj && typeof bookObj === 'object') {
             // まず数値IDを探す（これが内部DB ID）
             if ('id' in bookObj && typeof bookObj.id === 'number') {

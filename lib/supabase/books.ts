@@ -88,7 +88,7 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
     };
 
     // まず、DBでこの書籍が既に存在するか一括で確認
-    let existingBook = null;
+    const existingBook = null;
 
     // 書籍IDで検索（Google Books ID）
     if (book.id) {
