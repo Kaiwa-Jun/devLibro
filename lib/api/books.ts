@@ -1,3 +1,4 @@
+import { formatASIN } from '@/lib/api/commerce';
 import { searchBooksByTitleInDB } from '@/lib/supabase/books';
 import { Book } from '@/types';
 
@@ -47,10 +48,36 @@ const getHighResImageUrl = (imageUrl: string | undefined): string => {
 const mapGoogleBookToBook = (googleBook: GoogleBookItem): Book => {
   const { volumeInfo } = googleBook;
 
+  console.log('Google Book変換 - volumeInfo:', JSON.stringify(volumeInfo, null, 2));
+  console.log('Google Book ID:', googleBook.id);
+
   // ISBNを取得
   const isbn =
     volumeInfo.industryIdentifiers?.find(id => id.type === 'ISBN_13' || id.type === 'ISBN_10')
       ?.identifier || '';
+
+  console.log('検出されたISBN:', isbn);
+
+  // ISBNがない場合はASINを探す
+  let asin =
+    !isbn && volumeInfo.industryIdentifiers
+      ? volumeInfo.industryIdentifiers.find(id => id.type === 'ASIN' || id.type === 'OTHER')
+          ?.identifier || ''
+      : '';
+
+  console.log('検出されたASIN元の値:', asin);
+
+  // ASINを適切にフォーマット
+  if (asin) {
+    asin = formatASIN(asin);
+    console.log('フォーマット後のASIN:', asin);
+  }
+
+  // 長さを制限（DBのisbnカラムが20文字までと仮定）
+  if (asin && asin.length > 20) {
+    console.log(`ASINが長すぎるため切り詰めます: ${asin} → ${asin.substring(0, 20)}`);
+    asin = asin.substring(0, 20);
+  }
 
   // 言語コードを変換（必要に応じて拡張）
   const languageMap: Record<string, string> = {
@@ -67,7 +94,7 @@ const mapGoogleBookToBook = (googleBook: GoogleBookItem): Book => {
 
   return {
     id: googleBook.id,
-    isbn,
+    isbn: isbn || asin, // ISBNがなければASINを使用
     title: volumeInfo.title,
     author: volumeInfo.authors?.join(', ') || '不明',
     language: languageMap[volumeInfo.language || ''] || volumeInfo.language || 'その他',

@@ -1,4 +1,5 @@
 import { Book } from '@/types';
+import { formatASIN } from './commerce';
 
 interface GoogleBooksVolumeInfo {
   title?: string;
@@ -136,12 +137,35 @@ export const searchBookByISBN = async (isbn: string): Promise<Book | null> => {
       return acc;
     }, '');
 
+    // ISBNがない場合はASINを探す
+    let asin = !confirmedIsbn
+      ? identifiers.reduce((acc: string, id) => {
+          if (id.type === 'ASIN' || id.type === 'OTHER') return id.identifier;
+          return acc;
+        }, '')
+      : '';
+
+    // デバッグ用：identifiersの内容をログ出力
+    console.log('書籍 ID:', item.id);
+    console.log('書籍タイトル:', volumeInfo.title);
+    console.log('全Identifiers:', JSON.stringify(identifiers));
+    if (asin) {
+      console.log('検出されたASIN元の値:', asin);
+    }
+
+    // ASINを適切にフォーマット
+    if (asin) {
+      const originalAsin = asin;
+      asin = formatASIN(asin);
+      console.log(`ASINをフォーマットしました: ${originalAsin} → ${asin}`);
+    }
+
     // カテゴリ情報を取得
     const categories = volumeInfo.categories || [];
 
     const book: Book = {
       id: item.id, // Google Books ID
-      isbn: confirmedIsbn || isbn,
+      isbn: confirmedIsbn || asin || isbn, // ISBNがなければASINを使用、それもなければ元の検索ISBN
       title: volumeInfo.title || '不明なタイトル',
       author: (volumeInfo.authors || []).join(', ') || '不明な著者',
       language: volumeInfo.language || 'ja',

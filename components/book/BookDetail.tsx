@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateUniqueIdentifier, validateIdentifier } from '@/lib/api/commerce';
 import { getBookByIdFromDB, saveBookToDB } from '@/lib/supabase/books';
 import { getDifficultyInfo } from '@/lib/utils';
 import { Book } from '@/types';
@@ -99,14 +100,30 @@ export default function BookDetail({ id }: BookDetailProps) {
               try {
                 console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
 
+                // ISBNが存在し、不正なフォーマットではない場合はそのまま、そうでない場合は整形
+                let bookIsbn = parsedBook.isbn;
+                if (!bookIsbn || !validateIdentifier(bookIsbn)) {
+                  console.log('有効なISBN/ASINが見つからないため、一意の識別子を生成します');
+                  bookIsbn = generateUniqueIdentifier(
+                    parsedBook.title,
+                    parsedBook.author,
+                    parsedBook.id
+                  );
+                  console.log('生成された識別子:', bookIsbn);
+                } else {
+                  console.log('有効なISBN/ASINが存在:', bookIsbn);
+                }
+
                 // フレームワークとプログラミング言語フィールドが無い場合は空の配列を追加
                 const bookToSave = {
                   ...parsedBook,
+                  isbn: bookIsbn, // 生成または検証済みの識別子を使用
                   programming_languages:
                     parsedBook.programming_languages || parsedBook.programmingLanguages || [],
                   frameworks: parsedBook.frameworks || [],
                 };
 
+                console.log('DBに保存する書籍データ:', bookToSave);
                 const savedBook = await saveBookToDB(bookToSave);
                 if (savedBook) {
                   console.log('書籍をDBに保存しました:', savedBook);
@@ -138,12 +155,73 @@ export default function BookDetail({ id }: BookDetailProps) {
 
                   // 保存済みフラグをセッションストレージに設定
                   sessionStorage.setItem(`book_${id}_saved`, 'true');
+                } else {
+                  console.error('書籍の保存に失敗しました。保存済みフラグはセットしません。');
                 }
               } catch (saveError) {
                 console.error('書籍のDB保存エラー:', saveError);
+                // エラー発生時は保存済みフラグをクリア
+                sessionStorage.removeItem(`book_${id}_saved`);
               }
             } else {
               console.log('この書籍はすでに保存済みです。重複保存を回避します。');
+              // 実際にDBに保存されているか再確認（フラグのみでは不十分な場合がある）
+              try {
+                console.log('データベースに実際に存在するか確認します');
+                // タイトルで検索
+                const { getSupabaseClient } = await import('@/lib/supabase/books');
+                const supabase = getSupabaseClient();
+
+                const { data: titleCheck } = await supabase
+                  .from('books')
+                  .select('*')
+                  .eq('title', parsedBook.title)
+                  .limit(1);
+
+                if (!titleCheck || titleCheck.length === 0) {
+                  console.log('データベースに存在しないため、強制的に保存します');
+                  // セッションフラグを削除
+                  sessionStorage.removeItem(`book_${id}_saved`);
+
+                  // ISBNを整形
+                  let bookIsbn = parsedBook.isbn;
+                  if (!bookIsbn || !validateIdentifier(bookIsbn)) {
+                    bookIsbn = generateUniqueIdentifier(
+                      parsedBook.title,
+                      parsedBook.author,
+                      parsedBook.id
+                    );
+                  }
+
+                  // 保存処理
+                  const bookToSave = {
+                    ...parsedBook,
+                    isbn: bookIsbn,
+                    programming_languages:
+                      parsedBook.programming_languages || parsedBook.programmingLanguages || [],
+                    frameworks: parsedBook.frameworks || [],
+                  };
+
+                  console.log('強制的に保存する書籍データ:', bookToSave);
+                  const savedBook = await saveBookToDB(bookToSave);
+                  if (savedBook) {
+                    console.log('書籍をDBに強制保存しました:', savedBook);
+                    setBook(savedBook);
+
+                    // 内部IDを設定
+                    if (typeof savedBook.id === 'string' || typeof savedBook.id === 'number') {
+                      setInternalBookId(String(savedBook.id));
+                    }
+
+                    // 保存済みフラグを設定
+                    sessionStorage.setItem(`book_${id}_saved`, 'true');
+                  }
+                } else {
+                  console.log('データベースに既に存在することを確認:', titleCheck[0]);
+                }
+              } catch (checkError) {
+                console.error('データベース存在確認エラー:', checkError);
+              }
             }
           }
         } catch (storageError) {
@@ -348,7 +426,12 @@ export default function BookDetail({ id }: BookDetailProps) {
               {book.description}
             </motion.p>
 
-            <PurchaseLinks isbn={book.isbn} />
+            <PurchaseLinks
+              isbn={book.isbn}
+              title={book.title}
+              author={book.author}
+              googleBooksId={book.id}
+            />
 
             <div className="mt-6">
               <WriteReviewButton bookId={internalBookId || id} />

@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { generateUniqueIdentifier, validateIdentifier } from '@/lib/api/commerce';
 import { mockBooks } from '@/lib/mock-data';
 import { Book } from '@/types';
 
 // クライアントサイドでのみ Supabase クライアントを初期化
-const getSupabaseClient = () => {
+export const getSupabaseClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
@@ -76,18 +77,55 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
 
     // 1. Google Books IDで検索（最も正確な識別子）
     if (book.id) {
+      console.log('Google Books IDで重複チェック:', book.id);
+      // パターン1: [GBID:xxx]形式で検索
       const gbidPattern = `[GBID:${book.id}]`;
       duplicateChecks.push(
         supabase.from('books').select('*').ilike('description', `%${gbidPattern}%`).limit(1)
       );
+
+      // パターン2: Google Books IDを直接使用した識別子
+      duplicateChecks.push(supabase.from('books').select('*').eq('isbn', `GB-${book.id}`).limit(1));
+
+      // Google Books IDがすでに存在する場合、それを最優先で返す（高速)
+      const { data: gbData } = await supabase
+        .from('books')
+        .select('*')
+        .ilike('description', `%${gbidPattern}%`)
+        .limit(1);
+
+      if (gbData && gbData.length > 0) {
+        console.log('Google Books IDで既存の書籍を発見:', gbData[0]);
+        return formatBookFromDB(gbData[0]);
+      }
     }
 
     // 2. ISBNで検索（存在する場合、かつ一時的に生成されたものでない場合）
-    if (book.isbn && !book.isbn.startsWith('N-')) {
+    if (book.isbn && validateIdentifier(book.isbn)) {
+      console.log('ISBNで重複チェック:', book.isbn);
       duplicateChecks.push(supabase.from('books').select('*').eq('isbn', book.isbn).limit(1));
+
+      // ISBNが記述に含まれている場合もチェック
+      const isbnPattern = `[ISBN:${book.isbn}]`;
+      duplicateChecks.push(
+        supabase.from('books').select('*').ilike('description', `%${isbnPattern}%`).limit(1)
+      );
+
+      // ISBNですでに存在する場合、すぐに返す（高速)
+      const { data: isbnData } = await supabase
+        .from('books')
+        .select('*')
+        .eq('isbn', book.isbn)
+        .limit(1);
+
+      if (isbnData && isbnData.length > 0) {
+        console.log('ISBNで既存の書籍を発見:', isbnData[0]);
+        return formatBookFromDB(isbnData[0]);
+      }
     }
 
     // 3. タイトルと著者で検索（より厳密な重複チェック）
+    console.log('タイトルと著者で重複チェック:', book.title, book.author || '不明');
     duplicateChecks.push(
       supabase
         .from('books')
@@ -97,40 +135,63 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
         .limit(1)
     );
 
-    // 重複チェックを実行
-    const checkResults = await Promise.all(duplicateChecks);
+    // タイトルと著者ですでに存在する場合、すぐに返す（高速)
+    const { data: titleAuthorData } = await supabase
+      .from('books')
+      .select('*')
+      .eq('title', book.title)
+      .eq('author', book.author || '不明')
+      .limit(1);
 
-    // 重複検出
-    for (const result of checkResults) {
-      if (result.error) {
-        console.error('重複チェックエラー:', result.error);
-        continue;
-      }
-
-      if (result.data && result.data.length > 0) {
-        console.log('既存の書籍を発見:', result.data[0]);
-        return formatBookFromDB(result.data[0]);
-      }
+    if (titleAuthorData && titleAuthorData.length > 0) {
+      console.log('タイトルと著者で既存の書籍を発見:', titleAuthorData[0]);
+      return formatBookFromDB(titleAuthorData[0]);
     }
 
     // プログラミング言語とフレームワークを検出
     const programmingLanguages = await detectProgrammingLanguagesFromBook(book);
     const frameworks = await detectFrameworksFromBook(book);
 
+    // ISBNの検証と調整
+    let isbnToSave = book.isbn || '';
+    const asinMatch = isbnToSave.match(/B[0-9]{9}/);
+    const isOriginalISBN = book.isbn ? `[ISBN:${book.isbn}]` : '';
+
+    // 無効なISBNの場合は、新しいIDを生成
+    if (!isbnToSave || !validateIdentifier(isbnToSave)) {
+      console.log('有効なISBNではないため、新しいIDを生成します:', isbnToSave);
+
+      // 一意の識別子を生成
+      isbnToSave = generateUniqueIdentifier(book.title, book.author, book.id);
+      console.log('生成された新しい識別子:', isbnToSave);
+    } else if (asinMatch) {
+      // 正規のASINのように見える場合は、そのままASINを使用
+      console.log('有効なASINを検出:', asinMatch[0]);
+      isbnToSave = asinMatch[0];
+    }
+
+    // 書籍の説明文に元のISBN/ASIN情報とGoogle Books IDを追加
+    let descriptionWithMeta = book.description || '';
+
+    // Google Books IDを説明文に追加
+    if (book.id) {
+      descriptionWithMeta = `[GBID:${book.id}] ${descriptionWithMeta}`;
+    }
+
+    // 元のISBNが生成されたものと異なる場合は保存
+    if (book.isbn && book.isbn !== isbnToSave) {
+      descriptionWithMeta = `${isOriginalISBN} ${descriptionWithMeta}`;
+    }
+
     // テーブル構造に合わせたデータを準備
     const bookToSave = {
-      // ISBNがない場合は短い一意識別子を生成（20文字以内）
-      isbn:
-        book.isbn ||
-        'N-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 6),
+      isbn: isbnToSave,
       title: book.title,
       author: book.author || '不明',
       language: book.language || '日本語',
       categories: book.categories || [],
       img_url: book.img_url || '',
-      description: book.description || '',
-      // Google Books IDを説明文に含めておく（検索用）
-      ...(book.id && { description: `[GBID:${book.id}] ${book.description || ''}` }),
+      description: descriptionWithMeta,
       // 新フィールド
       programming_languages: programmingLanguages,
       frameworks: frameworks,
