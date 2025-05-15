@@ -21,13 +21,21 @@ jest.mock('@/lib/supabase/client', () => ({
 type MotionProps = {
   children: ReactNode;
   className?: string;
-  whileHover?: Record<string, unknown>;
-  transition?: Record<string, unknown>;
+  _whileHover?: Record<string, unknown>;
+  _transition?: Record<string, unknown>;
 };
 
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: MotionProps) => <div {...props}>{children}</div>,
+    div: ({ children, className, _whileHover, _transition, ...rest }: MotionProps) => {
+      // whileHoverなどのframer-motion固有のプロパティは除外し、
+      // 標準のHTML属性のみを残す
+      return (
+        <div className={className} {...rest}>
+          {children}
+        </div>
+      );
+    },
   },
 }));
 
