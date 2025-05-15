@@ -109,7 +109,9 @@ describe('書籍検索機能（日本語フィルタリング）', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
       const fetchUrl = (fetch as jest.Mock).mock.calls[0][0] as string;
       expect(fetchUrl).toContain('langRestrict=ja');
-      expect(fetchUrl).toContain('q=intitle:テスト');
+      // URLエンコードされたパラメータをチェック
+      expect(fetchUrl).toContain('intitle%3A');
+      expect(fetchUrl).toContain('%E3%83%86%E3%82%B9%E3%83%88'); // 'テスト'のURLエンコード
     });
 
     it('検索結果から日本語の書籍を返す', async () => {
@@ -147,7 +149,8 @@ describe('書籍検索機能（日本語フィルタリング）', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
       const fetchUrl = (fetch as jest.Mock).mock.calls[0][0] as string;
       expect(fetchUrl).toContain('langRestrict=ja');
-      expect(fetchUrl).toContain('q=isbn:9784873117386');
+      // URLエンコードされたパラメータをチェック
+      expect(fetchUrl).toContain('isbn%3A9784873117386');
     });
 
     it('日本語の書籍のみを返し、その他の言語の書籍は除外する', async () => {
