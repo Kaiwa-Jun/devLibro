@@ -365,7 +365,11 @@ export default function BookDetail({ id }: BookDetailProps) {
               {book.description}
             </motion.p>
 
-            <PurchaseLinks isbn={book.isbn} />
+            <PurchaseLinks
+              isbn={book.isbn}
+              title={book.title}
+              bookId={internalBookId || undefined}
+            />
 
             <div className="mt-6">
               <WriteReviewButton bookId={internalBookId || id} />
