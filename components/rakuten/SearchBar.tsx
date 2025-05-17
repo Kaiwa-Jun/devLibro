@@ -71,7 +71,7 @@ export default function RakutenSearchBar() {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="楽天Books APIで書籍タイトルを検索"
+          placeholder="書籍タイトルを検索"
           className="pl-10 pr-4 h-11 rounded-full bg-muted"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
