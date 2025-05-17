@@ -28,7 +28,7 @@ export type RakutenBooksResponse = {
   pageCount: number;
   hits: number;
   carrier: number;
-  GenreInformation: any[];
+  GenreInformation: unknown[];
 };
 
 // ページネーションパラメータ型
