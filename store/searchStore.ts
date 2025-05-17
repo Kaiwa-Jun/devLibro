@@ -9,6 +9,7 @@ interface SearchState {
   hasMore: boolean;
   totalItems: number;
   currentPage: number;
+  useRakuten: boolean;
 
   setSearchTerm: (term: string) => void;
   setSearchResults: (results: Book[], replace?: boolean) => void;
@@ -18,6 +19,7 @@ interface SearchState {
   incrementPage: () => void;
   resetPagination: () => void;
   clearSearch: () => void;
+  setUseRakuten: (useRakuten: boolean) => void;
 }
 
 // 検索状態を管理するストア
@@ -28,6 +30,7 @@ export const useSearchStore = create<SearchState>(set => ({
   hasMore: false,
   totalItems: 0,
   currentPage: 0,
+  useRakuten: false,
 
   // 検索語を設定
   setSearchTerm: term =>
@@ -76,4 +79,7 @@ export const useSearchStore = create<SearchState>(set => ({
       totalItems: 0,
       currentPage: 0,
     }),
+
+  // 楽天APIを使用するかどうかを設定
+  setUseRakuten: useRakuten => set({ useRakuten }),
 }));

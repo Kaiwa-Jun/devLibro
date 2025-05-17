@@ -14,6 +14,7 @@ const nextConfig = {
       'm.media-amazon.com',
       'images-na.ssl-images-amazon.com',
       'images-fe.ssl-images-amazon.com',
+      'thumbnail.image.rakuten.co.jp',
     ],
   },
   // SWCコンパイラを強制的に使用

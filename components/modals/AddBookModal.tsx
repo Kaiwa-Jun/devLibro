@@ -13,7 +13,7 @@ import { DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebounce } from '@/hooks/useDebounce';
-import { searchBooksByTitle as searchGoogleBooks } from '@/lib/api/google-books';
+import { searchRakutenBooksWithPagination } from '@/lib/api/rakuten-books';
 import { searchBooksByTitleInDB } from '@/lib/supabase/books';
 import { getUser } from '@/lib/supabase/client';
 import { addBookToUserShelf, getUserBooks } from '@/lib/supabase/user-books';
@@ -156,57 +156,56 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
     }
 
     try {
-      // 1ページあたりの最大結果数
-      const perPage = 10;
+      console.log(`📚 [楽天検索] "${debouncedSearchTerm}" を検索中... (ページ: ${currentPage})`);
 
-      // データベースとGoogle Books APIの両方から検索
-      const [dbResults, googleResults] = await Promise.all([
-        searchBooksByTitleInDB(debouncedSearchTerm, perPage * currentPage),
-        searchGoogleBooks(debouncedSearchTerm, perPage * currentPage),
+      // データベースと楽天Books APIの両方から検索
+      const [dbResults, rakutenResults] = await Promise.all([
+        searchBooksByTitleInDB(debouncedSearchTerm, 10),
+        searchRakutenBooksWithPagination(debouncedSearchTerm, currentPage, 20),
       ]);
 
-      // 重複を削除するためにID（またはISBN）ベースで結合
+      console.log(
+        `📚 [楽天検索] 結果: DBから${dbResults.length}件、楽天から${rakutenResults.books.length}件`
+      );
+
+      // 重複を削除するためにISBNベースで結合
       const combinedResults = [...dbResults];
 
-      // データベースに存在しない書籍のみをGoogle Books結果から追加
-      googleResults.forEach(googleBook => {
+      // データベースに存在しない書籍のみを楽天結果から追加
+      rakutenResults.books.forEach(rakutenBook => {
         // まずISBNで重複チェック
-        if (googleBook.isbn) {
-          const existsInDB = dbResults.some(dbBook => dbBook.isbn === googleBook.isbn);
+        if (rakutenBook.isbn) {
+          const existsInDB = dbResults.some(dbBook => dbBook.isbn === rakutenBook.isbn);
           if (!existsInDB) {
-            combinedResults.push(googleBook);
+            combinedResults.push(rakutenBook);
             return;
           }
         }
 
         // 次にタイトルで重複チェック
         const existsInDB = dbResults.some(
-          dbBook => dbBook.title.toLowerCase() === googleBook.title.toLowerCase()
+          dbBook => dbBook.title.toLowerCase() === rakutenBook.title.toLowerCase()
         );
 
         if (!existsInDB) {
-          combinedResults.push(googleBook);
+          combinedResults.push(rakutenBook);
         }
       });
 
       // ユーザーの本棚に既に存在する書籍を除外
       const filteredResults = combinedResults.filter(book => !isBookInUserLibrary(book));
 
-      // ページネーション処理
-      // 全部の結果から、現在のページに表示すべき部分を抽出
-      const startIndex = 0;
-      const endIndex = perPage * currentPage;
-      const paginatedResults = filteredResults.slice(startIndex, endIndex);
+      console.log(`📚 [楽天検索] フィルター後: ${filteredResults.length}件`);
 
       // 次のページがあるかどうかを判定
-      setHasMore(filteredResults.length > paginatedResults.length);
+      setHasMore(rakutenResults.hasMore);
 
       if (resetResults) {
-        setSearchResults(paginatedResults);
+        setSearchResults(filteredResults);
       } else {
         // 既存の結果と重複を取り除いて結合
         const existingIds = new Set(searchResults.map(book => book.id));
-        const newResults = paginatedResults.filter(book => !existingIds.has(book.id));
+        const newResults = filteredResults.filter(book => !existingIds.has(book.id));
         setSearchResults(prev => [...prev, ...newResults]);
       }
 
@@ -302,7 +301,7 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="書籍タイトルを検索"
+              placeholder="楽天Booksで書籍タイトルを検索"
               className="pl-10 pr-4"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -355,6 +354,11 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
                     <div>
                       <h4 className="font-medium line-clamp-1">{book.title}</h4>
                       <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
+                      {book.publisherName && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {book.publisherName}
+                        </p>
+                      )}
                       {book.isbn && !book.isbn.startsWith('N-') ? (
                         <p className="text-xs text-muted-foreground">ISBN: {book.isbn}</p>
                       ) : (
@@ -415,6 +419,9 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
                   <div className="text-center">
                     <h4 className="font-medium text-lg">{selectedBook.title}</h4>
                     <p className="text-sm text-muted-foreground">{selectedBook.author}</p>
+                    {selectedBook.publisherName && (
+                      <p className="text-sm text-muted-foreground">{selectedBook.publisherName}</p>
+                    )}
                     {selectedBook.isbn && !selectedBook.isbn.startsWith('N-') ? (
                       <p className="text-xs text-muted-foreground mt-1">
                         ISBN: {selectedBook.isbn}
