@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getUser } from '@/lib/supabase/client';
 import { getUserBooks } from '@/lib/supabase/user-books';
 import { UserBook } from '@/types';
@@ -55,24 +55,6 @@ export default function BookshelfTabs() {
 
     fetchUserBooks();
   }, []);
-
-  // activeTabが変更されたときに確実にタブが切り替わるようにする
-  useEffect(() => {
-    console.log('現在のアクティブタブ:', activeTab);
-    // 強制的にDOMを更新するための小さな遅延
-    const timer = setTimeout(() => {
-      const tabsElement = document.querySelector(
-        `[data-state="active"][data-value="${activeTab}"]`
-      );
-      if (tabsElement) {
-        console.log('タブ要素が見つかりました:', tabsElement);
-      } else {
-        console.log('タブ要素が見つかりません');
-      }
-    }, 10);
-
-    return () => clearTimeout(timer);
-  }, [activeTab]);
 
   // 画面表示時にデータを再取得するための関数
   const refreshUserBooks = async (showLoading = true) => {
@@ -199,89 +181,122 @@ export default function BookshelfTabs() {
             console.log(`タブが手動で切り替えられました: ${value}`);
             setActiveTab(value as 'unread' | 'reading' | 'done');
           }}
+          className="relative"
         >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="unread">これから読む ({unreadBooks.length})</TabsTrigger>
-            <TabsTrigger value="reading">読書中 ({readingBooks.length})</TabsTrigger>
-            <TabsTrigger value="done">読了 ({doneBooks.length})</TabsTrigger>
-          </TabsList>
-
-          <div className="mt-6">
-            {/* 全てのコンテンツを常に描画し、表示・非表示のみ切り替え */}
-            <div className={activeTab === 'unread' ? 'block' : 'hidden'}>
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  className="space-y-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {unreadBooks.length > 0 ? (
-                    unreadBooks.map(userBook => (
-                      <BookshelfItem
-                        key={userBook.id}
-                        userBook={userBook}
-                        onUpdate={handleBookUpdate}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">
-                      これから読む本はありません
-                    </p>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className={activeTab === 'reading' ? 'block' : 'hidden'}>
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  className="space-y-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {readingBooks.length > 0 ? (
-                    readingBooks.map(userBook => (
-                      <BookshelfItem
-                        key={userBook.id}
-                        userBook={userBook}
-                        onUpdate={handleBookUpdate}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">読書中の本はありません</p>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <div className={activeTab === 'done' ? 'block' : 'hidden'}>
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  className="space-y-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {doneBooks.length > 0 ? (
-                    doneBooks.map(userBook => (
-                      <BookshelfItem
-                        key={userBook.id}
-                        userBook={userBook}
-                        onUpdate={handleBookUpdate}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">読了した本はありません</p>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+          <div className="relative">
+            <TabsList className="grid w-full grid-cols-3 relative z-10">
+              <TabsTrigger value="unread" className="relative z-10">
+                これから読む ({unreadBooks.length})
+              </TabsTrigger>
+              <TabsTrigger value="reading" className="relative z-10">
+                読書中 ({readingBooks.length})
+              </TabsTrigger>
+              <TabsTrigger value="done" className="relative z-10">
+                読了 ({doneBooks.length})
+              </TabsTrigger>
+            </TabsList>
+            {/* アクティブインジケーターアニメーション */}
+            <motion.div
+              className="absolute h-[calc(100%-8px)] top-[4px] rounded-sm bg-background shadow-sm z-0"
+              style={{
+                width: `calc(100% / 3)`,
+              }}
+              animate={{
+                x: activeTab === 'unread' ? 0 : activeTab === 'reading' ? `100%` : `200%`,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 400,
+                damping: 35,
+                mass: 1.2,
+                velocity: 2,
+              }}
+              layout
+            />
           </div>
+
+          <TabsContent
+            value="unread"
+            className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+            asChild
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="space-y-4">
+                {unreadBooks.length > 0 ? (
+                  unreadBooks.map(userBook => (
+                    <BookshelfItem
+                      key={userBook.id}
+                      userBook={userBook}
+                      onUpdate={handleBookUpdate}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    これから読む本はありません
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent
+            value="reading"
+            className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+            asChild
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="space-y-4">
+                {readingBooks.length > 0 ? (
+                  readingBooks.map(userBook => (
+                    <BookshelfItem
+                      key={userBook.id}
+                      userBook={userBook}
+                      onUpdate={handleBookUpdate}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">読書中の本はありません</p>
+                )}
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent
+            value="done"
+            className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+            asChild
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="space-y-4">
+                {doneBooks.length > 0 ? (
+                  doneBooks.map(userBook => (
+                    <BookshelfItem
+                      key={userBook.id}
+                      userBook={userBook}
+                      onUpdate={handleBookUpdate}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">読了した本はありません</p>
+                )}
+              </div>
+            </motion.div>
+          </TabsContent>
         </Tabs>
       </div>
     );
