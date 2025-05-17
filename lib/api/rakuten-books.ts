@@ -63,11 +63,112 @@ export function getHighResRakutenImageUrl(imageUrl: string): string {
   }
 }
 
+// 技術書管理アプリに関連しないジャンルID（これらは検索結果から除外する）
+const EXCLUDED_GENRE_IDS = [
+  '001001', // 漫画（コミック）
+  '001007', // アート・建築・デザイン
+  '001008', // 絵本・児童書
+  '001014', // タレント写真集
+  '001015', // ゲーム攻略本
+  '001016', // エンターテイメント
+  '001017', // 新書
+  '001018', // 文庫
+  '001019', // ライトノベル
+  '001020', // BL（ボーイズラブ）
+  '001028', // 医学・薬学・看護学・歯科学
+  '001029', // 健康・家庭医学
+  '001031', // 暮らし・健康・子育て
+];
+
+// 技術書に関連するジャンルIDかどうかを判定する関数
+const isRelevantBook = (booksGenreId: string): boolean => {
+  if (!booksGenreId) return true; // ジャンルIDがない場合は表示する
+
+  // 複数のジャンルIDがある場合（/区切り）はいずれかが除外カテゴリに含まれるか確認
+  const genreIds = booksGenreId.split('/');
+
+  // いずれかのジャンルIDが除外リストに含まれていればfalse（表示しない）
+  return !genreIds.some(genreId =>
+    EXCLUDED_GENRE_IDS.some(excludedId => genreId.startsWith(excludedId))
+  );
+};
+
+// booksGenreIdからカテゴリを抽出する関数
+const extractCategoriesFromGenreId = (booksGenreId: string): string[] => {
+  if (!booksGenreId) return [];
+
+  // 複数のジャンルがスラッシュで区切られている場合は分割
+  const genreIds = booksGenreId.split('/');
+  const categories: string[] = [];
+
+  // 技術書管理アプリに関連するカテゴリのみを抽出する
+  // 除外するカテゴリ: 漫画、アート・建築・デザイン、絵本・児童書、タレント写真集、ゲーム攻略本、
+  // エンターテイメント、新書、文庫、BL、医学系、健康系、暮らし系
+
+  genreIds.forEach(genreId => {
+    // 楽天ブックスジャンルIDの詳細マッピング
+    if (genreId.startsWith('001')) {
+      // 001: 本
+      // 本は一般的すぎるので追加しない
+
+      // 詳細カテゴリ: レベル2（主要ジャンル） - 技術書管理に関連するもののみ
+      // 除外: 001001(漫画), 001007(アート), 001008(絵本), 001014(タレント), 001015(ゲーム),
+      // 001016(エンタメ), 001017(新書), 001018(文庫), 001019(ライトノベル), 001020(BL), 001028(医学), 001029(健康), 001031(暮らし)
+      if (genreId.startsWith('001002')) categories.push('語学・学習参考書');
+      else if (genreId.startsWith('001003')) categories.push('人文・思想');
+      else if (genreId.startsWith('001004')) categories.push('コンピュータ・IT');
+      else if (genreId.startsWith('001005')) categories.push('科学・医学・技術');
+      else if (genreId.startsWith('001006')) categories.push('文学・評論');
+      else if (genreId.startsWith('001009')) categories.push('資格・検定・就職');
+      else if (genreId.startsWith('001010')) categories.push('趣味・実用');
+      else if (genreId.startsWith('001011')) categories.push('ビジネス・経済・就職');
+      else if (genreId.startsWith('001012')) categories.push('旅行・留学・アウトドア');
+      else if (genreId.startsWith('001013')) categories.push('人生論・自己啓発');
+      else if (genreId.startsWith('001021')) categories.push('多言語');
+
+      // 詳細カテゴリ: レベル3以上（より具体的なサブジャンル）
+      // コンピュータ・IT系の詳細カテゴリ
+      if (genreId.startsWith('00100401')) categories.push('プログラミング');
+      else if (genreId.startsWith('00100402')) categories.push('アプリケーション');
+      else if (genreId.startsWith('00100403')) categories.push('OS');
+      else if (genreId.startsWith('00100404')) categories.push('ネットワーク');
+      else if (genreId.startsWith('00100405')) categories.push('データベース');
+      else if (genreId.startsWith('00100406')) categories.push('ハードウェア');
+      else if (genreId.startsWith('00100407')) categories.push('セキュリティ');
+      else if (genreId.startsWith('00100408')) categories.push('情報処理');
+      else if (genreId.startsWith('00100409')) categories.push('Web作成・開発');
+      else if (genreId.startsWith('00100410')) categories.push('グラフィックス・DTP・音楽');
+      else if (genreId.startsWith('00100499')) categories.push('その他');
+
+      // 漫画のサブカテゴリは除外
+
+      // ビジネス・経済系
+      if (genreId.startsWith('00101101')) categories.push('経営');
+      else if (genreId.startsWith('00101102')) categories.push('経済');
+      else if (genreId.startsWith('00101103')) categories.push('マーケティング・セールス');
+      else if (genreId.startsWith('00101104')) categories.push('投資・金融・会社経営');
+      else if (genreId.startsWith('00101105')) categories.push('MBA・人材管理');
+
+      // 語学・学習参考書
+      if (genreId.startsWith('00100201')) categories.push('英語');
+      else if (genreId.startsWith('00100299')) categories.push('その他言語');
+    }
+  });
+
+  // 重複を除去
+  return categories.filter((category, index, self) => self.indexOf(category) === index);
+};
+
 // 楽天ブックスのレスポンスをアプリのBook型に変換する関数
 const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]['Item']): Book => {
   // 高解像度の画像URLを生成
   const originalImageUrl = rakutenBook.largeImageUrl || rakutenBook.mediumImageUrl;
   const highResImageUrl = getHighResRakutenImageUrl(originalImageUrl);
+
+  // booksGenreIdからカテゴリを抽出
+  const categories = extractCategoriesFromGenreId(rakutenBook.booksGenreId);
+
+  // カテゴリが空の場合も空配列のままにする（「本」は追加しない）
 
   return {
     id: rakutenBook.isbn, // ISBNをIDとして使用
@@ -75,7 +176,7 @@ const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]
     title: rakutenBook.title,
     author: rakutenBook.author || '不明',
     language: '日本語', // 楽天ブックスAPIは日本語の書籍のみを提供
-    categories: [], // デフォルト値（楽天APIではカテゴリ情報の形式が異なる）
+    categories, // 詳細カテゴリ
     img_url: highResImageUrl || '/images/book-placeholder.png',
     avg_difficulty: 0, // デフォルト値
     description: rakutenBook.itemCaption || '',
@@ -103,6 +204,8 @@ export const searchRakutenBooksByTitle = async ({
       page: page.toString(),
       hits: hits.toString(),
       applicationId: API_KEY || '',
+      // APIに渡す際のパラメータに技術書に関連するカテゴリ指定を追加してもよいが、
+      // 一旦は結果をフィルタリングする方式を採用
     });
 
     const response = await fetch(`${RAKUTEN_BOOKS_API_URL}?${params.toString()}`);
@@ -112,18 +215,28 @@ export const searchRakutenBooksByTitle = async ({
     }
 
     const data: RakutenBooksResponse = await response.json();
-    const books = data.Items.map(item => mapRakutenBookToBook(item.Item));
-    const totalItems = data.count || 0;
 
-    // 次のページがあるかどうかを判定
-    const hasMore = page < data.pageCount;
+    // 検索結果から技術書に関連しないジャンルの書籍をフィルタリングして除外
+    const filteredItems = data.Items.filter(item => isRelevantBook(item.Item.booksGenreId));
+    const filteredBooks = filteredItems.map(item => mapRakutenBookToBook(item.Item));
+
+    // フィルタリング後の件数を記録
+    const originalCount = data.Items.length;
+    const filteredCount = filteredBooks.length;
+    console.log(
+      `📊 [楽天ブックスAPI] フィルタリング: ${originalCount}件中${filteredCount}件が技術書関連`
+    );
+
+    const totalItems = filteredCount;
+    // ページネーションを調整（単純化のため、フィルタリング後の数を使用）
+    const hasMore = page < Math.ceil(totalItems / hits);
 
     console.log(
-      `📗 [楽天ブックスAPI] 検索結果: ${books.length}件取得 (全${totalItems}件中, 次ページ: ${hasMore ? 'あり' : 'なし'})`
+      `📗 [楽天ブックスAPI] 検索結果: ${filteredBooks.length}件取得 (技術書関連のみ、次ページ: ${hasMore ? 'あり' : 'なし'})`
     );
 
     return {
-      books,
+      books: filteredBooks,
       totalItems,
       hasMore,
     };
@@ -161,7 +274,16 @@ export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null
       return null;
     }
 
-    const book = mapRakutenBookToBook(data.Items[0].Item);
+    // 技術書に関連するジャンルかどうかをチェック
+    const item = data.Items[0].Item;
+    if (!isRelevantBook(item.booksGenreId)) {
+      console.log(
+        `ℹ️ [ISBN検索] ISBN "${isbn}" の書籍は技術書に関連しないジャンルのため表示しません`
+      );
+      return null;
+    }
+
+    const book = mapRakutenBookToBook(item);
     console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の日本語書籍が見つかりました: "${book.title}"`);
     return book;
   } catch (error) {
@@ -360,6 +482,21 @@ export const searchRakutenBookByTitle = async (title: string): Promise<string | 
       JSON.stringify(data).substring(0, 300) + '...'
     );
 
+    // データがない場合
+    if (!data || !data.Items || !Array.isArray(data.Items) || data.Items.length === 0) {
+      console.log(`ℹ️ [楽天ブックスAPI] "${title}" に一致する書籍が見つかりませんでした`);
+      return null;
+    }
+
+    // 最初のアイテムのジャンルをチェック
+    const firstItem = data.Items[0].Item || data.Items[0];
+    if (!isRelevantBook(firstItem.booksGenreId)) {
+      console.log(
+        `ℹ️ [楽天ブックスAPI] "${title}" の書籍は技術書に関連しないジャンルのため表示しません`
+      );
+      return null;
+    }
+
     // ISBN抽出処理
     const isbn = extractIsbnFromRakutenResponse(data);
 
@@ -433,6 +570,14 @@ export const getRakutenBookDetailByTitle = async (
     // 項目がItemプロパティ内にあるパターンと直接プロパティとしてあるパターンの両方に対応
     const bookItem = itemContainer.Item || itemContainer;
     console.log(`📘 [楽天ブックスAPI] 書籍データ:`, bookItem);
+
+    // 技術書に関連するジャンルかチェック
+    if (!isRelevantBook(bookItem.booksGenreId)) {
+      console.log(
+        `ℹ️ [楽天ブックスAPI] "${title}" の書籍は技術書に関連しないジャンルのため表示しません`
+      );
+      return { isbn: null, detailUrl: null };
+    }
 
     const isbn = bookItem.isbn || null;
     const detailUrl = bookItem.itemUrl || null;
