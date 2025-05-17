@@ -567,3 +567,25 @@ async function detectFrameworksFromBook(book: Book): Promise<string[]> {
 
   return Array.from(detectedFrameworks);
 }
+
+// 書籍のISBNを更新する関数
+export const updateBookISBN = async (bookId: string | number, isbn: string): Promise<boolean> => {
+  try {
+    const supabase = getSupabaseClient();
+
+    console.log(`書籍ID:${bookId}のISBNを"${isbn}"に更新します`);
+
+    const { error } = await supabase.from('books').update({ isbn }).eq('id', bookId);
+
+    if (error) {
+      console.error('書籍のISBN更新エラー:', error);
+      return false;
+    }
+
+    console.log(`書籍ID:${bookId}のISBNを正常に更新しました`);
+    return true;
+  } catch (error) {
+    console.error('updateBookISBN内でエラー発生:', error);
+    return false;
+  }
+};

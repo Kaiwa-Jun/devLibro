@@ -11,6 +11,19 @@
  * @returns 有効なISBNの場合はtrue、それ以外はfalse
  */
 export function validateISBN(isbn: string): boolean {
+  if (!isbn) return false;
+
+  // Google Books IDの場合はfalseを返す (例: eX_eEAAAQBAJ)
+  if (
+    isbn.includes('_') ||
+    /^[A-Za-z0-9]{12}$/.test(isbn) ||
+    isbn.startsWith('N-') ||
+    /^[A-Za-z]{2}_[A-Za-z0-9]+$/.test(isbn)
+  ) {
+    console.log(`📌 無効なISBN形式を検出: "${isbn}"`);
+    return false;
+  }
+
   // 空白とハイフンを削除
   const cleanedISBN = isbn.replace(/[-\s]/g, '');
 
