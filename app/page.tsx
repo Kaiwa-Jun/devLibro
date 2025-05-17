@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
 import BookGrid from '@/components/home/BookGrid';
 import FilterButtons from '@/components/home/FilterButtons';
@@ -13,6 +14,10 @@ export const metadata: Metadata = generatePageMetadata({
 });
 
 export default function Home() {
+  // ルートパスへのアクセスを書籍検索画面にリダイレクト
+  redirect('/books');
+
+  // 以下は元のホーム画面のコード（リダイレクトされるため実行されません）
   return (
     <div className="space-y-6 pb-8 pt-8">
       <div className="max-w-2xl mx-auto relative">

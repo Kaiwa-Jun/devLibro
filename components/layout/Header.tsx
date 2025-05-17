@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 
-import AuthButton from '@/components/auth/AuthButton';
-import { Button } from '@/components/ui/button';
+import AuthButton from '../auth/AuthButton';
+import { Button } from '../ui/button';
 
 export default function Header() {
   const pathname = usePathname();
@@ -16,9 +16,9 @@ export default function Header() {
   const tabs = [
     {
       name: 'ホーム',
-      href: '/',
+      href: '/books',
       icon: Home,
-      active: pathname === '/',
+      active: pathname === '/books' || pathname === '/',
     },
     {
       name: '本棚',
@@ -26,13 +26,20 @@ export default function Header() {
       icon: User,
       active: pathname.startsWith('/profile'),
     },
+    // 元のGoogle Books APIを使った検索画面はコメントアウト
+    // {
+    //   name: 'Google検索',
+    //   href: '/google-search',
+    //   icon: Search,
+    //   active: pathname === '/google-search',
+    // },
   ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-10 bg-background border-b border-border shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/books" className="flex items-center space-x-2">
             <motion.div whileHover={{ rotate: 10 }} transition={{ type: 'spring', stiffness: 300 }}>
               <BookOpen className="h-8 w-8 text-primary" />
             </motion.div>

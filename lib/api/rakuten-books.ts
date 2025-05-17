@@ -1,127 +1,219 @@
 import { Book } from '@/types';
 
 const RAKUTEN_BOOKS_API_URL = 'https://app.rakuten.co.jp/services/api/BooksBook/Search/20170404';
-const APP_ID = process.env.NEXT_PUBLIC_RAKUTEN_APP_ID;
+const API_KEY = process.env.NEXT_PUBLIC_RAKUTEN_APP_ID;
 
-// 楽天API関連の型定義
-export type RakutenBookItem = {
-  title?: string;
-  author?: string;
-  publisherName?: string;
-  isbn?: string;
-  itemCaption?: string;
-  largeImageUrl?: string;
-  mediumImageUrl?: string;
-  salesDate?: string;
-  itemUrl?: string; // 商品詳細ページのURL
-  [key: string]: unknown;
-};
-
-// 楽天APIレスポンスの型定義（実際のレスポンスに合わせて調整）
+// 楽天ブックスAPIからの応答型
 export type RakutenBooksResponse = {
-  Items?: Array<{
-    Item?: RakutenBookItem;
-    [key: string]: unknown;
+  Items: Array<{
+    Item: {
+      title: string;
+      author: string;
+      isbn: string;
+      publisherName: string;
+      itemCaption: string;
+      largeImageUrl: string;
+      mediumImageUrl: string;
+      smallImageUrl: string;
+      affiliateUrl: string;
+      itemUrl: string;
+      salesDate: string;
+      contents: string;
+      size: string;
+      booksGenreId: string;
+    };
   }>;
-  count?: number;
-  page?: number;
-  pageCount?: number;
-  hits?: number;
-  GenreInformation?: unknown[];
-  [key: string]: unknown;
+  count: number;
+  page: number;
+  pageCount: number;
+  hits: number;
+  carrier: number;
+  GenreInformation: unknown[];
 };
 
-/**
- * タイトルで楽天ブックスAPIを検索
- */
-export const searchRakutenBooksByTitle = async (title: string): Promise<Book[]> => {
+// ページネーションパラメータ型
+export type SearchRakutenBooksParams = {
+  query: string;
+  page?: number;
+  hits?: number;
+};
+
+// 楽天の画像URLをより高解像度に変換する関数
+export function getHighResRakutenImageUrl(imageUrl: string): string {
+  // nullやundefinedの場合はプレースホルダーを返す
+  if (!imageUrl) {
+    return '/images/book-placeholder.png';
+  }
+
+  // 既存のサイズパラメータを確認（例: ?_ex=200x200）
+  const sizeParamRegex = /(\?|&)_ex=\d+x\d+/;
+
+  // URLにクエリパラメータがあるか確認
+  const hasQueryParams = imageUrl.includes('?');
+
+  if (sizeParamRegex.test(imageUrl)) {
+    // 既存のサイズパラメータを600x600に置き換え
+    return imageUrl.replace(sizeParamRegex, '$1_ex=600x600');
+  } else if (hasQueryParams) {
+    // 他のクエリパラメータがある場合は&で追加
+    return `${imageUrl}&_ex=600x600`;
+  } else {
+    // クエリパラメータがない場合は?で追加
+    return `${imageUrl}?_ex=600x600`;
+  }
+}
+
+// 楽天ブックスのレスポンスをアプリのBook型に変換する関数
+const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]['Item']): Book => {
+  // 高解像度の画像URLを生成
+  const originalImageUrl = rakutenBook.largeImageUrl || rakutenBook.mediumImageUrl;
+  const highResImageUrl = getHighResRakutenImageUrl(originalImageUrl);
+
+  return {
+    id: rakutenBook.isbn, // ISBNをIDとして使用
+    isbn: rakutenBook.isbn,
+    title: rakutenBook.title,
+    author: rakutenBook.author || '不明',
+    language: '日本語', // 楽天ブックスAPIは日本語の書籍のみを提供
+    categories: [], // デフォルト値（楽天APIではカテゴリ情報の形式が異なる）
+    img_url: highResImageUrl || '/images/book-placeholder.png',
+    avg_difficulty: 0, // デフォルト値
+    description: rakutenBook.itemCaption || '',
+    publisherName: rakutenBook.publisherName,
+    itemUrl: rakutenBook.itemUrl,
+  };
+};
+
+// タイトルによる書籍検索（ページネーション対応）
+export const searchRakutenBooksByTitle = async ({
+  query,
+  page = 1,
+  hits = 20,
+}: SearchRakutenBooksParams): Promise<{
+  books: Book[];
+  totalItems: number;
+  hasMore: boolean;
+}> => {
   try {
-    if (!APP_ID) {
-      console.warn('楽天アプリIDが設定されていません');
-      return [];
-    }
-
-    if (!title) return [];
-
-    console.log(`📚 [楽天ブックスAPI] "${title}" を検索中...`);
+    console.log(`📚 [楽天ブックスAPI] "${query}" を検索中... (ページ: ${page}, 表示件数: ${hits})`);
 
     const params = new URLSearchParams({
-      applicationId: APP_ID,
-      title: title,
-      hits: '20', // 最大結果数
-      booksGenreId: '001', // 本
-      sort: 'sales', // 売れている順
-      formatVersion: '2',
+      format: 'json',
+      title: query,
+      page: page.toString(),
+      hits: hits.toString(),
+      applicationId: API_KEY || '',
     });
 
     const response = await fetch(`${RAKUTEN_BOOKS_API_URL}?${params.toString()}`);
 
     if (!response.ok) {
-      throw new Error(`楽天ブックスAPI エラー: ${response.status} ${response.statusText}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: RakutenBooksResponse = await response.json();
+    const books = data.Items.map(item => mapRakutenBookToBook(item.Item));
+    const totalItems = data.count || 0;
 
-    // レスポンス全体のログ出力（ただし長すぎる場合は省略）
-    console.log(`📊 [楽天ブックスAPI] レスポンス:`, JSON.stringify(data).substring(0, 500) + '...');
+    // 次のページがあるかどうかを判定
+    const hasMore = page < data.pageCount;
 
-    if (!data || !data.Items || !Array.isArray(data.Items) || data.Items.length === 0) {
-      console.log(`ℹ️ [楽天ブックスAPI] "${title}" の検索結果は0件です`);
-      return [];
-    }
+    console.log(
+      `📗 [楽天ブックスAPI] 検索結果: ${books.length}件取得 (全${totalItems}件中, 次ページ: ${hasMore ? 'あり' : 'なし'})`
+    );
 
-    // 楽天ブックスAPIの結果をアプリのBook型に変換
-    const books: Book[] = [];
-
-    for (const item of data.Items) {
-      try {
-        // itemの構造をログ出力
-        console.log(
-          `📖 [楽天ブックスAPI] 書籍データ:`,
-          JSON.stringify(item).substring(0, 300) + '...'
-        );
-
-        // 項目がItemプロパティ内にあるパターンと直接プロパティとしてあるパターンの両方に対応
-        const bookData = item.Item || item;
-
-        if (!bookData) {
-          console.log(`⚠️ [楽天ブックスAPI] 書籍データの構造が不明です:`, item);
-          continue;
-        }
-
-        // 必須プロパティの確認
-        const title = bookData.title || '';
-        const author = bookData.author || '';
-        const isbn = bookData.isbn || '';
-
-        if (!title) {
-          console.log(`⚠️ [楽天ブックスAPI] タイトルがない書籍はスキップします`);
-          continue;
-        }
-
-        books.push({
-          id: `rakuten-${isbn || Date.now()}`, // ISBNがなければタイムスタンプ
-          isbn,
-          title,
-          author,
-          language: '日本語', // 楽天ブックスAPIは基本的に日本の書籍
-          categories: [],
-          img_url: bookData.largeImageUrl || bookData.mediumImageUrl || '',
-          description: bookData.itemCaption || '',
-          avg_difficulty: 0, // デフォルト値
-          programmingLanguages: [],
-          frameworks: [],
-        });
-      } catch (itemError) {
-        console.error(`❌ [楽天ブックスAPI] 書籍データの処理中にエラー:`, itemError);
-      }
-    }
-
-    console.log(`✅ [楽天ブックスAPI] "${title}" の検索結果: ${books.length}件取得`);
-    return books;
+    return {
+      books,
+      totalItems,
+      hasMore,
+    };
   } catch (error) {
     console.error('❌ [楽天ブックスAPIエラー] 書籍検索中にエラーが発生:', error);
-    return [];
+    return {
+      books: [],
+      totalItems: 0,
+      hasMore: false,
+    };
+  }
+};
+
+// ISBNによる書籍検索
+export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null> => {
+  try {
+    console.log(`📘 [ISBN検索開始] ISBN "${isbn}" を楽天ブックスAPIで検索中...`);
+
+    const params = new URLSearchParams({
+      format: 'json',
+      isbn: isbn,
+      applicationId: API_KEY || '',
+    });
+
+    const response = await fetch(`${RAKUTEN_BOOKS_API_URL}?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data: RakutenBooksResponse = await response.json();
+
+    if (!data.Items || data.Items.length === 0) {
+      console.log(`ℹ️ [ISBN検索] ISBN "${isbn}" に一致する書籍は見つかりませんでした`);
+      return null;
+    }
+
+    const book = mapRakutenBookToBook(data.Items[0].Item);
+    console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の日本語書籍が見つかりました: "${book.title}"`);
+    return book;
+  } catch (error) {
+    console.error(`❌ [ISBN検索エラー] ISBN "${isbn}" の検索中にエラーが発生:`, error);
+    return null;
+  }
+};
+
+// 検索用の総合関数（ページネーション対応）
+export const searchRakutenBooksWithPagination = async (
+  query: string,
+  page = 1,
+  hits = 20
+): Promise<{
+  books: Book[];
+  hasMore: boolean;
+  totalItems: number;
+}> => {
+  if (!query || query.length < 2) {
+    return { books: [], hasMore: false, totalItems: 0 };
+  }
+
+  try {
+    // API検索を実行
+    console.log(`🔍 [API検索開始] "${query}" を楽天ブックスAPIで検索します... (ページ: ${page})`);
+    const { books, totalItems, hasMore } = await searchRakutenBooksByTitle({
+      query,
+      page,
+      hits,
+    });
+
+    if (books.length > 0) {
+      console.log(
+        `✅ [API検索成功] "${query}" の検索結果: ${books.length}件の書籍をAPIから取得しました`
+      );
+
+      return {
+        books,
+        hasMore,
+        totalItems,
+      };
+    } else {
+      console.log(`ℹ️ [API検索] "${query}" に一致する書籍はAPIに見つかりませんでした`);
+      return {
+        books: [],
+        hasMore: false,
+        totalItems: 0,
+      };
+    }
+  } catch (error) {
+    console.error('❌ [検索エラー] searchRakutenBooksWithPaginationでエラーが発生:', error);
+    return { books: [], hasMore: false, totalItems: 0 };
   }
 };
 
@@ -236,7 +328,7 @@ function extractIsbnFromRakutenResponse(data: Record<string, unknown>): string |
  */
 export const searchRakutenBookByTitle = async (title: string): Promise<string | null> => {
   try {
-    if (!APP_ID) {
+    if (!API_KEY) {
       console.warn('楽天アプリIDが設定されていません');
       return null;
     }
@@ -246,7 +338,7 @@ export const searchRakutenBookByTitle = async (title: string): Promise<string | 
     console.log(`📘 [楽天ブックスAPI] "${title}" のISBNを検索中...`);
 
     const params = new URLSearchParams({
-      applicationId: APP_ID,
+      applicationId: API_KEY,
       title: title,
       hits: '1', // 最初の1件だけで十分
       booksGenreId: '001', // 本
@@ -292,7 +384,7 @@ export const getRakutenBookDetailByTitle = async (
   title: string
 ): Promise<{ isbn: string | null; detailUrl: string | null }> => {
   try {
-    if (!APP_ID) {
+    if (!API_KEY) {
       console.warn('楽天アプリIDが設定されていません');
       return { isbn: null, detailUrl: null };
     }
@@ -302,7 +394,7 @@ export const getRakutenBookDetailByTitle = async (
     console.log(`📘 [楽天ブックスAPI] "${title}" の詳細情報を検索中...`);
 
     const params = new URLSearchParams({
-      applicationId: APP_ID,
+      applicationId: API_KEY,
       title: title,
       hits: '1', // 最初の1件だけで十分
       booksGenreId: '001', // 本
