@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -179,15 +178,23 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
             className="my-4"
           />
           <div className="flex justify-center">
-            <Badge
-              className="gap-1.5"
-              style={{
-                color: `var(--${getDifficultyInfo(difficulty, 'review').color})`,
-                backgroundColor: `var(--${getDifficultyInfo(difficulty, 'review').color})15`,
-              }}
+            <div
+              className={`text-xs py-0.5 px-2 rounded-full whitespace-nowrap w-fit min-w-[4rem] font-medium flex items-center justify-center border ${
+                getDifficultyInfo(difficulty, 'review').color === 'difficulty-easy'
+                  ? 'bg-red-50 text-red-600 border-red-200'
+                  : getDifficultyInfo(difficulty, 'review').color === 'difficulty-somewhat-easy'
+                    ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                    : getDifficultyInfo(difficulty, 'review').color === 'difficulty-normal'
+                      ? 'bg-green-50 text-green-600 border-green-200'
+                      : getDifficultyInfo(difficulty, 'review').color === 'difficulty-somewhat-hard'
+                        ? 'bg-blue-50 text-blue-600 border-blue-200'
+                        : getDifficultyInfo(difficulty, 'review').color === 'difficulty-hard'
+                          ? 'bg-purple-50 text-purple-600 border-purple-200'
+                          : 'bg-gray-50 text-gray-600 border-gray-200'
+              }`}
             >
               {getDifficultyInfo(difficulty, 'review').label}
-            </Badge>
+            </div>
           </div>
         </div>
       </div>
