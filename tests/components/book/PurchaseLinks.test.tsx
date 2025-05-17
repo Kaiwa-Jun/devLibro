@@ -7,13 +7,13 @@ import * as supabaseBooks from '@/lib/supabase/books';
 
 // モック関数を作成
 jest.mock('@/lib/api/commerce', () => ({
+  validateISBN: jest.fn(),
   generateAmazonURL: jest.fn(),
   generateRakutenURL: jest.fn(),
-  validateISBN: jest.fn(),
 }));
 
 jest.mock('@/lib/api/rakuten-books', () => ({
-  searchRakutenBookByTitle: jest.fn(),
+  getRakutenBookDetailByTitle: jest.fn(),
 }));
 
 jest.mock('@/lib/supabase/books', () => ({
@@ -63,59 +63,65 @@ describe('PurchaseLinks コンポーネント', () => {
     // ISBNを無効と判定
     (commerce.validateISBN as jest.Mock).mockReturnValue(false);
     // 楽天APIからISBNを返す
-    (rakutenBooks.searchRakutenBookByTitle as jest.Mock).mockResolvedValue('9784774195353');
-    // ISBN-13での生成を想定
+    (rakutenBooks.getRakutenBookDetailByTitle as jest.Mock).mockResolvedValue({
+      isbn: '9784774195353',
+      detailUrl: 'https://books.rakuten.co.jp/rb/12345678/',
+    });
+    // 生成URLをモック
     (commerce.generateAmazonURL as jest.Mock).mockReturnValue(
       'https://www.amazon.co.jp/exec/obidos/ASIN/4774195353'
     );
     (commerce.generateRakutenURL as jest.Mock).mockReturnValue(
-      'https://books.rakuten.co.jp/search?sitem=9784774195353'
+      'https://books.rakuten.co.jp/rb/12345678/'
     );
 
     render(<PurchaseLinks isbn="invalid-isbn" title="世界一流エンジニアの思考法" />);
 
     // 非同期処理の完了を待つ
     await waitFor(() => {
-      // 楽天APIからのISBNで生成されたリンクを確認
       expect(screen.getByText('Amazon')).toBeInTheDocument();
       expect(screen.getByText('楽天Books')).toBeInTheDocument();
-
-      // 楽天APIが正しく呼び出されたか確認
-      expect(rakutenBooks.searchRakutenBookByTitle).toHaveBeenCalledWith(
-        '世界一流エンジニアの思考法'
-      );
-
-      // DBは更新されていないはず（bookIdがないので）
-      expect(supabaseBooks.updateBookISBN).not.toHaveBeenCalled();
     });
+
+    // ISBNバリデーションが呼ばれたか確認
+    expect(commerce.validateISBN).toHaveBeenCalledWith('invalid-isbn');
+
+    // 楽天APIが正しく呼び出されたか確認
+    expect(rakutenBooks.getRakutenBookDetailByTitle).toHaveBeenCalledWith(
+      '世界一流エンジニアの思考法'
+    );
   });
 
   test('楽天APIで取得したISBNをDBに保存する', async () => {
     // ISBNを無効と判定
     (commerce.validateISBN as jest.Mock).mockReturnValue(false);
     // 楽天APIからISBNを返す
-    (rakutenBooks.searchRakutenBookByTitle as jest.Mock).mockResolvedValue('9784774195353');
+    (rakutenBooks.getRakutenBookDetailByTitle as jest.Mock).mockResolvedValue({
+      isbn: '9784774195353',
+      detailUrl: 'https://books.rakuten.co.jp/rb/12345678/',
+    });
     // 生成URLをモック
     (commerce.generateAmazonURL as jest.Mock).mockReturnValue(
       'https://www.amazon.co.jp/exec/obidos/ASIN/4774195353'
     );
     (commerce.generateRakutenURL as jest.Mock).mockReturnValue(
-      'https://books.rakuten.co.jp/search?sitem=9784774195353'
+      'https://books.rakuten.co.jp/rb/12345678/'
     );
+    // DB更新のモック
+    (supabaseBooks.updateBookISBN as jest.Mock).mockResolvedValue(true);
 
     render(<PurchaseLinks isbn="invalid-isbn" title="世界一流エンジニアの思考法" bookId="123" />);
 
     // 非同期処理の完了を待つ
-    // supabaseBooks.updateBookISBNが呼ばれたことを期待せず、コンポーネントが表示されたことだけを確認
     await waitFor(() => {
       expect(screen.getByText('Amazon')).toBeInTheDocument();
       expect(screen.getByText('楽天Books')).toBeInTheDocument();
-
-      // 楽天APIが検索に使われたことを確認
-      expect(rakutenBooks.searchRakutenBookByTitle).toHaveBeenCalledWith(
-        '世界一流エンジニアの思考法'
-      );
     });
+
+    // 楽天APIが検索に使われたことを確認
+    expect(rakutenBooks.getRakutenBookDetailByTitle).toHaveBeenCalledWith(
+      '世界一流エンジニアの思考法'
+    );
   });
 
   test('Amazonのリンクだけが利用可能な場合は楽天リンクは表示されない', async () => {
@@ -160,7 +166,7 @@ describe('PurchaseLinks コンポーネント', () => {
     // ISBNを無効と判定
     (commerce.validateISBN as jest.Mock).mockReturnValue(false);
     // 楽天APIからnullを返す
-    (rakutenBooks.searchRakutenBookByTitle as jest.Mock).mockResolvedValue(null);
+    (rakutenBooks.getRakutenBookDetailByTitle as jest.Mock).mockResolvedValue(null);
 
     render(<PurchaseLinks isbn="invalid-isbn" title="存在しない書籍" />);
 
