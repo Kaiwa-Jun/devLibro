@@ -310,9 +310,14 @@ export const getRakutenBookDetailByTitle = async (
       formatVersion: '2',
     });
 
-    const response = await fetch(`${RAKUTEN_BOOKS_API_URL}?${params.toString()}`);
+    console.log(`📘 [楽天ブックスAPI] 完全なURLパラメータ: ${params.toString()}`);
+    const requestUrl = `${RAKUTEN_BOOKS_API_URL}?${params.toString()}`;
+    console.log(`📘 [楽天ブックスAPI] リクエストURL: ${requestUrl}`);
+
+    const response = await fetch(requestUrl);
 
     if (!response.ok) {
+      console.error(`📘 [楽天ブックスAPI] HTTPエラー: ${response.status} ${response.statusText}`);
       throw new Error(`楽天ブックスAPI エラー: ${response.status} ${response.statusText}`);
     }
 
@@ -321,7 +326,7 @@ export const getRakutenBookDetailByTitle = async (
     // レスポンスの構造を確認
     console.log(
       `📊 [楽天ブックスAPI] レスポンス確認:`,
-      JSON.stringify(data).substring(0, 300) + '...'
+      JSON.stringify(data).substring(0, 500) + '...'
     );
 
     if (!data || !data.Items || !Array.isArray(data.Items) || data.Items.length === 0) {
@@ -330,10 +335,17 @@ export const getRakutenBookDetailByTitle = async (
     }
 
     // 最初の結果から情報を抽出
-    const bookItem = data.Items[0].Item || data.Items[0];
+    const itemContainer = data.Items[0];
+    console.log(`📘 [楽天ブックスAPI] 最初のアイテム:`, itemContainer);
+
+    // 項目がItemプロパティ内にあるパターンと直接プロパティとしてあるパターンの両方に対応
+    const bookItem = itemContainer.Item || itemContainer;
+    console.log(`📘 [楽天ブックスAPI] 書籍データ:`, bookItem);
 
     const isbn = bookItem.isbn || null;
     const detailUrl = bookItem.itemUrl || null;
+
+    console.log(`📘 [楽天ブックスAPI] 抽出された情報 - ISBN: ${isbn}, 詳細URL: ${detailUrl}`);
 
     if (isbn || detailUrl) {
       console.log(`✅ [楽天ブックスAPI] "${title}" の詳細情報: ISBN=${isbn}, URL=${detailUrl}`);

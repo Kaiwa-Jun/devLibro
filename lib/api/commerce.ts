@@ -156,13 +156,18 @@ export function generateRakutenURL(
   isbn: string,
   options: { affiliateId?: string; detailUrl?: string } = {}
 ): string | null {
+  // デバッグログ
+  console.log(`🔎 [楽天URL生成] 開始 - ISBN: ${isbn}, options:`, options);
+
   // 詳細ページURLが指定されている場合はそれを優先
   if (options.detailUrl) {
+    console.log(`🔎 [楽天URL生成] 詳細URLを優先使用: ${options.detailUrl}`);
     let url = options.detailUrl;
 
     // アフィリエイトIDがあれば追加
     if (options.affiliateId && !url.includes('?afid=') && !url.includes('&afid=')) {
       url += url.includes('?') ? `&afid=${options.affiliateId}` : `?afid=${options.affiliateId}`;
+      console.log(`🔎 [楽天URL生成] アフィリエイトID追加後: ${url}`);
     }
 
     return url;
@@ -170,6 +175,7 @@ export function generateRakutenURL(
 
   // ISBNのバリデーション
   if (!validateISBN(isbn)) {
+    console.log(`🔎 [楽天URL生成] 無効なISBN: ${isbn}`);
     return null;
   }
 
@@ -178,10 +184,12 @@ export function generateRakutenURL(
 
   // 基本URL - 商品詳細が直接取得できない場合は検索ページに
   let url = `https://books.rakuten.co.jp/search?sitem=${cleanedISBN}`;
+  console.log(`🔎 [楽天URL生成] 検索URL生成: ${url}`);
 
   // アフィリエイトIDがあれば追加
   if (options.affiliateId) {
     url += `&afid=${options.affiliateId}`;
+    console.log(`🔎 [楽天URL生成] アフィリエイトID追加後: ${url}`);
   }
 
   return url;
