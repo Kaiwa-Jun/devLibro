@@ -149,13 +149,25 @@ export function generateAmazonURL(
  * ISBNから楽天Booksの商品ページURLを生成します
  *
  * @param isbn ISBN-10またはISBN-13
- * @param options 設定オプション（将来のアフィリエイトID対応など）
+ * @param options 設定オプション（詳細ページURL、アフィリエイトIDなど）
  * @returns 楽天Booksの商品ページURL
  */
 export function generateRakutenURL(
   isbn: string,
-  options: { affiliateId?: string } = {}
+  options: { affiliateId?: string; detailUrl?: string } = {}
 ): string | null {
+  // 詳細ページURLが指定されている場合はそれを優先
+  if (options.detailUrl) {
+    let url = options.detailUrl;
+
+    // アフィリエイトIDがあれば追加
+    if (options.affiliateId && !url.includes('?afid=') && !url.includes('&afid=')) {
+      url += url.includes('?') ? `&afid=${options.affiliateId}` : `?afid=${options.affiliateId}`;
+    }
+
+    return url;
+  }
+
   // ISBNのバリデーション
   if (!validateISBN(isbn)) {
     return null;
@@ -164,7 +176,7 @@ export function generateRakutenURL(
   // 空白とハイフンを削除
   const cleanedISBN = isbn.replace(/[-\s]/g, '');
 
-  // 基本URL
+  // 基本URL - 商品詳細が直接取得できない場合は検索ページに
   let url = `https://books.rakuten.co.jp/search?sitem=${cleanedISBN}`;
 
   // アフィリエイトIDがあれば追加

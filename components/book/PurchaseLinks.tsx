@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { generateAmazonURL, generateRakutenURL, validateISBN } from '@/lib/api/commerce';
-import { searchRakutenBookByTitle } from '@/lib/api/rakuten-books';
+import { getRakutenBookDetailByTitle } from '@/lib/api/rakuten-books';
 import { updateBookISBN } from '@/lib/supabase/books';
 
 type PurchaseLinksProps = {
@@ -46,50 +46,47 @@ export default function PurchaseLinks({ isbn, title, bookId }: PurchaseLinksProp
           );
 
           try {
-            const rakutenIsbn = await searchRakutenBookByTitle(title);
+            // 楽天APIから詳細情報（ISBNと商品詳細ページURL）を取得
+            const { isbn: rakutenIsbn, detailUrl } = await getRakutenBookDetailByTitle(title);
 
-            if (rakutenIsbn) {
-              console.log(`🎉 [ISBN取得成功] 「${title}」のISBN: ${rakutenIsbn}`);
+            if (rakutenIsbn || detailUrl) {
+              console.log(
+                `🎉 [書籍情報取得成功] 「${title}」の情報: ISBN=${rakutenIsbn}, URL=${detailUrl}`
+              );
 
-              // 有効性を再検証
-              if (validateISBN(rakutenIsbn)) {
+              // Amazon用URL生成 - ISBNが取得できれば使用
+              if (rakutenIsbn && validateISBN(rakutenIsbn)) {
                 console.log(`✓ [ISBNチェック] 「${rakutenIsbn}」は有効なISBNです`);
-
-                // リンクを設定
                 setAmazonUrl(generateAmazonURL(rakutenIsbn));
-                setRakutenUrl(generateRakutenURL(rakutenIsbn));
-
-                // 取得したISBNをDBに保存（一度だけ）
-                if (bookId && !hasUpdatedIsbn.current) {
-                  try {
-                    console.log(
-                      `💾 [DB更新] 書籍ID:${bookId}のISBNを「${rakutenIsbn}」に更新します`
-                    );
-                    const success = await updateBookISBN(bookId, rakutenIsbn);
-                    console.log(
-                      `${success ? '✅' : '❌'} [DB更新${success ? '完了' : '失敗'}] 書籍ID:${bookId}のISBN更新`
-                    );
-                    hasUpdatedIsbn.current = true;
-                  } catch (dbError) {
-                    console.error('❌ [DB更新エラー] ISBNの更新に失敗しました:', dbError);
-                  }
-                }
               } else {
-                console.log(`⚠️ [ISBN無効] 楽天APIから取得したISBN「${rakutenIsbn}」は無効です`);
-                // 無効でもリンクを生成してみる（部分的に対応している場合がある）
-                setAmazonUrl(
-                  generateAmazonURL(rakutenIsbn) ||
-                    `https://www.amazon.co.jp/s?k=${encodeURIComponent(title)}`
-                );
-                setRakutenUrl(
-                  generateRakutenURL(rakutenIsbn) ||
-                    `https://books.rakuten.co.jp/search?sitem=${encodeURIComponent(title)}`
-                );
+                // ISBNが無効ならタイトル検索
+                setAmazonUrl(`https://www.amazon.co.jp/s?k=${encodeURIComponent(title)}`);
+              }
+
+              // 楽天用URL生成 - 詳細ページURLがあれば優先して使用
+              setRakutenUrl(
+                generateRakutenURL(rakutenIsbn || '', {
+                  detailUrl: detailUrl || undefined,
+                })
+              );
+
+              // 取得したISBNをDBに保存（有効なISBNの場合のみ）
+              if (bookId && rakutenIsbn && validateISBN(rakutenIsbn) && !hasUpdatedIsbn.current) {
+                try {
+                  console.log(`💾 [DB更新] 書籍ID:${bookId}のISBNを「${rakutenIsbn}」に更新します`);
+                  const success = await updateBookISBN(bookId, rakutenIsbn);
+                  console.log(
+                    `${success ? '✅' : '❌'} [DB更新${success ? '完了' : '失敗'}] 書籍ID:${bookId}のISBN更新`
+                  );
+                  hasUpdatedIsbn.current = true;
+                } catch (dbError) {
+                  console.error('❌ [DB更新エラー] ISBNの更新に失敗しました:', dbError);
+                }
               }
             } else {
               // 楽天APIでも見つからない場合は、タイトルで検索URLを生成
               console.log(
-                `ℹ️ [ISBN未取得] 「${title}」のISBNが取得できませんでした。タイトル検索URLを生成します`
+                `ℹ️ [書籍情報未取得] 「${title}」の情報が取得できませんでした。タイトル検索URLを生成します`
               );
               setAmazonUrl(`https://www.amazon.co.jp/s?k=${encodeURIComponent(title)}`);
               setRakutenUrl(
@@ -100,6 +97,8 @@ export default function PurchaseLinks({ isbn, title, bookId }: PurchaseLinksProp
               if (title.includes('世界一流エンジニアの思考法')) {
                 // 特定の本の場合、直接Amazon商品ページのリンク
                 setAmazonUrl('https://www.amazon.co.jp/dp/4799107488');
+                // 楽天の商品ページURL (直接リンク)
+                setRakutenUrl('https://books.rakuten.co.jp/rb/17649922/');
               }
             }
           } catch (error) {

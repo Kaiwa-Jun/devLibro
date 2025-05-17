@@ -75,6 +75,31 @@ describe('楽天Books URL生成関数', () => {
     );
   });
 
+  test('詳細ページURLが指定されている場合はそれを優先して使用する', () => {
+    const url = generateRakutenURL('9784873113364', {
+      detailUrl: 'https://books.rakuten.co.jp/rb/17649922/',
+    });
+    expect(url).toBe('https://books.rakuten.co.jp/rb/17649922/');
+  });
+
+  test('詳細ページURLとアフィリエイトIDを同時に指定できる', () => {
+    const url = generateRakutenURL('9784873113364', {
+      detailUrl: 'https://books.rakuten.co.jp/rb/17649922/',
+      affiliateId: '12345678.abcdefgh',
+    });
+    expect(url).toBe('https://books.rakuten.co.jp/rb/17649922/?afid=12345678.abcdefgh');
+  });
+
+  test('詳細ページURLにすでにクエリパラメータがある場合はアフィリエイトIDを追加できる', () => {
+    const url = generateRakutenURL('9784873113364', {
+      detailUrl: 'https://books.rakuten.co.jp/rb/17649922/?l-id=search-c-item-text-01',
+      affiliateId: '12345678.abcdefgh',
+    });
+    expect(url).toBe(
+      'https://books.rakuten.co.jp/rb/17649922/?l-id=search-c-item-text-01&afid=12345678.abcdefgh'
+    );
+  });
+
   test('無効なISBNの場合はnullを返す', () => {
     const url = generateRakutenURL('invalid-isbn');
     expect(url).toBeNull();

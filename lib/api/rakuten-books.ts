@@ -13,6 +13,7 @@ export type RakutenBookItem = {
   largeImageUrl?: string;
   mediumImageUrl?: string;
   salesDate?: string;
+  itemUrl?: string; // 商品詳細ページのURL
   [key: string]: unknown;
 };
 
@@ -280,5 +281,69 @@ export const searchRakutenBookByTitle = async (title: string): Promise<string | 
   } catch (error) {
     console.error(`❌ [楽天ブックスAPIエラー] "${title}" のISBN検索中にエラーが発生:`, error);
     return null;
+  }
+};
+
+/**
+ * 楽天ブックスAPIから特定タイトルの書籍の詳細情報を取得
+ * 詳細ページURLも取得できるようにするため
+ */
+export const getRakutenBookDetailByTitle = async (
+  title: string
+): Promise<{ isbn: string | null; detailUrl: string | null }> => {
+  try {
+    if (!APP_ID) {
+      console.warn('楽天アプリIDが設定されていません');
+      return { isbn: null, detailUrl: null };
+    }
+
+    if (!title) return { isbn: null, detailUrl: null };
+
+    console.log(`📘 [楽天ブックスAPI] "${title}" の詳細情報を検索中...`);
+
+    const params = new URLSearchParams({
+      applicationId: APP_ID,
+      title: title,
+      hits: '1', // 最初の1件だけで十分
+      booksGenreId: '001', // 本
+      sort: 'sales', // 売れている順
+      formatVersion: '2',
+    });
+
+    const response = await fetch(`${RAKUTEN_BOOKS_API_URL}?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`楽天ブックスAPI エラー: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // レスポンスの構造を確認
+    console.log(
+      `📊 [楽天ブックスAPI] レスポンス確認:`,
+      JSON.stringify(data).substring(0, 300) + '...'
+    );
+
+    if (!data || !data.Items || !Array.isArray(data.Items) || data.Items.length === 0) {
+      console.log(`ℹ️ [楽天ブックスAPI] "${title}" に一致する書籍が見つかりませんでした`);
+      return { isbn: null, detailUrl: null };
+    }
+
+    // 最初の結果から情報を抽出
+    const bookItem = data.Items[0].Item || data.Items[0];
+
+    const isbn = bookItem.isbn || null;
+    const detailUrl = bookItem.itemUrl || null;
+
+    if (isbn || detailUrl) {
+      console.log(`✅ [楽天ブックスAPI] "${title}" の詳細情報: ISBN=${isbn}, URL=${detailUrl}`);
+    } else {
+      console.log(`⚠️ [楽天ブックスAPI] "${title}" の詳細情報が取得できませんでした`);
+    }
+
+    return { isbn, detailUrl };
+  } catch (error) {
+    console.error(`❌ [楽天ブックスAPIエラー] "${title}" の詳細情報検索中にエラーが発生:`, error);
+    return { isbn: null, detailUrl: null };
   }
 };
