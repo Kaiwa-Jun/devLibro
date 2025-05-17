@@ -10,6 +10,8 @@ export type Book = {
   description?: string;
   programmingLanguages?: string[];
   frameworks?: string[];
+  publisherName?: string;
+  itemUrl?: string;
 };
 
 export type User = {
