@@ -14,8 +14,8 @@ export const metadata: Metadata = generatePageMetadata({
 });
 
 export default function Home() {
-  // ルートパスへのアクセスを楽天Books API検索画面にリダイレクト
-  redirect('/rakuten');
+  // ルートパスへのアクセスを書籍検索画面にリダイレクト
+  redirect('/books');
 
   // 以下は元のホーム画面のコード（リダイレクトされるため実行されません）
   return (

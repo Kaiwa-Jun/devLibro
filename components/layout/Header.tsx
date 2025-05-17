@@ -15,9 +15,9 @@ export default function Header() {
   const tabs = [
     {
       name: 'ホーム',
-      href: '/rakuten',
+      href: '/books',
       icon: Home,
-      active: pathname === '/rakuten' || pathname === '/',
+      active: pathname === '/books' || pathname === '/',
     },
     {
       name: '本棚',
@@ -38,7 +38,7 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-10 bg-background border-b border-border shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center">
-          <Link href="/rakuten" className="flex items-center space-x-2">
+          <Link href="/books" className="flex items-center space-x-2">
             <motion.div whileHover={{ rotate: 10 }} transition={{ type: 'spring', stiffness: 300 }}>
               <BookOpen className="h-8 w-8 text-primary" />
             </motion.div>

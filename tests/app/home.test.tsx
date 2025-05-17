@@ -13,7 +13,7 @@ describe('ホームページ', () => {
     jest.clearAllMocks();
   });
 
-  test('ホーム画面が/rakutenにリダイレクトされることを確認', () => {
+  test('ホーム画面が/booksにリダイレクトされることを確認', () => {
     try {
       // Homeコンポーネントをインスタンス化
       // redirectがトップレベルで呼び出されるため、実際にレンダリングはされません
@@ -23,8 +23,8 @@ describe('ホームページ', () => {
       console.error('Expected error occurred:', error);
     }
 
-    // redirectが'/rakuten'へのリダイレクトで呼び出されたか確認
-    expect(redirect).toHaveBeenCalledWith('/rakuten');
+    // redirectが'/books'へのリダイレクトで呼び出されたか確認
+    expect(redirect).toHaveBeenCalledWith('/books');
     expect(redirect).toHaveBeenCalledTimes(1);
   });
 });
