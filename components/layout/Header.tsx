@@ -2,9 +2,10 @@
 
 import { motion } from 'framer-motion';
 import { BookOpen, Home, Moon, Sun, User } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTheme } from 'next-themes';
+
 import AuthButton from '../auth/AuthButton';
 import { Button } from '../ui/button';
 

@@ -1,6 +1,8 @@
-import Home from '@/app/page';
 import '@testing-library/jest-dom';
+
 import { redirect } from 'next/navigation';
+
+import Home from '@/app/page';
 
 // next/navigationのリダイレクト関数をモック化
 jest.mock('next/navigation', () => ({
