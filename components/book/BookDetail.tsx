@@ -282,14 +282,14 @@ export default function BookDetail({ id }: BookDetailProps) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative h-[240px] w-[180px] flex-shrink-0 mx-auto md:mx-0"
+            className="relative h-[320px] w-[240px] flex-shrink-0 mx-auto md:mx-0 bg-muted"
           >
             <Image
               src={book.img_url}
               alt={book.title}
               fill
-              className="object-cover rounded-md"
-              sizes="180px"
+              className="object-contain"
+              sizes="240px"
             />
           </motion.div>
 
@@ -346,14 +346,26 @@ export default function BookDetail({ id }: BookDetailProps) {
                 ))}
 
               {/* 難易度タグ */}
-              <Badge
-                variant="outline"
-                className="gap-1.5 border"
-                style={{ color: `var(--${difficultyInfo.color})` }}
-              >
-                <DifficultyIcon style={{ color: `var(--${difficultyInfo.color})` }} />
-                <span>{difficultyInfo.label}</span>
-              </Badge>
+              {difficultyInfo.label !== '不明' && (
+                <div
+                  className={`text-xs py-0.5 px-2 rounded-full whitespace-nowrap w-fit min-w-[4rem] flex-shrink-0 font-medium flex items-center justify-center border ${
+                    difficultyInfo.color === 'difficulty-easy'
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : difficultyInfo.color === 'difficulty-somewhat-easy'
+                        ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                        : difficultyInfo.color === 'difficulty-normal'
+                          ? 'bg-green-50 text-green-600 border-green-200'
+                          : difficultyInfo.color === 'difficulty-somewhat-hard'
+                            ? 'bg-blue-50 text-blue-600 border-blue-200'
+                            : difficultyInfo.color === 'difficulty-hard'
+                              ? 'bg-purple-50 text-purple-600 border-purple-200'
+                              : 'bg-gray-50 text-gray-600 border-gray-200'
+                  }`}
+                >
+                  <DifficultyIcon className="h-3 w-3 flex-shrink-0 mr-0.5" />
+                  <span>{difficultyInfo.label}</span>
+                </div>
+              )}
             </motion.div>
 
             <motion.p

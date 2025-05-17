@@ -81,6 +81,7 @@ describe('BookCard Component', () => {
     const unknownBook = { ...mockBook, avg_difficulty: 0 };
     rerender(<BookCard book={unknownBook} />);
 
-    expect(screen.getByText('不明')).toBeInTheDocument();
+    expect(screen.getByText('テスト著者')).toBeInTheDocument();
+    expect(screen.queryByText('不明')).not.toBeInTheDocument();
   });
 });

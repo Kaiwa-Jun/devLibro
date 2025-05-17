@@ -42,14 +42,24 @@ export default function ReviewItem({ review }: ReviewItemProps) {
             <Badge variant="outline" className="border">
               経験 {review.experienceLabel || `${review.experience_years}年`}
             </Badge>
-            <Badge
-              variant="outline"
-              className="gap-1.5 border"
-              style={{ color: `var(--${difficultyInfo.color})` }}
+            <div
+              className={`text-xs py-0.5 px-2 rounded-full whitespace-nowrap w-fit min-w-[4rem] flex-shrink-0 font-medium flex items-center justify-center border ${
+                difficultyInfo.color === 'difficulty-easy'
+                  ? 'bg-red-50 text-red-600 border-red-200'
+                  : difficultyInfo.color === 'difficulty-somewhat-easy'
+                    ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                    : difficultyInfo.color === 'difficulty-normal'
+                      ? 'bg-green-50 text-green-600 border-green-200'
+                      : difficultyInfo.color === 'difficulty-somewhat-hard'
+                        ? 'bg-blue-50 text-blue-600 border-blue-200'
+                        : difficultyInfo.color === 'difficulty-hard'
+                          ? 'bg-purple-50 text-purple-600 border-purple-200'
+                          : 'bg-gray-50 text-gray-600 border-gray-200'
+              }`}
             >
-              <DifficultyIcon style={{ color: `var(--${difficultyInfo.color})` }} />
+              <DifficultyIcon className="h-3 w-3 flex-shrink-0 mr-0.5" />
               <span>{difficultyInfo.label}</span>
-            </Badge>
+            </div>
             <span className="text-xs text-muted-foreground ml-auto">
               {formatDate(review.created_at)}
             </span>

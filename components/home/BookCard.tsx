@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { getDifficultyInfo } from '@/lib/utils';
 import { Book } from '@/types';
 
@@ -31,36 +30,50 @@ export default function BookCard({ book }: BookCardProps) {
   return (
     <Link href={`/book/${book.id}`} onClick={saveBookToSession}>
       <motion.div
-        className="group relative rounded-lg overflow-hidden border border-border bg-card transition-colors"
+        className="group relative border border-border bg-card transition-colors overflow-hidden"
         whileHover={{ y: -5 }}
         transition={{ type: 'spring', stiffness: 400, damping: 10 }}
       >
-        <div className="relative aspect-[3/4]">
-          <Image
-            src={book.img_url}
-            alt={book.title}
-            fill
-            className="object-cover bg-muted transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 40vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-            priority={false}
-            quality={85}
-            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJNQNlw9Q6ZAAAAABJRU5ErkJggg=="
-            placeholder="blur"
-          />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4">
-            <h3 className="font-medium text-white truncate group-hover:text-primary/90 transition-colors">
-              {book.title}
-            </h3>
-            <p className="text-sm text-white/80 mt-1 truncate">{book.author}</p>
-            <div className="mt-2 flex items-center">
-              <Badge
-                variant="outline"
-                className="bg-white/20 hover:bg-white/30 gap-1.5 border-white/20"
-                style={{ color: `var(--${difficultyInfo.color})` }}
-              >
-                <DifficultyIcon style={{ color: `var(--${difficultyInfo.color})` }} />
-                <span>{difficultyInfo.label}</span>
-              </Badge>
+        <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+          <div className="relative w-full h-full transition-all duration-300 ease-out group-hover:scale-[1.01]">
+            <Image
+              src={book.img_url}
+              alt={book.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 40vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+              priority={false}
+              quality={85}
+              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJNQNlw9Q6ZAAAAABJRU5ErkJggg=="
+              placeholder="blur"
+            />
+            <div className="absolute inset-x-0 bottom-0 h-[33%] bg-gradient-to-t from-white via-white/80 to-transparent flex flex-col justify-end p-4">
+              <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                {book.title}
+              </h3>
+              <div className="flex items-center justify-between mt-1.5">
+                <p className="text-xs text-muted-foreground truncate max-w-[60%]">{book.author}</p>
+                {difficultyInfo.label !== '不明' && (
+                  <div
+                    className={`text-xs py-0.5 px-2 rounded-full whitespace-nowrap w-fit min-w-[4rem] flex-shrink-0 ml-1 font-medium flex items-center justify-center border ${
+                      difficultyInfo.color === 'difficulty-easy'
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : difficultyInfo.color === 'difficulty-somewhat-easy'
+                          ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                          : difficultyInfo.color === 'difficulty-normal'
+                            ? 'bg-green-50 text-green-600 border-green-200'
+                            : difficultyInfo.color === 'difficulty-somewhat-hard'
+                              ? 'bg-blue-50 text-blue-600 border-blue-200'
+                              : difficultyInfo.color === 'difficulty-hard'
+                                ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                : 'bg-gray-50 text-gray-600 border-gray-200'
+                    }`}
+                  >
+                    <DifficultyIcon className="h-3 w-3 flex-shrink-0 mr-0.5" />
+                    <span>{difficultyInfo.label}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
