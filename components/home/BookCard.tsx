@@ -40,7 +40,7 @@ export default function BookCard({ book }: BookCardProps) {
               src={book.img_url}
               alt={book.title}
               fill
-              className="object-cover"
+              className="object-contain object-top"
               sizes="(max-width: 640px) 40vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
               priority={false}
               quality={85}
