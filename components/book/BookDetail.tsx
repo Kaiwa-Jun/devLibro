@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Info } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -358,50 +358,46 @@ export default function BookDetail({ id }: BookDetailProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="relative"
             >
-              <AnimatePresence initial={false}>
+              <div className="relative">
                 <motion.div
-                  key={isDescriptionExpanded ? 'expanded' : 'collapsed'}
-                  initial="collapsed"
-                  animate={isDescriptionExpanded ? 'expanded' : 'collapsed'}
-                  exit="collapsed"
-                  variants={{
-                    expanded: { height: 'auto', opacity: 1 },
-                    collapsed: { height: '4.5rem', opacity: 1 },
-                  }}
-                  transition={{ duration: 0.4, ease: 'easeInOut' }}
                   className="overflow-hidden text-sm text-muted-foreground"
+                  initial={{ height: 'auto' }}
+                  animate={{
+                    height: isDescriptionExpanded ? 'auto' : '4.5rem',
+                    transition: { duration: 0.3, ease: 'easeInOut' },
+                  }}
                 >
                   {book.description}
                   {!isDescriptionExpanded && book.description && book.description.length > 150 && (
-                    <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-b from-transparent via-card/70 to-card" />
+                    <motion.div
+                      className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-b from-transparent via-card/70 to-card"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    />
                   )}
                 </motion.div>
-              </AnimatePresence>
-              {book.description && book.description.length > 150 && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                  className={`text-xs text-blue-600 hover:text-blue-800 mt-1 font-medium flex items-center ${
-                    !isDescriptionExpanded
-                      ? 'relative z-10 bg-card/70 px-2 py-1 rounded-full backdrop-blur-sm'
-                      : ''
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {isDescriptionExpanded ? '閉じる' : '続きを読む'}
-                  <motion.span
-                    animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="ml-1 text-xs"
+                {book.description && book.description.length > 150 && (
+                  <button
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    className={`text-xs text-blue-600 hover:text-blue-800 mt-1 font-medium flex items-center ${
+                      !isDescriptionExpanded
+                        ? 'relative z-10 bg-card/70 px-2 py-1 rounded-full backdrop-blur-sm'
+                        : ''
+                    }`}
                   >
-                    ▼
-                  </motion.span>
-                </motion.button>
-              )}
+                    {isDescriptionExpanded ? '閉じる' : '続きを読む'}
+                    <motion.span
+                      className="ml-1 text-xs inline-block"
+                      animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      ▼
+                    </motion.span>
+                  </button>
+                )}
+              </div>
             </motion.div>
 
             <PurchaseLinks
