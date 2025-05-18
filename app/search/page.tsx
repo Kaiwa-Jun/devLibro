@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import BookCard from '@/components/home/BookCard';
 import { Button } from '@/components/ui/button';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { searchBooksByTitle } from '@/lib/api/books';
 import { Book } from '@/types';
 
@@ -13,6 +14,7 @@ export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
+  const { trackSearch, isDebugMode } = useAnalytics();
 
   const [isLoading, setIsLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
@@ -57,6 +59,14 @@ export default function SearchPage() {
         setTotalItems(results.totalItems);
         setHasMore(results.hasMore);
 
+        // Google Analyticsに検索イベントを送信
+        trackSearch(query, results.totalItems);
+        if (isDebugMode) {
+          console.log(
+            `[Analytics Debug] Search tracked: "${query}" (${results.totalItems} results)`
+          );
+        }
+
         if (results.books.length === 0) {
           setError('検索結果が見つかりませんでした。別のキーワードで試してください。');
         }
@@ -69,7 +79,7 @@ export default function SearchPage() {
     };
 
     fetchBooks();
-  }, [query, router]);
+  }, [query, router, trackSearch, isDebugMode]);
 
   // 追加データの読み込み
   const loadMoreBooks = async () => {
@@ -88,6 +98,11 @@ export default function SearchPage() {
       setBooks(prevBooks => [...prevBooks, ...results.books]);
       setHasMore(results.hasMore);
       setPage(nextPage);
+
+      // 追加読み込みイベントを記録
+      if (isDebugMode) {
+        console.log(`[Analytics Debug] Load more results: page ${nextPage} for "${query}"`);
+      }
     } catch (error) {
       console.error('Error loading more books:', error);
     } finally {

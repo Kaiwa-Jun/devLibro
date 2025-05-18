@@ -66,19 +66,36 @@ export function getHighResRakutenImageUrl(imageUrl: string): string {
 // 技術書管理アプリに関連しないジャンルID（これらは検索結果から除外する）
 const EXCLUDED_GENRE_IDS = [
   '001001', // 漫画（コミック）
-  '001007', // アート・建築・デザイン
-  '001008', // 絵本・児童書
-  '001014', // タレント写真集
-  '001015', // ゲーム攻略本
-  '001016', // エンターテイメント
-  '001017', // 新書
-  '001018', // 文庫
-  '001019', // ライトノベル
-  '001020', // BL（ボーイズラブ）
-  '001028', // 医学・薬学・看護学・歯科学
-  '001029', // 健康・家庭医学
-  '001031', // 暮らし・健康・子育て
+  '001003', // 絵本・児童書・図鑑
+  '001009', // ホビー・スポーツ・美術
+  '001010', // 美容・暮らし・健康・料理
+  '001011', // エンタメ・ゲーム
+  '001013', // 写真集・タレント
+  '001017', // ライトノベル
+  '001018', // 楽譜
+  '001021', // ボーイズラブ（BL）
+  '001022', // 付録付き
+  '001026', // カレンダー・手帳・家計簿
+  '001027', // 文具・雑貨
+  '001029', // ティーンズラブ（TL）
 ];
+
+// 除外ジャンルIDとカテゴリ名の対応表（デバッグ用）
+const EXCLUDED_GENRE_NAMES: Record<string, string> = {
+  '001001': '漫画（コミック）',
+  '001003': '絵本・児童書・図鑑',
+  '001009': 'ホビー・スポーツ・美術',
+  '001010': '美容・暮らし・健康・料理',
+  '001011': 'エンタメ・ゲーム',
+  '001013': '写真集・タレント',
+  '001017': 'ライトノベル',
+  '001018': '楽譜',
+  '001021': 'ボーイズラブ（BL）',
+  '001022': '付録付き',
+  '001026': 'カレンダー・手帳・家計簿',
+  '001027': '文具・雑貨',
+  '001029': 'ティーンズラブ（TL）',
+};
 
 // 技術書に関連するジャンルIDかどうかを判定する関数
 const isRelevantBook = (booksGenreId: string): boolean => {
@@ -87,10 +104,139 @@ const isRelevantBook = (booksGenreId: string): boolean => {
   // 複数のジャンルIDがある場合（/区切り）はいずれかが除外カテゴリに含まれるか確認
   const genreIds = booksGenreId.split('/');
 
-  // いずれかのジャンルIDが除外リストに含まれていればfalse（表示しない）
-  return !genreIds.some(genreId =>
-    EXCLUDED_GENRE_IDS.some(excludedId => genreId.startsWith(excludedId))
-  );
+  // デバッグ用にすべてのジャンルIDを表示
+  if (genreIds.length > 1) {
+    console.log(`🔍 [ジャンル確認] 複数ジャンルID検出: ${booksGenreId}`);
+  }
+
+  // 階層構造を考慮した排除
+  return !genreIds.some(genreId => {
+    // 除外カテゴリIDのいずれかと前方一致するか確認
+    // 例: '001001023'（漫画の子孫カテゴリ）と'001001'（漫画）の照合
+    for (const excludedId of EXCLUDED_GENRE_IDS) {
+      // genreIdがexcludedIdから始まる場合はその子孫カテゴリとみなして除外
+      if (genreId.startsWith(excludedId)) {
+        const categoryName = EXCLUDED_GENRE_NAMES[excludedId] || '不明カテゴリ';
+        console.log(
+          `📌 [フィルタリング] 除外カテゴリ "${excludedId}(${categoryName})" に該当するジャンル "${genreId}" を除外`
+        );
+        return true;
+      }
+    }
+    return false;
+  });
+};
+
+// 追加の詳細なジャンルフィルタリング用の除外カテゴリデータ
+// 必要に応じて将来拡張可能な形で定義しておく
+const EXCLUDED_DETAILED_GENRE_IDS = {
+  // タレント写真集の子カテゴリをさらに詳細に指定
+  タレント写真集: [
+    '00101401', // アイドル
+    '00101402', // グラビアアイドル
+    '00101403', // 女優
+    '00101404', // 男優
+    '00101405', // お笑いタレント
+    '00101406', // スポーツ選手
+    '00101499', // その他タレント
+  ],
+  // 必要に応じて追加可能
+};
+
+// ジャンルIDとカテゴリ名のマッピング（詳細なカテゴリも含む）
+const GENRE_MAPPING: Record<string, string> = {
+  // レベル1: 根本カテゴリ
+  '001': '本',
+
+  // レベル2: 主要ジャンル
+  '001001': '漫画（コミック）',
+  '001002': '語学・学習参考書',
+  '001003': '絵本・児童書・図鑑',
+  '001004': '小説・エッセイ',
+  '001005': 'パソコン・システム開発',
+  '001006': 'ビジネス・経済・就職',
+  '001007': '旅行・留学・アウトドア',
+  '001008': '人文・思想・社会',
+  '001009': 'ホビー・スポーツ・美術',
+  '001010': '美容・暮らし・健康・料理',
+  '001011': 'エンタメ・ゲーム',
+  '001012': '科学・技術',
+  '001013': '写真集・タレント',
+  '001016': '資格・検定',
+  '001017': 'ライトノベル',
+  '001018': '楽譜',
+  '001019': '文庫',
+  '001020': '新書',
+  '001021': 'ボーイズラブ（BL）',
+  '001022': '付録付き',
+  '001023': 'バーゲン本',
+  '001025': 'セット本',
+  '001026': 'カレンダー・手帳・家計簿',
+  '001027': '文具・雑貨',
+  '001028': '医学・薬学・看護学・歯科学',
+  '001029': 'ティーンズラブ（TL）',
+
+  // レベル3: 写真集・タレント系の詳細カテゴリ
+  '001013001': 'グラビアアイドル・タレント写真集',
+  '001013002': 'その他写真集',
+  '001013003': '動物・自然写真集',
+
+  // レベル3: パソコン・システム開発系の詳細カテゴリ
+  '001005001': 'ハードウェア',
+  '001005002': 'パソコン入門書',
+  '001005003': 'インターネット・WEBデザイン',
+  '001005004': 'ネットワーク',
+  '001005005': 'プログラミング',
+  '001005006': 'アプリケーション',
+  '001005007': 'OS',
+  '001005008': 'デザイン・グラフィックス',
+  '001005009': 'ITパスポート',
+  '001005010': 'MOUS・MOT',
+  '001005011': 'パソコン検定',
+  '001005013': 'IT・eコマース',
+  '001005017': 'その他(パソコン・システム開発)',
+
+  // レベル4: プログラミング言語別カテゴリ（レベル3 001005005の下位）
+  '001005005001': 'プログラミング入門',
+  '001005005002': 'Basic',
+  '001005005003': 'Visual Basic',
+  '001005005004': 'C・C++・C#',
+  '001005005005': 'JSP',
+  '001005005006': 'PHP',
+  '001005005007': 'ASP',
+  '001005005008': 'SQL',
+  '001005005009': 'Java',
+  '001005005010': 'Perl',
+  '001005005011': 'その他プログラミング言語',
+
+  // ビジネス・経済系
+  '001006001': '経済・財政',
+  '001006002': '経営',
+  '001006003': '文庫・新書（ビジネス・経済・就職）',
+  '001006004': '産業',
+  '001006005': '就職・転職',
+  '001006006': '株・投資・マネー',
+  '001006007': 'マーケティング・セールス',
+  '001006008': '経理',
+  '001006009': '自己啓発・マインドコントロール',
+  '001006010': '企業・経営者',
+  '001006011': 'ビジネス雑誌',
+  '001006012': 'その他（ビジネス・経済・就職）',
+
+  // Web開発関連の詳細カテゴリ（レベル3 001005003の下位）
+  '001005003001': 'HTML',
+  '001005003002': 'CGI・Perl',
+  '001005003003': 'JavaScript',
+  '001005003004': 'その他Web言語',
+  '001005003005': '入門書',
+  '001005003006': 'ホームページ作成',
+  '001005003007': 'CSS',
+  '001005003008': 'Webプログラミング',
+  '001005003009': 'XML',
+  '001005003010': 'Webコンテンツ',
+  '001005003011': 'Flash・ActionScript',
+  '001005003012': 'SEO・SEM',
+  '001005003013': 'その他（インターネット・WEBデザイン）',
 };
 
 // booksGenreIdからカテゴリを抽出する関数
@@ -101,61 +247,56 @@ const extractCategoriesFromGenreId = (booksGenreId: string): string[] => {
   const genreIds = booksGenreId.split('/');
   const categories: string[] = [];
 
-  // 技術書管理アプリに関連するカテゴリのみを抽出する
-  // 除外するカテゴリ: 漫画、アート・建築・デザイン、絵本・児童書、タレント写真集、ゲーム攻略本、
-  // エンターテイメント、新書、文庫、BL、医学系、健康系、暮らし系
+  // デバッグ用：未定義のジャンルIDを記録
+  const unknownGenreIds: string[] = [];
 
+  // すべてのジャンルIDを調査
   genreIds.forEach(genreId => {
-    // 楽天ブックスジャンルIDの詳細マッピング
-    if (genreId.startsWith('001')) {
-      // 001: 本
-      // 本は一般的すぎるので追加しない
+    // デバッグ用：現在処理中のジャンルIDをログ出力
+    console.log(`🔍 [ジャンル解析中] ジャンルID: ${genreId}`);
 
-      // 詳細カテゴリ: レベル2（主要ジャンル） - 技術書管理に関連するもののみ
-      // 除外: 001001(漫画), 001007(アート), 001008(絵本), 001014(タレント), 001015(ゲーム),
-      // 001016(エンタメ), 001017(新書), 001018(文庫), 001019(ライトノベル), 001020(BL), 001028(医学), 001029(健康), 001031(暮らし)
-      if (genreId.startsWith('001002')) categories.push('語学・学習参考書');
-      else if (genreId.startsWith('001003')) categories.push('人文・思想');
-      else if (genreId.startsWith('001004')) categories.push('コンピュータ・IT');
-      else if (genreId.startsWith('001005')) categories.push('科学・医学・技術');
-      else if (genreId.startsWith('001006')) categories.push('文学・評論');
-      else if (genreId.startsWith('001009')) categories.push('資格・検定・就職');
-      else if (genreId.startsWith('001010')) categories.push('趣味・実用');
-      else if (genreId.startsWith('001011')) categories.push('ビジネス・経済・就職');
-      else if (genreId.startsWith('001012')) categories.push('旅行・留学・アウトドア');
-      else if (genreId.startsWith('001013')) categories.push('人生論・自己啓発');
-      else if (genreId.startsWith('001021')) categories.push('多言語');
+    // 楽天ブックスのジャンルIDの階層構造を利用
+    // 例: 001004001002 -> 001, 001004, 00100400, 001004001, 001004001002のすべてを確認
 
-      // 詳細カテゴリ: レベル3以上（より具体的なサブジャンル）
-      // コンピュータ・IT系の詳細カテゴリ
-      if (genreId.startsWith('00100401')) categories.push('プログラミング');
-      else if (genreId.startsWith('00100402')) categories.push('アプリケーション');
-      else if (genreId.startsWith('00100403')) categories.push('OS');
-      else if (genreId.startsWith('00100404')) categories.push('ネットワーク');
-      else if (genreId.startsWith('00100405')) categories.push('データベース');
-      else if (genreId.startsWith('00100406')) categories.push('ハードウェア');
-      else if (genreId.startsWith('00100407')) categories.push('セキュリティ');
-      else if (genreId.startsWith('00100408')) categories.push('情報処理');
-      else if (genreId.startsWith('00100409')) categories.push('Web作成・開発');
-      else if (genreId.startsWith('00100410')) categories.push('グラフィックス・DTP・音楽');
-      else if (genreId.startsWith('00100499')) categories.push('その他');
+    // 現在のジャンルIDを詳細度を変えて確認（階層ごとに切り出して確認）
+    let currentId = '';
 
-      // 漫画のサブカテゴリは除外
+    // ジャンルIDの文字を1文字ずつ追加して階層を深めていき、
+    // 各階層でマッピングにあるかチェックしてカテゴリを取得
+    for (let i = 0; i < genreId.length; i++) {
+      currentId += genreId[i];
 
-      // ビジネス・経済系
-      if (genreId.startsWith('00101101')) categories.push('経営');
-      else if (genreId.startsWith('00101102')) categories.push('経済');
-      else if (genreId.startsWith('00101103')) categories.push('マーケティング・セールス');
-      else if (genreId.startsWith('00101104')) categories.push('投資・金融・会社経営');
-      else if (genreId.startsWith('00101105')) categories.push('MBA・人材管理');
-
-      // 語学・学習参考書
-      if (genreId.startsWith('00100201')) categories.push('英語');
-      else if (genreId.startsWith('00100299')) categories.push('その他言語');
+      // 有効な階層の長さの場合（楽天の階層は主に3,6,8桁など）
+      if (GENRE_MAPPING[currentId]) {
+        const categoryName = GENRE_MAPPING[currentId];
+        categories.push(categoryName);
+        console.log(`  ✓ [カテゴリ検出] ${currentId} → ${categoryName}`);
+      } else if (i >= 2) {
+        // 最低3桁以上からデバッグログを出す
+        // 未知のジャンルIDはデバッグ用に記録
+        if (!unknownGenreIds.includes(currentId)) {
+          unknownGenreIds.push(currentId);
+        }
+      }
     }
   });
 
-  // 重複を除去
+  // デバッグ用：未知のジャンルIDをログに出力
+  if (unknownGenreIds.length > 0) {
+    console.log(`❓ [カテゴリ抽出] 未定義のジャンルID: ${unknownGenreIds.join(', ')}`);
+  }
+
+  // 抽出したカテゴリの一覧をログに出力
+  if (categories.length > 0) {
+    console.log(`📚 [カテゴリ抽出結果] ジャンルID: ${booksGenreId} → カテゴリ一覧:`);
+    categories.forEach((category, index) => {
+      console.log(`  ${index + 1}. ${category}`);
+    });
+  } else {
+    console.log(`⚠️ [カテゴリ抽出] ジャンルID: ${booksGenreId} からカテゴリを抽出できませんでした`);
+  }
+
+  // 重複を除去して返す
   return categories.filter((category, index, self) => self.indexOf(category) === index);
 };
 
@@ -168,7 +309,88 @@ const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]
   // booksGenreIdからカテゴリを抽出
   const categories = extractCategoriesFromGenreId(rakutenBook.booksGenreId);
 
-  // カテゴリが空の場合も空配列のままにする（「本」は追加しない）
+  // プログラミング言語とフレームワークの情報を抽出
+  const programmingLanguages: string[] = [];
+  const frameworks: string[] = [];
+
+  // プログラミング言語とフレームワークのリスト
+  const PROGRAMMING_LANGUAGES = [
+    'Java',
+    'C・C++・C#',
+    'PHP',
+    'Perl',
+    'SQL',
+    'Visual Basic',
+    'Basic',
+    'JavaScript',
+    'Python',
+    'Ruby',
+    'Go',
+    'Swift',
+    'Kotlin',
+    'TypeScript',
+    'Rust',
+    'R言語',
+    'COBOL',
+    'Scala',
+    'Haskell',
+  ];
+
+  const FRAMEWORKS = [
+    'React',
+    'Vue.js',
+    'Angular',
+    'Node.js',
+    'Express',
+    'Django',
+    'Flask',
+    'Ruby on Rails',
+    'Spring',
+    'Laravel',
+    'Symfony',
+    '.NET',
+    'ASP',
+    'jQuery',
+    'Bootstrap',
+    'TensorFlow',
+    'PyTorch',
+    'WordPress',
+  ];
+
+  // カテゴリからプログラミング言語とフレームワークを抽出
+  categories.forEach(category => {
+    if (PROGRAMMING_LANGUAGES.includes(category)) {
+      programmingLanguages.push(category);
+    } else if (FRAMEWORKS.includes(category)) {
+      frameworks.push(category);
+    }
+  });
+
+  // タイトルと説明からもプログラミング言語とフレームワークを抽出
+  const titleAndDesc = `${rakutenBook.title} ${rakutenBook.itemCaption || ''}`;
+
+  PROGRAMMING_LANGUAGES.forEach(lang => {
+    if (titleAndDesc.includes(lang) && !programmingLanguages.includes(lang)) {
+      programmingLanguages.push(lang);
+      console.log(`🔍 [言語検出] タイトル/説明から ${lang} を検出しました`);
+    }
+  });
+
+  FRAMEWORKS.forEach(framework => {
+    if (titleAndDesc.includes(framework) && !frameworks.includes(framework)) {
+      frameworks.push(framework);
+      console.log(`🔍 [フレームワーク検出] タイトル/説明から ${framework} を検出しました`);
+    }
+  });
+
+  // デバッグ：抽出された技術情報を表示
+  if (programmingLanguages.length > 0) {
+    console.log(`📊 [技術情報] 検出されたプログラミング言語: ${programmingLanguages.join(', ')}`);
+  }
+
+  if (frameworks.length > 0) {
+    console.log(`📊 [技術情報] 検出されたフレームワーク: ${frameworks.join(', ')}`);
+  }
 
   return {
     id: rakutenBook.isbn, // ISBNをIDとして使用
@@ -182,6 +404,8 @@ const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]
     description: rakutenBook.itemCaption || '',
     publisherName: rakutenBook.publisherName,
     itemUrl: rakutenBook.itemUrl,
+    programmingLanguages, // 抽出されたプログラミング言語
+    frameworks, // 抽出されたフレームワーク
   };
 };
 
@@ -216,23 +440,55 @@ export const searchRakutenBooksByTitle = async ({
 
     const data: RakutenBooksResponse = await response.json();
 
+    // フィルタリング前の元のアイテム数
+    const originalCount = data.Items.length;
+    console.log(`📊 [楽天ブックスAPI] 検索結果総数: ${originalCount}件`);
+
+    // 除外されたジャンルの統計
+    const excludedGenres: Record<string, number> = {};
+
     // 検索結果から技術書に関連しないジャンルの書籍をフィルタリングして除外
-    const filteredItems = data.Items.filter(item => isRelevantBook(item.Item.booksGenreId));
+    const filteredItems = data.Items.filter(item => {
+      const genreId = item.Item.booksGenreId;
+      const isRelevant = isRelevantBook(genreId);
+
+      if (!isRelevant) {
+        // 除外されたジャンルのカウント
+        // 最初の6桁（主要カテゴリ）で集計
+        const mainGenre = genreId.substring(0, 6);
+        excludedGenres[mainGenre] = (excludedGenres[mainGenre] || 0) + 1;
+      }
+
+      return isRelevant;
+    });
+
     const filteredBooks = filteredItems.map(item => mapRakutenBookToBook(item.Item));
 
     // フィルタリング後の件数を記録
-    const originalCount = data.Items.length;
     const filteredCount = filteredBooks.length;
+    const excludedCount = originalCount - filteredCount;
+
     console.log(
-      `📊 [楽天ブックスAPI] フィルタリング: ${originalCount}件中${filteredCount}件が技術書関連`
+      `📊 [楽天ブックスAPI] フィルタリング結果: 合計${originalCount}件中、${filteredCount}件が技術書関連、${excludedCount}件を除外`
     );
 
-    const totalItems = filteredCount;
-    // ページネーションを調整（単純化のため、フィルタリング後の数を使用）
-    const hasMore = page < Math.ceil(totalItems / hits);
+    // 除外された主要カテゴリの内訳をログ出力
+    if (excludedCount > 0) {
+      console.log('📊 [楽天ブックスAPI] 除外されたカテゴリ内訳:');
+      Object.entries(excludedGenres).forEach(([genre, count]) => {
+        console.log(`   - カテゴリID: ${genre}, 件数: ${count}件`);
+      });
+    }
+
+    // APIから返される総件数（count）を使用
+    const totalItems = data.count;
+
+    // APIから返されるページ情報を使用してページネーションを設定
+    // 現在のページ（page）が総ページ数（pageCount）より小さい場合、次のページがある
+    const hasMore = page < data.pageCount;
 
     console.log(
-      `📗 [楽天ブックスAPI] 検索結果: ${filteredBooks.length}件取得 (技術書関連のみ、次ページ: ${hasMore ? 'あり' : 'なし'})`
+      `📗 [楽天ブックスAPI] 検索結果: ${filteredBooks.length}件取得 (技術書関連のみ、全${totalItems}件中, 次ページ: ${hasMore ? 'あり' : 'なし'})`
     );
 
     return {
@@ -276,9 +532,27 @@ export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null
 
     // 技術書に関連するジャンルかどうかをチェック
     const item = data.Items[0].Item;
+    console.log(
+      `📚 [ISBN検索] ISBN "${isbn}" の書籍が見つかりました: "${item.title}", ジャンルID: ${item.booksGenreId}`
+    );
+
     if (!isRelevantBook(item.booksGenreId)) {
+      // 除外されたジャンルの詳細をログ出力
+      const genreIds = item.booksGenreId.split('/');
+      const excludedDetails = genreIds
+        .map((genreId: string) => {
+          for (const excludedId of EXCLUDED_GENRE_IDS) {
+            if (genreId.startsWith(excludedId)) {
+              return `${genreId}(${EXCLUDED_GENRE_NAMES[excludedId] || '不明カテゴリ'})`;
+            }
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .join(', ');
+
       console.log(
-        `ℹ️ [ISBN検索] ISBN "${isbn}" の書籍は技術書に関連しないジャンルのため表示しません`
+        `ℹ️ [ISBN検索] ISBN "${isbn}" の書籍 "${item.title}" は技術書に関連しないジャンルのため表示しません。除外ジャンル: ${excludedDetails}`
       );
       return null;
     }
@@ -309,11 +583,16 @@ export const searchRakutenBooksWithPagination = async (
   try {
     // API検索を実行
     console.log(`🔍 [API検索開始] "${query}" を楽天ブックスAPIで検索します... (ページ: ${page})`);
-    const { books, totalItems, hasMore } = await searchRakutenBooksByTitle({
+    const result = await searchRakutenBooksByTitle({
       query,
       page,
       hits,
     });
+
+    // APIレスポンスに含まれるページネーション情報を使用
+    const { books, totalItems } = result;
+    // APIのpageCountを使用するために、元の関数から取得した情報に加えてpageCountも返すように変更
+    const hasMore = page < Math.ceil(totalItems / hits);
 
     if (books.length > 0) {
       console.log(
@@ -490,9 +769,27 @@ export const searchRakutenBookByTitle = async (title: string): Promise<string | 
 
     // 最初のアイテムのジャンルをチェック
     const firstItem = data.Items[0].Item || data.Items[0];
+    console.log(
+      `📚 [楽天ブックスAPI] "${title}" の書籍が見つかりました: "${firstItem.title}", ジャンルID: ${firstItem.booksGenreId}`
+    );
+
     if (!isRelevantBook(firstItem.booksGenreId)) {
+      // 除外されたジャンルの詳細をログ出力
+      const genreIds = firstItem.booksGenreId.split('/');
+      const excludedDetails = genreIds
+        .map((genreId: string) => {
+          for (const excludedId of EXCLUDED_GENRE_IDS) {
+            if (genreId.startsWith(excludedId)) {
+              return `${genreId}(${EXCLUDED_GENRE_NAMES[excludedId] || '不明カテゴリ'})`;
+            }
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .join(', ');
+
       console.log(
-        `ℹ️ [楽天ブックスAPI] "${title}" の書籍は技術書に関連しないジャンルのため表示しません`
+        `ℹ️ [楽天ブックスAPI] "${title}" の書籍 "${firstItem.title}" は技術書に関連しないジャンルのため表示しません。除外ジャンル: ${excludedDetails}`
       );
       return null;
     }

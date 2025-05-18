@@ -12,6 +12,12 @@ export const siteConfig = {
   },
   defaultLocale: 'ja',
   supportedLocales: ['ja', 'en'],
+  // Google Analytics関連情報
+  analytics: {
+    measurementId: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+    privacyPolicyUrl: '/privacy-policy',
+    cookieConsentEnabled: true,
+  },
 };
 
 // 書籍タイプのJSON-LD向け型定義
@@ -31,6 +37,11 @@ export interface BookJsonLd {
  * デフォルトのメタデータを生成
  */
 export function getDefaultMetadata(): Metadata {
+  // Google検証コード（文字列または未定義の場合に空配列を使用）
+  const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? [process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION]
+    : [];
+
   return {
     title: {
       default: `${siteConfig.name} - 技術書書評アプリ`,
@@ -84,6 +95,10 @@ export function getDefaultMetadata(): Metadata {
       apple: '/apple-touch-icon.png',
     },
     manifest: '/site.webmanifest',
+    // 構造化データのアプリケーションのカテゴリ情報
+    verification: {
+      google: googleVerification,
+    },
   };
 }
 
