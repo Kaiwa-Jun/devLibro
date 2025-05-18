@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 
 import BookDetail from '@/components/book/BookDetail';
+import BookDetailTracking from '@/components/book/BookDetailTracking';
 import ReviewList from '@/components/book/ReviewList';
 import WriteReviewButton from '@/components/book/WriteReviewButton';
 import BookJsonLd from '@/components/seo/BookJsonLd';
@@ -48,6 +49,9 @@ export default async function BookPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="space-y-6 pb-8 pt-2">
+      {/* Google Analyticsトラッキング用コンポーネント */}
+      <BookDetailTracking bookId={id} bookTitle={book.title} />
+
       <WriteReviewButton />
       <BookDetail id={id} />
       <ReviewList bookId={id} />

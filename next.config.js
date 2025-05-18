@@ -15,7 +15,13 @@ const nextConfig = {
       'images-na.ssl-images-amazon.com',
       'images-fe.ssl-images-amazon.com',
       'thumbnail.image.rakuten.co.jp',
+      'localhost',
+      'placehold.co',
+      'lh3.googleusercontent.com',
+      'via.placeholder.com',
     ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    formats: ['image/webp'],
   },
   // SWCコンパイラを強制的に使用
   swcMinify: true,
@@ -43,6 +49,48 @@ const nextConfig = {
     '@radix-ui/primitive',
     'lucide-react',
   ],
+  // コンパイル時の環境変数設定
+  env: {
+    // 開発環境ではテスト用GA測定IDを使用（本番環境では.envファイルから取得）
+    NEXT_PUBLIC_GA_MEASUREMENT_ID:
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+        : 'G-DEVELOPMENT-ID', // 開発環境用のID
+  },
+  // ホスト名の設定
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
