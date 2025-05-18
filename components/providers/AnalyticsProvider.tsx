@@ -1,18 +1,18 @@
 'use client';
 
-import { pageview } from '@/lib/analytics/gtag';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+
+import { pageview } from '@/lib/analytics/gtag';
 
 export default function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // URLが変更されたらページビューをトラッキング
+    // URLが変更されたときにページビューを送信
     if (pathname) {
-      const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
-      pageview(url);
+      pageview(pathname);
     }
   }, [pathname, searchParams]);
 

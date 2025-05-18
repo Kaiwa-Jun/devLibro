@@ -1,79 +1,67 @@
 'use client';
 
-import * as gtag from '@/lib/analytics/gtag';
 import { useCallback } from 'react';
 
-/**
- * Google Analyticsのイベントを簡単に使用するためのカスタムフック
- */
-export function useAnalytics() {
-  // 汎用イベントトラッキング
-  const trackEvent = useCallback((eventName: string, params = {}) => {
-    gtag.trackEvent(eventName, params);
-  }, []);
+import * as gtag from '@/lib/analytics/gtag';
 
-  // 書籍表示イベント
+/**
+ * Google Analyticsトラッキングのためのカスタムフック
+ */
+export const useAnalytics = () => {
+  // 書籍詳細閲覧
   const trackBookView = useCallback((bookId: string, bookTitle: string) => {
     gtag.trackBookView(bookId, bookTitle);
   }, []);
 
-  // 検索イベント
+  // 検索実行
   const trackSearch = useCallback((searchTerm: string, resultsCount: number) => {
     gtag.trackSearch(searchTerm, resultsCount);
   }, []);
 
-  // ログインイベント
-  const trackLogin = useCallback((method: string) => {
-    gtag.trackLogin(method);
-  }, []);
-
-  // 本棚追加イベント
+  // 書棚に追加
   const trackAddToShelf = useCallback((bookId: string, bookTitle: string, shelfName: string) => {
     gtag.trackAddToShelf(bookId, bookTitle, shelfName);
   }, []);
 
-  // レビュー投稿イベント
+  // レビュー投稿
   const trackReviewSubmit = useCallback((bookId: string, bookTitle: string, rating: number) => {
     gtag.trackReviewSubmit(bookId, bookTitle, rating);
   }, []);
 
-  // シェアイベント
+  // 共有アクション
   const trackShare = useCallback((bookId: string, bookTitle: string, shareMethod: string) => {
     gtag.trackShare(bookId, bookTitle, shareMethod);
   }, []);
 
-  // サインアップイベント
+  // ログイン
+  const trackLogin = useCallback((method: string) => {
+    gtag.trackLogin(method);
+  }, []);
+
+  // サインアップ
   const trackSignup = useCallback((method: string, success: boolean) => {
     gtag.trackSignup(method, success);
   }, []);
 
-  // エラー報告イベント
+  // エラー追跡
   const trackError = useCallback((errorType: string, errorMessage: string, errorSource: string) => {
     gtag.trackError(errorType, errorMessage, errorSource);
   }, []);
 
-  // ユーザーアクションイベント
-  const trackAction = useCallback(
-    (action: string, category: string, label?: string, value?: number) => {
-      gtag.event({ action, category, label, value });
-    },
-    []
-  );
-
-  // デバッグモードの状態を取得
-  const isDebugMode = gtag.debugMode();
+  // 汎用イベント追跡
+  const trackEvent = useCallback((eventName: string, params = {}) => {
+    gtag.trackEvent(eventName, params);
+  }, []);
 
   return {
-    trackEvent,
     trackBookView,
     trackSearch,
-    trackLogin,
     trackAddToShelf,
     trackReviewSubmit,
     trackShare,
+    trackLogin,
     trackSignup,
     trackError,
-    trackAction,
-    isDebugMode,
+    trackEvent,
   };
-}
+};

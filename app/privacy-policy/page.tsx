@@ -1,114 +1,83 @@
 import { generatePageMetadata } from '@/lib/seo/metadata';
-import { Metadata } from 'next';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = generatePageMetadata({
   title: 'プライバシーポリシー',
-  description: 'DevLibroのプライバシーポリシーです。ユーザー情報の取り扱いについて説明しています。',
+  description: '当サイトのプライバシーポリシーについて説明します。',
   path: '/privacy-policy',
 });
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="max-w-3xl mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">プライバシーポリシー</h1>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">1. 個人情報の収集について</h2>
-        <p className="mb-4">
-          DevLibro（以下、「当サービス」）は、サービス提供のために必要な範囲で個人情報を収集することがあります。
-          収集する情報には、ユーザー名、メールアドレス、プロフィール情報などが含まれます。
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-6">プライバシーポリシー</h1>
+      <div className="prose max-w-none dark:prose-invert">
+        <h2 className="text-2xl font-semibold mt-8 mb-4">1. 収集する情報</h2>
+        <p>
+          当サイトでは、サービス向上のためにGoogle
+          Analyticsを利用して匿名のアクセス情報を収集しています。これには以下の情報が含まれます：
         </p>
-      </section>
+        <ul className="list-disc pl-6 mb-4">
+          <li>閲覧したページ</li>
+          <li>サイト内での行動</li>
+          <li>参照元</li>
+          <li>使用デバイス、ブラウザ情報</li>
+          <li>おおよその位置情報</li>
+        </ul>
 
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">2. アクセス解析ツールについて</h2>
-        <p className="mb-4">
-          当サービスでは、サービスの利用状況を把握するために、Google Analyticsを利用しています。
-          Google Analyticsは、Cookieを使用してデータを収集します。
-          このデータは匿名で収集されており、個人を特定するものではありません。
+        <h2 className="text-2xl font-semibold mt-8 mb-4">2. Cookieの使用</h2>
+        <p>
+          当サイトでは、ユーザーエクスペリエンスの向上とサービス利用状況の分析のためにCookieを使用しています。Cookieはブラウザに保存される小さなテキストファイルで、当サイトの利用状況を記録するために使用されます。
         </p>
-        <p className="mb-4">
-          Google Analyticsの詳細については、
+
+        <h2 className="text-2xl font-semibold mt-8 mb-4">3. 情報の利用目的</h2>
+        <p>収集した情報は以下の目的で利用されます：</p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>サービスの利用状況分析</li>
+          <li>サイトの改善</li>
+          <li>ユーザーエクスペリエンスの向上</li>
+        </ul>
+
+        <h2 className="text-2xl font-semibold mt-8 mb-4">4. 第三者への情報提供</h2>
+        <p>
+          当サイトでは、法的要請がある場合を除き、収集した個人情報を第三者に提供することはありません。ただし、匿名化された統計データについては、パートナーと共有する場合があります。
+        </p>
+
+        <h2 className="text-2xl font-semibold mt-8 mb-4">5. オプトアウト</h2>
+        <p>
+          ユーザーはCookieの使用を拒否することができます。ブラウザの設定を変更してCookieを無効にすることで、当サイトのCookieの使用を防ぐことができますが、一部のサービス機能が正しく動作しない場合があります。
+        </p>
+        <p>
+          また、以下のリンクからGoogle Analyticsのオプトアウトができます：
           <a
-            href="https://policies.google.com/privacy?hl=ja"
+            href="https://tools.google.com/dlpage/gaoptout"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            Googleのプライバシーポリシー
-          </a>
-          をご確認ください。
-        </p>
-        <p className="mb-4">
-          なお、Google Analyticsのトラッキングを無効にしたい場合は、
-          <a
-            href="https://tools.google.com/dlpage/gaoptout?hl=ja"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
+            className="text-blue-500 hover:underline"
           >
             Google Analyticsオプトアウトアドオン
           </a>
-          をご利用いただけます。
         </p>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">3. 個人情報の利用目的</h2>
-        <p className="mb-4">収集した個人情報は、以下の目的で利用します：</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>サービスの提供・維持・改善</li>
-          <li>ユーザーからのお問い合わせへの対応</li>
-          <li>新機能や更新情報のお知らせ</li>
-          <li>利用状況の分析によるサービス改善</li>
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">4. 個人情報の第三者提供</h2>
-        <p className="mb-4">
-          法令に基づく場合や、人の生命・身体・財産の保護のために必要がある場合を除き、
-          収集した個人情報を第三者に提供することはありません。
+        <h2 className="text-2xl font-semibold mt-8 mb-4">6. プライバシーポリシーの変更</h2>
+        <p>
+          当サイトは、必要に応じてプライバシーポリシーを変更することがあります。重要な変更がある場合は、サイト上で通知します。
         </p>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">5. Cookieの使用について</h2>
-        <p className="mb-4">
-          当サービスでは、ユーザー体験の向上やサービス改善のためにCookieを使用しています。
-          ブラウザの設定によりCookieの受け入れを拒否することも可能ですが、
-          その場合、一部の機能が正常に動作しない可能性があります。
+        <h2 className="text-2xl font-semibold mt-8 mb-4">7. お問い合わせ</h2>
+        <p>
+          プライバシーポリシーに関するご質問やご不明点がある場合は、
+          <a href="/contact" className="text-blue-500 hover:underline">
+            お問い合わせフォーム
+          </a>
+          からご連絡ください。
         </p>
-      </section>
 
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">6. プライバシーポリシーの変更</h2>
-        <p className="mb-4">
-          当サービスは、必要に応じてプライバシーポリシーを変更することがあります。
-          変更した場合は、当ページにて通知します。
-        </p>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">7. お問い合わせ</h2>
-        <p className="mb-4">
-          プライバシーポリシーに関するお問い合わせは、以下の連絡先までお願いいたします。
-        </p>
-        <p className="mb-4">
-          Twitter(X):{' '}
-          <a
-            href="https://x.com/crew_runteq38"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            @crew_runteq38
-          </a>{' '}
-          のDMにてお問い合わせください
-        </p>
-      </section>
-
-      <div className="text-sm text-gray-500 mt-12">最終更新日: 2025年5月18日</div>
+        <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
+          最終更新日: 2023年12月1日
+        </div>
+      </div>
     </div>
   );
 }

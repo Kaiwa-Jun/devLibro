@@ -1,10 +1,11 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
 
 export default function CookieConsent() {
   const [showConsent, setShowConsent] = useState<boolean>(false);

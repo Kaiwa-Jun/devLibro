@@ -1,7 +1,8 @@
-// Google Analyticsの型定義
+// Googleアナリティクス用の型定義
 declare global {
   interface Window {
-    gtag: (command: 'config' | 'event', targetId: string, config?: Record<string, any>) => void;
+    gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void;
+    dataLayer: unknown[];
   }
 }
 

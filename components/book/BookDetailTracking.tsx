@@ -1,8 +1,10 @@
 'use client';
 
-import { useAnalytics } from '@/hooks/useAnalytics';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { debugMode } from '@/lib/analytics/gtag';
 
 interface BookDetailTrackingProps {
   bookId: string;
@@ -13,7 +15,7 @@ interface BookDetailTrackingProps {
  * 書籍詳細表示時にGoogle Analyticsにイベントを送信するクライアントコンポーネント
  */
 export default function BookDetailTracking({ bookId, bookTitle }: BookDetailTrackingProps) {
-  const { trackBookView, isDebugMode } = useAnalytics();
+  const { trackBookView } = useAnalytics();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -21,10 +23,10 @@ export default function BookDetailTracking({ bookId, bookTitle }: BookDetailTrac
     trackBookView(bookId, bookTitle);
 
     // デバッグモード（開発環境）の場合はコンソールに表示
-    if (isDebugMode) {
+    if (debugMode()) {
       console.log(`[Analytics Debug] Book view tracked: ${bookId} - ${bookTitle}`);
     }
-  }, [bookId, bookTitle, pathname, trackBookView, isDebugMode]);
+  }, [bookId, bookTitle, pathname, trackBookView]);
 
   // このコンポーネントは画面に何も表示しない
   return null;
