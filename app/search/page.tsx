@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import BookCard from '@/components/home/BookCard';
 import { Button } from '@/components/ui/button';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { debugMode } from '@/lib/analytics/gtag';
 import { searchBooksByTitle } from '@/lib/api/books';
 import { Book } from '@/types';
 
@@ -14,7 +15,7 @@ export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
-  const { trackSearch, isDebugMode } = useAnalytics();
+  const { trackSearch } = useAnalytics();
 
   const [isLoading, setIsLoading] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
@@ -61,7 +62,7 @@ export default function SearchPage() {
 
         // Google Analyticsに検索イベントを送信
         trackSearch(query, results.totalItems);
-        if (isDebugMode) {
+        if (debugMode()) {
           console.log(
             `[Analytics Debug] Search tracked: "${query}" (${results.totalItems} results)`
           );
@@ -79,7 +80,7 @@ export default function SearchPage() {
     };
 
     fetchBooks();
-  }, [query, router, trackSearch, isDebugMode]);
+  }, [query, router, trackSearch]);
 
   // 追加データの読み込み
   const loadMoreBooks = async () => {
@@ -100,7 +101,7 @@ export default function SearchPage() {
       setPage(nextPage);
 
       // 追加読み込みイベントを記録
-      if (isDebugMode) {
+      if (debugMode()) {
         console.log(`[Analytics Debug] Load more results: page ${nextPage} for "${query}"`);
       }
     } catch (error) {
