@@ -27,6 +27,7 @@ export default function BookDetail({ id }: BookDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [internalBookId, setInternalBookId] = useState<string | null>(null); // 明示的にDB IDを保持
   const hasAttemptedSave = useRef(false); // 保存を試みたかどうかを追跡
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false); // 説明文の展開状態
 
   useEffect(() => {
     // Supabaseから書籍データを取得
@@ -330,21 +331,6 @@ export default function BookDetail({ id }: BookDetailProps) {
                     </Badge>
                   ))}
 
-              {/* カテゴリタグ */}
-              {book.categories
-                .filter(category => {
-                  // Referenceは表示しない
-                  if (category === 'Reference') {
-                    return false;
-                  }
-                  return true;
-                })
-                .map(category => (
-                  <Badge key={category} variant="outline" className="border">
-                    {category}
-                  </Badge>
-                ))}
-
               {/* 難易度タグ */}
               {difficultyInfo.label !== '不明' && (
                 <div
@@ -368,14 +354,51 @@ export default function BookDetail({ id }: BookDetailProps) {
               )}
             </motion.div>
 
-            <motion.p
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-sm text-muted-foreground"
             >
-              {book.description}
-            </motion.p>
+              <div className="relative">
+                <motion.div
+                  className="overflow-hidden text-sm text-muted-foreground"
+                  initial={{ height: 'auto' }}
+                  animate={{
+                    height: isDescriptionExpanded ? 'auto' : '4.5rem',
+                    transition: { duration: 0.3, ease: 'easeInOut' },
+                  }}
+                >
+                  {book.description}
+                  {!isDescriptionExpanded && book.description && book.description.length > 150 && (
+                    <motion.div
+                      className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-b from-transparent via-card/70 to-card"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    />
+                  )}
+                </motion.div>
+                {book.description && book.description.length > 150 && (
+                  <button
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    className={`text-xs text-blue-600 hover:text-blue-800 mt-1 font-medium flex items-center ${
+                      !isDescriptionExpanded
+                        ? 'relative z-10 bg-card/70 px-2 py-1 rounded-full backdrop-blur-sm'
+                        : ''
+                    }`}
+                  >
+                    {isDescriptionExpanded ? '閉じる' : '続きを読む'}
+                    <motion.span
+                      className="ml-1 text-xs inline-block"
+                      animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      ▼
+                    </motion.span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
 
             <PurchaseLinks
               isbn={book.isbn}
