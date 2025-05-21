@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  // リクエストのオリジン（ホスト名）を取得
-  const origin = requestUrl.origin;
+  // 適切なリダイレクト先URLを決定
+  // 本番環境ではVERCEL_URLを使用、それ以外では現在のオリジンを使用
+  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : requestUrl.origin;
 
-  // 認証後は書籍検索画面にリダイレクト（現在のオリジンを使用）
-  return NextResponse.redirect(`${origin}/books`);
+  // 認証後は書籍検索画面にリダイレクト
+  return NextResponse.redirect(`${baseUrl}/books`);
 }

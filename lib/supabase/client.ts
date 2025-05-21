@@ -98,10 +98,16 @@ export const signInWithEmail = async (email: string, password: string) => {
 
 export const signInWithGitHub = async () => {
   const client = getSupabaseClient();
+
+  // 本番環境では明示的にVercelのURLを使用し、それ以外の環境ではwindow.location.originを使用
+  const redirectUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`
+    : `${window.location.origin}/auth/callback`;
+
   const { data, error } = await client.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: redirectUrl,
     },
   });
 
@@ -110,10 +116,16 @@ export const signInWithGitHub = async () => {
 
 export const signInWithGoogle = async () => {
   const client = getSupabaseClient();
+
+  // 本番環境では明示的にVercelのURLを使用し、それ以外の環境ではwindow.location.originを使用
+  const redirectUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`
+    : `${window.location.origin}/auth/callback`;
+
   const { data, error } = await client.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: redirectUrl,
     },
   });
 
