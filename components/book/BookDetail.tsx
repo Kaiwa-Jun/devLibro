@@ -106,6 +106,9 @@ export default function BookDetail({ id }: BookDetailProps) {
             // 詳細ページにアクセスしたということなので、DBに保存する
             // ただし、既に保存済みかどうかを確認するフラグをセットしておく
             const savedFlag = sessionStorage.getItem(`book_${id}_saved`);
+            console.log(`書籍ID ${id} の保存フラグ状態:`, savedFlag);
+
+            // 保存フラグがない、または pending の場合のみ保存を試みる
             if (!savedFlag || savedFlag === 'pending') {
               try {
                 console.log('ユーザーが詳細ページを表示したため、書籍をDBに保存します');
@@ -124,6 +127,7 @@ export default function BookDetail({ id }: BookDetailProps) {
                 // 保存処理を直接実行
                 console.log('セッションストレージの書籍データをDBに保存します:', bookToSave);
                 const savedBook = await saveBookToDB(bookToSave);
+                console.log('書籍保存の結果:', savedBook);
 
                 // 認証エラーやRLSエラーのチェック
                 if (savedBook && typeof savedBook === 'object' && 'error' in savedBook) {
@@ -145,8 +149,8 @@ export default function BookDetail({ id }: BookDetailProps) {
                     console.warn('セキュリティポリシーにより書籍情報は保存されませんでした');
                   }
 
-                  // 元の書籍情報をそのまま使用
-                  sessionStorage.setItem(`book_${id}_saved`, 'true');
+                  // エラーがあっても書籍情報は表示するために元の書籍情報を使用
+                  sessionStorage.setItem(`book_${id}_saved`, 'error');
                   return;
                 }
 
@@ -177,17 +181,20 @@ export default function BookDetail({ id }: BookDetailProps) {
                       setInternalBookId(String(savedObj.id));
                     }
                   }
-                }
 
-                // 処理成功後、必ず保存済みフラグを設定（成功/失敗に関わらず）
-                sessionStorage.setItem(`book_${id}_saved`, 'true');
+                  // 保存成功のフラグを設定
+                  sessionStorage.setItem(`book_${id}_saved`, 'true');
+                }
               } catch (saveError) {
                 console.error('書籍のDB保存エラー:', saveError);
-                // エラー発生時にも保存済みフラグを設定（再試行を防ぐ）
-                sessionStorage.setItem(`book_${id}_saved`, 'true');
+                // エラー発生時にはエラーフラグを設定（再試行を防ぐ）
+                sessionStorage.setItem(`book_${id}_saved`, 'error');
               }
             } else {
-              console.log('この書籍はすでに保存済みです。重複保存を回避します。');
+              console.log(
+                'この書籍はすでに保存済みまたは処理中です。重複保存を回避します。フラグ状態:',
+                savedFlag
+              );
             }
           }
         } catch (storageError) {

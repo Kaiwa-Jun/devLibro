@@ -77,6 +77,32 @@ export const getBookByISBNFromDB = async (isbn: string): Promise<Book | null> =>
   }
 };
 
+// エラー情報を含むBook型
+export type BookWithError = Book & {
+  error: {
+    code: string;
+    message: string;
+  };
+};
+
+// user_idフィールドを含むBook型
+export type BookWithUserId = {
+  user_id: string;
+  id: string;
+  isbn: string;
+  title: string;
+  author: string;
+  language: string;
+  categories: string[];
+  img_url: string;
+  avg_difficulty: number;
+  description?: string;
+  programmingLanguages?: string[];
+  frameworks?: string[];
+  publisherName?: string;
+  itemUrl?: string;
+};
+
 // 書籍をデータベースに保存
 export const saveBookToDB = async (book: Book): Promise<Book | null> => {
   try {
@@ -196,24 +222,102 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
     const { data: sessionData } = await supabase.auth.getSession();
     const session = sessionData.session;
 
+    // user_idフィールドがあるかどうかを確認するためのクエリを実行
+    let hasUserIdColumn = false;
+    try {
+      // この段階で明示的にuser_idカラムの確認を行う
+      console.log('user_idカラムの存在確認を試みます');
+
+      // まず直接保存を試みてエラーをトラップする方が確実
+      const testBook = {
+        ...bookToSave,
+        user_id: 'test-user-id',
+        // 既存レコードと重複しないよう一時的な値を使用
+        isbn: `TEST-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        title: `TEST-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      };
+
+      const { error: testError } = await supabase
+        .from('books')
+        .insert([testBook])
+        .select()
+        .limit(1);
+
+      // カラムがある場合はエラーがないか、または別のエラー（一意制約など）の可能性がある
+      if (!testError || (testError && testError.code !== 'PGRST204')) {
+        console.log('user_idカラムは存在します');
+        hasUserIdColumn = true;
+      } else {
+        console.log('user_idカラムが存在しません:', testError);
+      }
+
+      // テスト用のレコードを削除（挿入に成功した場合のみ）
+      if (!testError) {
+        await supabase.from('books').delete().eq('isbn', testBook.isbn);
+      }
+    } catch (tableError) {
+      console.warn('user_idカラムの確認中にエラーが発生しました:', tableError);
+      // エラーがあった場合でもとりあえず保存を試みる
+    }
+
     // 認証されたユーザーがいるか確認
     if (!session) {
       console.error('認証されていません。書籍の保存にはログインが必要です。');
-      // フロントエンドでエラーハンドリングするため、エラーを明示的にマークしたオブジェクトを返す
+
+      // user_idがないテーブルの場合は、そのまま保存を試みる
+      if (!hasUserIdColumn) {
+        console.log('user_idフィールドがないため、認証なしで保存を試みます');
+        try {
+          const { data: anonymousData, error: anonymousError } = await supabase
+            .from('books')
+            .insert([bookToSave])
+            .select()
+            .single();
+
+          if (anonymousError) {
+            console.error('認証なしでの書籍保存エラー:', anonymousError);
+            return {
+              ...book,
+              error: {
+                code: anonymousError.code || 'UNKNOWN_ERROR',
+                message: anonymousError.message || '書籍の保存中に不明なエラーが発生しました。',
+              },
+            } as BookWithError;
+          }
+
+          console.log('認証なしで書籍が正常に保存されました:', anonymousData);
+          return formatBookFromDB(anonymousData);
+        } catch (anonymousSaveError) {
+          console.error('認証なしでの書籍保存の例外:', anonymousSaveError);
+          return {
+            ...book,
+            error: {
+              code: 'EXCEPTION',
+              message:
+                anonymousSaveError instanceof Error
+                  ? anonymousSaveError.message
+                  : '不明な例外が発生しました',
+            },
+          } as BookWithError;
+        }
+      }
+
+      // user_idフィールドがある場合は、エラーを返す
       return {
         ...book,
         error: {
           code: 'NOT_AUTHENTICATED',
           message: '認証されていません。書籍の保存にはログインが必要です。',
         },
-      } as Book & { error: { code: string; message: string } };
+      } as BookWithError;
     }
 
-    // ユーザーIDを追加して保存（RLSポリシーに対応）
-    const bookWithUserId = {
-      ...bookToSave,
-      user_id: session.user.id,
-    };
+    // ユーザーIDを追加して保存（RLSポリシーに対応）- user_idフィールドがある場合のみ
+    const bookWithUserId = hasUserIdColumn
+      ? { ...bookToSave, user_id: session.user.id }
+      : bookToSave;
+
+    console.log('保存する最終的な書籍データ:', bookWithUserId);
 
     // 新しい書籍を挿入
     const { data, error } = await supabase.from('books').insert([bookWithUserId]).select().single();
@@ -225,30 +329,77 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
       if (error.code === '42501') {
         console.error('行レベルセキュリティポリシー違反。公開APIを使用します。');
 
-        // 代替として外部APIエンドポイント経由で保存を試みる（必要に応じて実装）
-        try {
-          // ここにAPI経由での保存ロジックを実装
-          // 例: const response = await fetch('/api/books', { method: 'POST', body: JSON.stringify(bookToSave) });
+        // フロントエンドでエラーハンドリングするため、エラーを明示的にマークしたオブジェクトを返す
+        return {
+          ...book,
+          error: {
+            code: error.code,
+            message: 'セキュリティポリシーにより書籍の保存が制限されています。',
+          },
+        } as BookWithError;
+      }
 
-          // とりあえずユーザーには書籍データを返す（保存されたことにして問題ない場合）
-          return {
-            ...book,
-            savedLocally: true, // クライアント側で保存されたフラグ
-          } as Book & { savedLocally: boolean };
-        } catch (apiError) {
-          console.error('APIを使用した書籍保存エラー:', apiError);
-          return null;
+      // user_idカラムが見つからないエラーの場合、user_idなしで再度試みる
+      if (error.code === 'PGRST204' && error.message.includes('user_id')) {
+        console.log('user_idカラムが見つからないため、user_idなしで再度保存を試みます');
+
+        // user_idフィールドを除いた新しいオブジェクトを作成
+        const bookWithoutUserId: Record<string, unknown> = {};
+        Object.keys(bookWithUserId).forEach(key => {
+          if (key !== 'user_id') {
+            bookWithoutUserId[key as keyof typeof bookWithUserId] =
+              bookWithUserId[key as keyof typeof bookWithUserId];
+          }
+        });
+
+        try {
+          const { data: retryData, error: retryError } = await supabase
+            .from('books')
+            .insert([bookWithoutUserId])
+            .select()
+            .single();
+
+          if (retryError) {
+            console.error('user_idなしでの保存再試行エラー:', retryError);
+            return {
+              ...book,
+              error: {
+                code: retryError.code || 'RETRY_ERROR',
+                message: retryError.message || 'user_idなしでの保存再試行に失敗しました。',
+              },
+            } as BookWithError;
+          }
+
+          console.log('user_idなしで書籍が正常に保存されました:', retryData);
+          return formatBookFromDB(retryData);
+        } catch (retryException) {
+          console.error('user_idなしでの保存再試行例外:', retryException);
         }
       }
 
-      return null;
+      // その他のエラーの場合も、フロントエンドでのハンドリングのためにエラー情報を返す
+      return {
+        ...book,
+        error: {
+          code: error.code || 'UNKNOWN_ERROR',
+          message: error.message || '書籍の保存中に不明なエラーが発生しました。',
+        },
+      } as BookWithError;
     }
 
     console.log('書籍が正常に保存されました:', data);
     return formatBookFromDB(data);
   } catch (error) {
     console.error('saveBookToDB内でエラー発生:', error);
-    return null;
+
+    // 例外が発生した場合も、フロントエンドでのハンドリングのためにエラー情報を返す
+    return {
+      ...book,
+      error: {
+        code: 'EXCEPTION',
+        message: error instanceof Error ? error.message : '不明な例外が発生しました',
+      },
+    } as BookWithError;
   }
 };
 
