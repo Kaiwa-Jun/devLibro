@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { searchRakutenBookByISBN } from '@/lib/api/rakuten-books';
 import { saveBookToDB } from '@/lib/supabase/books';
 import { useSearchStore } from '@/store/searchStore';
@@ -18,6 +19,10 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { setSearchTerm, resetPagination, setUseRakuten } = useSearchStore();
+
+  // デバッグモード用の状態
+  const [isDebugMode, setIsDebugMode] = useState(false);
+  const [debugIsbn, setDebugIsbn] = useState('9784873119045');
 
   // 楽天APIを使用することを設定
   useEffect(() => {
@@ -68,19 +73,32 @@ export default function ScanPage() {
       setIsScanning(false);
       stopScanning();
 
+      console.log(`🔍 [スキャンデバッグ] ISBN "${isbn}" の検索を開始します...`);
+
       // 楽天Books APIを使ってISBNから書籍情報を取得
-      const book = await searchRakutenBookByISBN(isbn);
+      // skipGenreFilterをtrueに設定してジャンルフィルタリングをスキップ
+      console.log(
+        `🔍 [スキャンデバッグ] searchRakutenBookByISBN呼び出し - ISBN: ${isbn}, skipGenreFilter: true`
+      );
+      const book = await searchRakutenBookByISBN(isbn, true);
+      console.log(`🔍 [スキャンデバッグ] searchRakutenBookByISBN結果:`, book);
 
       if (!book) {
+        console.error(`❌ [スキャンエラー] ISBN "${isbn}" に該当する書籍が見つかりませんでした`);
         setError(`ISBNコード ${isbn} に該当する書籍が見つかりませんでした。`);
         return;
       }
 
+      console.log(`✅ [スキャン成功] ISBN "${isbn}" の書籍が見つかりました: "${book.title}"`);
+
       // 取得した書籍情報をDBに保存
+      console.log(`📦 [スキャンデバッグ] 書籍情報をDBに保存します: ${book.title}`);
       const savedBook = await saveBookToDB(book);
+      console.log(`📦 [スキャンデバッグ] 保存結果:`, savedBook);
+
       setScannedBook(savedBook || book);
     } catch (err) {
-      console.error('書籍情報の取得に失敗しました:', err);
+      console.error('❌ [スキャンエラー] 書籍情報の取得に失敗しました:', err);
       setError('書籍情報の取得に失敗しました。再度お試しください。');
     }
   };
@@ -103,6 +121,18 @@ export default function ScanPage() {
     };
   }, []);
 
+  // デバッグ検証用のISBN検索実行
+  const handleDebugSearch = () => {
+    if (debugIsbn && debugIsbn.trim()) {
+      handleScan(debugIsbn.trim());
+    }
+  };
+
+  // デバッグモード切替（Prodではダブルタップで表示）
+  const toggleDebugMode = () => {
+    setIsDebugMode(!isDebugMode);
+  };
+
   return (
     <div className="container max-w-lg py-6">
       <div className="flex items-center mb-6">
@@ -110,6 +140,9 @@ export default function ScanPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold ml-2">バーコードスキャン</h1>
+        <Button variant="ghost" className="ml-auto text-xs opacity-30" onClick={toggleDebugMode}>
+          {isDebugMode ? '検証終了' : '検証'}
+        </Button>
       </div>
 
       <Card>
@@ -120,7 +153,27 @@ export default function ScanPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!isScanning && !scannedBook && (
+          {isDebugMode && (
+            <div className="space-y-4 mb-4 p-3 border border-yellow-300 bg-yellow-50 rounded-md">
+              <h3 className="text-sm font-medium text-yellow-800">検証モード</h3>
+              <div className="flex gap-2">
+                <Input
+                  value={debugIsbn}
+                  onChange={e => setDebugIsbn(e.target.value)}
+                  placeholder="ISBNを入力"
+                  className="flex-1"
+                />
+                <Button onClick={handleDebugSearch} variant="outline">
+                  検索
+                </Button>
+              </div>
+              <p className="text-xs text-yellow-700">
+                実際のISBNを入力して検索結果を検証できます。
+              </p>
+            </div>
+          )}
+
+          {!isScanning && !scannedBook && !isDebugMode && (
             <Button onClick={startScanning} className="w-full">
               スキャン開始
             </Button>

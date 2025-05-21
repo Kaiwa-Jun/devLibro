@@ -314,12 +314,18 @@ const extractCategoriesFromGenreId = (booksGenreId: string): string[] => {
 
 // 楽天ブックスのレスポンスをアプリのBook型に変換する関数
 const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]['Item']): Book => {
+  console.log(`📗 [Book変換] 変換開始 - タイトル: "${rakutenBook.title}"`);
+  console.log(`📗 [Book変換] 入力データ:`, rakutenBook);
+
   // 高解像度の画像URLを生成
   const originalImageUrl = rakutenBook.largeImageUrl || rakutenBook.mediumImageUrl;
   const highResImageUrl = getHighResRakutenImageUrl(originalImageUrl);
+  console.log(`📗 [Book変換] 画像URL処理: ${originalImageUrl} → ${highResImageUrl}`);
 
   // booksGenreIdからカテゴリを抽出
+  console.log(`📗 [Book変換] ジャンルID: ${rakutenBook.booksGenreId}`);
   const categories = extractCategoriesFromGenreId(rakutenBook.booksGenreId);
+  console.log(`📗 [Book変換] 抽出されたカテゴリ: ${categories.join(', ')}`);
 
   // プログラミング言語とフレームワークの情報を抽出
   const programmingLanguages: string[] = [];
@@ -398,13 +404,17 @@ const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]
   // デバッグ：抽出された技術情報を表示
   if (programmingLanguages.length > 0) {
     console.log(`📊 [技術情報] 検出されたプログラミング言語: ${programmingLanguages.join(', ')}`);
+  } else {
+    console.log(`📊 [技術情報] プログラミング言語は検出されませんでした`);
   }
 
   if (frameworks.length > 0) {
     console.log(`📊 [技術情報] 検出されたフレームワーク: ${frameworks.join(', ')}`);
+  } else {
+    console.log(`📊 [技術情報] フレームワークは検出されませんでした`);
   }
 
-  return {
+  const bookResult = {
     id: rakutenBook.isbn, // ISBNをIDとして使用
     isbn: rakutenBook.isbn,
     title: rakutenBook.title,
@@ -419,6 +429,9 @@ const mapRakutenBookToBook = (rakutenBook: RakutenBooksResponse['Items'][number]
     programmingLanguages, // 抽出されたプログラミング言語
     frameworks, // 抽出されたフレームワーク
   };
+
+  console.log(`📗 [Book変換] 変換完了:`, bookResult);
+  return bookResult;
 };
 
 // タイトルによる書籍検索（ページネーション対応）
@@ -519,9 +532,20 @@ export const searchRakutenBooksByTitle = async ({
 };
 
 // ISBNによる書籍検索
-export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null> => {
+export const searchRakutenBookByISBN = async (
+  isbn: string,
+  skipGenreFilter = false
+): Promise<Book | null> => {
   try {
-    console.log(`📘 [ISBN検索開始] ISBN "${isbn}" を楽天ブックスAPIで検索中...`);
+    console.log(
+      `📘 [ISBN検索開始] ISBN "${isbn}" を楽天ブックスAPIで検索中... (skipGenreFilter: ${skipGenreFilter})`
+    );
+
+    // APIキーの確認
+    if (!API_KEY) {
+      console.error('❌ [ISBN検索エラー] 楽天アプリIDが設定されていません');
+      return null;
+    }
 
     const params = new URLSearchParams({
       format: 'json',
@@ -529,18 +553,30 @@ export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null
       applicationId: API_KEY || '',
     });
 
+    const requestUrl = `${RAKUTEN_BOOKS_API_URL}?${params.toString()}`;
+    console.log(`📘 [ISBN検索] リクエストURL: ${requestUrl}`);
+
     const response = await fetch(`${RAKUTEN_BOOKS_API_URL}?${params.toString()}`);
 
+    console.log(`📘 [ISBN検索] レスポンスステータス: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
+      console.error(
+        `❌ [ISBN検索エラー] APIリクエスト失敗: ${response.status} ${response.statusText}`
+      );
       throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data: RakutenBooksResponse = await response.json();
+    console.log(`📘 [ISBN検索] APIレスポンス:`, JSON.stringify(data).substring(0, 500) + '...');
 
     if (!data.Items || data.Items.length === 0) {
       console.log(`ℹ️ [ISBN検索] ISBN "${isbn}" に一致する書籍は見つかりませんでした`);
+      console.log(`📘 [ISBN検索] レスポンス全体:`, data);
       return null;
     }
+
+    console.log(`📘 [ISBN検索] 書籍の件数: ${data.Items.length}件`);
 
     // 技術書に関連するジャンルかどうかをチェック
     const item = data.Items[0].Item;
@@ -548,7 +584,21 @@ export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null
       `📚 [ISBN検索] ISBN "${isbn}" の書籍が見つかりました: "${item.title}", ジャンルID: ${item.booksGenreId}`
     );
 
-    if (!isRelevantBook(item.booksGenreId)) {
+    // ジャンルチェックの判定を詳細ログに出力
+    if (!skipGenreFilter) {
+      console.log(
+        `📚 [ISBN検索] ジャンルフィルタリングを実行します (skipGenreFilter: ${skipGenreFilter})`
+      );
+      const isRelevant = isRelevantBook(item.booksGenreId);
+      console.log(`📚 [ISBN検索] ジャンルの関連性: ${isRelevant ? '関連あり' : '関連なし'}`);
+    } else {
+      console.log(
+        `📚 [ISBN検索] ジャンルフィルタリングをスキップします (skipGenreFilter: ${skipGenreFilter})`
+      );
+    }
+
+    // skipGenreFilterがtrueの場合、ジャンルフィルタリングをスキップ
+    if (!skipGenreFilter && !isRelevantBook(item.booksGenreId)) {
       // 除外されたジャンルの詳細をログ出力
       const genreIds = item.booksGenreId.split('/');
       const excludedDetails = genreIds
@@ -569,8 +619,10 @@ export const searchRakutenBookByISBN = async (isbn: string): Promise<Book | null
       return null;
     }
 
+    console.log(`📚 [ISBN検索] 書籍データをBook型に変換します`);
     const book = mapRakutenBookToBook(item);
-    console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の日本語書籍が見つかりました: "${book.title}"`);
+    console.log(`✅ [ISBN検索成功] ISBN "${isbn}" の書籍が見つかりました: "${book.title}"`);
+    console.log(`📚 [ISBN検索] 変換後のBookデータ:`, book);
     return book;
   } catch (error) {
     console.error(`❌ [ISBN検索エラー] ISBN "${isbn}" の検索中にエラーが発生:`, error);
