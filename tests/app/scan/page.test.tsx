@@ -9,7 +9,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 jest.mock('@/lib/api/rakuten-books', () => ({
-  searchRakutenBookByISBN: jest.fn(),
+  searchRakutenBookByISBN: jest.fn((isbn, skipGenreFilter) => Promise.resolve(null)),
 }));
 
 jest.mock('@/lib/supabase/books', () => ({
