@@ -96,6 +96,28 @@ export default function ScanPage() {
       const savedBook = await saveBookToDB(book);
       console.log(`📦 [スキャンデバッグ] 保存結果:`, savedBook);
 
+      // 認証エラーやRLSエラーの場合でも書籍情報は表示する
+      if (savedBook && 'error' in savedBook) {
+        console.warn(
+          '⚠️ [スキャン警告] 書籍の保存に問題がありましたが、情報は表示できます:',
+          (savedBook as any).error
+        );
+
+        // エラーがあっても書籍情報を表示するために、エラーメッセージのみ表示して書籍情報はそのまま使用
+        if ((savedBook as any).error.code === 'NOT_AUTHENTICATED') {
+          setError(
+            'ログインしていないため書籍情報は保存されませんでしたが、検索結果を表示できます。'
+          );
+        } else if ((savedBook as any).error.code === '42501') {
+          setError(
+            'セキュリティポリシーにより書籍情報は保存されませんでしたが、検索結果を表示できます。'
+          );
+        }
+        // エラーがあっても書籍情報は表示
+        setScannedBook(book);
+        return;
+      }
+
       setScannedBook(savedBook || book);
     } catch (err) {
       console.error('❌ [スキャンエラー] 書籍情報の取得に失敗しました:', err);
