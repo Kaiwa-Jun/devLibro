@@ -124,6 +124,32 @@ export default function BookDetail({ id }: BookDetailProps) {
                 // 保存処理を直接実行
                 console.log('セッションストレージの書籍データをDBに保存します:', bookToSave);
                 const savedBook = await saveBookToDB(bookToSave);
+
+                // 認証エラーやRLSエラーのチェック
+                if (savedBook && typeof savedBook === 'object' && 'error' in savedBook) {
+                  console.warn(
+                    '書籍保存時にエラーが発生しましたが、表示は継続します:',
+                    (savedBook as Book & { error: { code: string; message: string } }).error
+                  );
+
+                  // エラータイプに応じたログ出力
+                  if (
+                    (savedBook as Book & { error: { code: string; message: string } }).error
+                      .code === 'NOT_AUTHENTICATED'
+                  ) {
+                    console.warn('認証されていないため書籍情報は保存されませんでした');
+                  } else if (
+                    (savedBook as Book & { error: { code: string; message: string } }).error
+                      .code === '42501'
+                  ) {
+                    console.warn('セキュリティポリシーにより書籍情報は保存されませんでした');
+                  }
+
+                  // 元の書籍情報をそのまま使用
+                  sessionStorage.setItem(`book_${id}_saved`, 'true');
+                  return;
+                }
+
                 if (savedBook) {
                   console.log('書籍をDBに保存しました:', savedBook);
                   // 新しいDBデータをセット (内部IDがあるほうが今後の参照に便利)
