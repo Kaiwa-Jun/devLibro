@@ -206,7 +206,7 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
           code: 'NOT_AUTHENTICATED',
           message: '認証されていません。書籍の保存にはログインが必要です。',
         },
-      } as any;
+      } as Book & { error: { code: string; message: string } };
     }
 
     // ユーザーIDを追加して保存（RLSポリシーに対応）
@@ -234,7 +234,7 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
           return {
             ...book,
             savedLocally: true, // クライアント側で保存されたフラグ
-          } as any;
+          } as Book & { savedLocally: boolean };
         } catch (apiError) {
           console.error('APIを使用した書籍保存エラー:', apiError);
           return null;

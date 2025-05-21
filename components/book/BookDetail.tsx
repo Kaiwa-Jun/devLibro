@@ -129,13 +129,19 @@ export default function BookDetail({ id }: BookDetailProps) {
                 if (savedBook && typeof savedBook === 'object' && 'error' in savedBook) {
                   console.warn(
                     '書籍保存時にエラーが発生しましたが、表示は継続します:',
-                    (savedBook as any).error
+                    (savedBook as Book & { error: { code: string; message: string } }).error
                   );
 
                   // エラータイプに応じたログ出力
-                  if ((savedBook as any).error.code === 'NOT_AUTHENTICATED') {
+                  if (
+                    (savedBook as Book & { error: { code: string; message: string } }).error
+                      .code === 'NOT_AUTHENTICATED'
+                  ) {
                     console.warn('認証されていないため書籍情報は保存されませんでした');
-                  } else if ((savedBook as any).error.code === '42501') {
+                  } else if (
+                    (savedBook as Book & { error: { code: string; message: string } }).error
+                      .code === '42501'
+                  ) {
                     console.warn('セキュリティポリシーにより書籍情報は保存されませんでした');
                   }
 
