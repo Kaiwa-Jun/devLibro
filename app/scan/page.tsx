@@ -22,7 +22,7 @@ export default function ScanPage() {
 
   // デバッグモード用の状態
   const [isDebugMode, setIsDebugMode] = useState(false);
-  const [debugIsbn, setDebugIsbn] = useState('9784873119045');
+  const [debugIsbn, setDebugIsbn] = useState('9784297114626');
 
   // 楽天APIを使用することを設定
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function ScanPage() {
 
       // ここではモック実装として、5秒後に固定のISBNでスキャンが成功したことにします
       setTimeout(() => {
-        handleScan('9784873119045'); // プログラミング TypeScript のISBN
+        handleScan('9784297114626'); // プログラミング TypeScript のISBN
       }, 5000);
     } catch (err) {
       console.error('カメラへのアクセスに失敗しました:', err);

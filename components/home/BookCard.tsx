@@ -21,6 +21,15 @@ export default function BookCard({ book }: BookCardProps) {
     try {
       // セッションストレージに書籍情報を保存
       sessionStorage.setItem(`book_${book.id}`, JSON.stringify(book));
+
+      // 既存の保存フラグがあっても、新たにページ遷移する場合はリセットする
+      // これにより、別のセッションや以前のエラー後に再度保存を試みることができる
+      const currentFlag = sessionStorage.getItem(`book_${book.id}_saved`);
+      if (currentFlag) {
+        console.log(`📚 既存の保存フラグをリセット: ${currentFlag} → null`);
+        sessionStorage.removeItem(`book_${book.id}_saved`);
+      }
+
       console.log(`📚 書籍情報をセッションストレージに保存: ${book.title}`);
     } catch (error) {
       console.error('セッションストレージへの保存エラー:', error);
