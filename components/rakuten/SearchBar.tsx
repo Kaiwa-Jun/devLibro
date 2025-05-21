@@ -99,7 +99,7 @@ export default function RakutenSearchBar() {
         <Button
           variant="outline"
           size="sm"
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 gap-1"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 gap-1 flex md:hidden"
           onClick={() => {
             router.push('/scan');
           }}
