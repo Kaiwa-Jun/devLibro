@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 
 import BookGrid from '@/components/home/BookGrid';
 import FilterButtons from '@/components/home/FilterButtons';
-import SearchBar from '@/components/home/SearchBar';
 import { generatePageMetadata } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = generatePageMetadata({
@@ -20,9 +19,6 @@ export default function Home() {
   // 以下は元のホーム画面のコード（リダイレクトされるため実行されません）
   return (
     <div className="space-y-6 pb-8 pt-8">
-      <div className="max-w-2xl mx-auto relative">
-        <SearchBar />
-      </div>
       <FilterButtons />
       <BookGrid />
     </div>
