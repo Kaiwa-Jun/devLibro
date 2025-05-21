@@ -405,7 +405,8 @@ export default function FilterButtons() {
           </SheetContent>
         </Sheet>
 
-        <Sheet
+        {/* カテゴリフィルタリング機能は後で実装予定 */}
+        {/* <Sheet
           open={activeSheet === 'category'}
           onOpenChange={open => setActiveSheet(open ? 'category' : null)}
         >
@@ -444,7 +445,7 @@ export default function FilterButtons() {
               </Button>
             </div>
           </SheetContent>
-        </Sheet>
+        </Sheet> */}
 
         {filterCount > 0 && (
           <Button
@@ -523,7 +524,8 @@ export default function FilterButtons() {
         </div>
       )}
 
-      {category.length > 0 && (
+      {/* カテゴリフィルタリング機能は後で実装予定 */}
+      {/* {category.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {category.map(value => {
             const catOption = filterOptions.category.find(cat => cat.value === value);
@@ -548,7 +550,7 @@ export default function FilterButtons() {
             );
           })}
         </div>
-      )}
+      )} */}
 
       {framework.length > 0 && (
         <div className="flex flex-wrap gap-2">
