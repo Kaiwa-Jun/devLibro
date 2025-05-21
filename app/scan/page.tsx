@@ -6,8 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { searchBookByISBN } from '@/lib/api/books';
+import { searchRakutenBookByISBN } from '@/lib/api/rakuten-books';
 import { saveBookToDB } from '@/lib/supabase/books';
+import { useSearchStore } from '@/store/searchStore';
 import { Book } from '@/types';
 
 export default function ScanPage() {
@@ -16,6 +17,15 @@ export default function ScanPage() {
   const [scannedBook, setScannedBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { setSearchTerm, resetPagination, setUseRakuten } = useSearchStore();
+
+  // 楽天APIを使用することを設定
+  useEffect(() => {
+    setUseRakuten(true);
+    return () => {
+      setUseRakuten(false);
+    };
+  }, [setUseRakuten]);
 
   // バーコードスキャン機能
   // 実際の実装では、QuaggaJSなどのライブラリを使用するとよいです
@@ -58,8 +68,8 @@ export default function ScanPage() {
       setIsScanning(false);
       stopScanning();
 
-      // Google Books APIを使ってISBNから書籍情報を取得
-      const book = await searchBookByISBN(isbn);
+      // 楽天Books APIを使ってISBNから書籍情報を取得
+      const book = await searchRakutenBookByISBN(isbn);
 
       if (!book) {
         setError(`ISBNコード ${isbn} に該当する書籍が見つかりませんでした。`);
@@ -72,6 +82,17 @@ export default function ScanPage() {
     } catch (err) {
       console.error('書籍情報の取得に失敗しました:', err);
       setError('書籍情報の取得に失敗しました。再度お試しください。');
+    }
+  };
+
+  // 検索結果ページへ遷移
+  const handleViewSearchResults = () => {
+    if (scannedBook) {
+      // 検索ストアに検索語をセット
+      setSearchTerm(scannedBook.title);
+      resetPagination();
+      // 検索結果ページへ遷移
+      router.push('/');
     }
   };
 
@@ -149,6 +170,9 @@ export default function ScanPage() {
                   onClick={() => router.push(`/book/${scannedBook.id}`)}
                 >
                   詳細を見る
+                </Button>
+                <Button variant="secondary" className="flex-1" onClick={handleViewSearchResults}>
+                  検索結果を見る
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => setScannedBook(null)}>
                   別の本をスキャン
