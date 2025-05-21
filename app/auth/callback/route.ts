@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  // 認証後は書籍検索画面にリダイレクト
-  return NextResponse.redirect(new URL('/books', request.url));
+  // リクエストのオリジン（ホスト名）を取得
+  const origin = requestUrl.origin;
+
+  // 認証後は書籍検索画面にリダイレクト（現在のオリジンを使用）
+  return NextResponse.redirect(`${origin}/books`);
 }
