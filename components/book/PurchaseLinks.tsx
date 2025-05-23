@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { generateAmazonURL, generateRakutenURL, validateISBN } from '@/lib/api/commerce';
 import { getRakutenBookDetailByTitle } from '@/lib/api/rakuten-books';
+import { affiliateConfig } from '@/lib/config/affiliate';
 import { updateBookISBN } from '@/lib/supabase/books';
 
 type PurchaseLinksProps = {
@@ -39,7 +40,9 @@ export default function PurchaseLinks({ isbn, title, bookId }: PurchaseLinksProp
           console.log(`✅ [ISBN有効] 「${isbn}」は有効なISBNです`);
 
           // Amazon URLの生成
-          const amazon = generateAmazonURL(isbn);
+          const amazon = generateAmazonURL(isbn, { 
+            affiliateId: affiliateConfig.amazon.affiliateId 
+          });
           console.log(`📚 [Amazon] URL生成結果: ${amazon}`);
           setAmazonUrl(amazon);
 
@@ -51,18 +54,25 @@ export default function PurchaseLinks({ isbn, title, bookId }: PurchaseLinksProp
 
             if (detailUrl) {
               console.log(`📚 [楽天] 詳細URLを使用: ${detailUrl}`);
-              const rakutenUrlWithDetail = generateRakutenURL(isbn, { detailUrl });
+              const rakutenUrlWithDetail = generateRakutenURL(isbn, { 
+                detailUrl,
+                affiliateId: affiliateConfig.rakuten.affiliateId
+              });
               console.log(`📚 [楽天] 最終URL (詳細あり): ${rakutenUrlWithDetail}`);
               setRakutenUrl(rakutenUrlWithDetail);
             } else {
               console.log(`📚 [楽天] 詳細URLなし、ISBNから直接生成`);
-              const rakutenUrlDirect = generateRakutenURL(isbn);
+              const rakutenUrlDirect = generateRakutenURL(isbn, {
+                affiliateId: affiliateConfig.rakuten.affiliateId
+              });
               console.log(`📚 [楽天] 最終URL (ISBN直接): ${rakutenUrlDirect}`);
               setRakutenUrl(rakutenUrlDirect);
             }
           } catch (apiError) {
             console.error('❌ [楽天API] エラー発生:', apiError);
-            const fallbackUrl = generateRakutenURL(isbn);
+            const fallbackUrl = generateRakutenURL(isbn, {
+              affiliateId: affiliateConfig.rakuten.affiliateId
+            });
             console.log(`📚 [楽天] フォールバックURL: ${fallbackUrl}`);
             setRakutenUrl(fallbackUrl);
           }
@@ -85,7 +95,9 @@ export default function PurchaseLinks({ isbn, title, bookId }: PurchaseLinksProp
               // Amazon用URL生成 - ISBNが取得できれば使用
               if (rakutenIsbn && validateISBN(rakutenIsbn)) {
                 console.log(`✓ [ISBNチェック] 「${rakutenIsbn}」は有効なISBNです`);
-                const amazonUrl = generateAmazonURL(rakutenIsbn);
+                const amazonUrl = generateAmazonURL(rakutenIsbn, {
+                  affiliateId: affiliateConfig.amazon.affiliateId
+                });
                 console.log(`📚 [Amazon] 生成URL: ${amazonUrl}`);
                 setAmazonUrl(amazonUrl);
               } else {
@@ -98,11 +110,13 @@ export default function PurchaseLinks({ isbn, title, bookId }: PurchaseLinksProp
               // 楽天用URL生成 - 詳細ページURLがあれば優先して使用
               const generatedRakutenUrl = generateRakutenURL(rakutenIsbn || '', {
                 detailUrl: detailUrl || undefined,
+                affiliateId: affiliateConfig.rakuten.affiliateId
               });
               console.log(`📚 [楽天] 最終生成URL: ${generatedRakutenUrl}`);
               console.log(`📚 [楽天] URL生成パラメータ:`, {
                 isbn: rakutenIsbn || '',
                 detailUrl: detailUrl || undefined,
+                affiliateId: affiliateConfig.rakuten.affiliateId
               });
               setRakutenUrl(generatedRakutenUrl);
 

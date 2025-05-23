@@ -27,6 +27,8 @@ describe('PurchaseLinks コンポーネント', () => {
     (commerce.validateISBN as jest.Mock).mockReturnValue(true);
     // デフォルトでDB更新成功とする
     (supabaseBooks.updateBookISBN as jest.Mock).mockResolvedValue(true);
+    process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_ID = 'test-amazon-id';
+    process.env.NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID = 'test-rakuten-id';
   });
 
   test('AmazonとRakutenのリンクが表示される', async () => {
