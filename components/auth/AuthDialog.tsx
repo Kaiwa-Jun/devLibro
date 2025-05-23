@@ -96,11 +96,17 @@ export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
           return;
         }
       } else if (provider === 'google') {
+        console.log('Starting Google OAuth from AuthDialog');
+        console.log('Current location:', window.location.href);
+
         const { error } = await signInWithGoogle();
         if (error) {
+          console.error('Google OAuth error in AuthDialog:', error);
           toast.error(error.message);
           return;
         }
+
+        console.log('Google OAuth initiated successfully');
       }
 
       // OAuthリダイレクトが行われるので、ここにはたどり着かない
