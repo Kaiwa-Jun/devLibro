@@ -23,7 +23,7 @@ export default function AddBookButton() {
           </Button>
         </motion.div>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="w-[80vw] sm:max-w-2xl rounded-xl">
         <DialogHeader>
           <DialogTitle>書籍を追加</DialogTitle>
         </DialogHeader>
