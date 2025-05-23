@@ -52,7 +52,9 @@ export default function Header() {
                 key={tab.name}
                 href={tab.href}
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  tab.active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                  tab.active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground md:hover:bg-muted'
                 }`}
               >
                 <span>{tab.name}</span>
@@ -66,7 +68,7 @@ export default function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="rounded-lg"
+            className="rounded-lg md:hover:bg-muted"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
