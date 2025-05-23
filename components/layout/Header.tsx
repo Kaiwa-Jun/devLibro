@@ -68,7 +68,7 @@ export default function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="rounded-lg md:hover:bg-muted"
+            className="rounded-lg md:hover:bg-muted md:hover:text-foreground"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
