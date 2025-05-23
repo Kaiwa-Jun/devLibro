@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import DeleteBookModal from '@/components/modals/DeleteBookModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,6 +34,7 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
   const [progress, setProgress] = useState(userBook.progress || 0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   // ローカルでユーザーブックの状態を管理
   const [localUserBook, setLocalUserBook] = useState<UserBook>(userBook);
 
@@ -95,16 +97,13 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
 
   // 削除処理
   const handleDelete = async () => {
-    if (!confirm(`「${localUserBook.book.title}」を本棚から削除しますか？`)) {
-      return;
-    }
-
     setIsLoading(true);
     try {
       const success = await deleteUserBook(localUserBook.id);
       if (success) {
         toast.success(`「${localUserBook.book.title}」を本棚から削除しました`);
         setIsDeleted(true);
+        setIsDeleteModalOpen(false);
         if (onUpdate) {
           // 親コンポーネントに削除情報を通知
           onUpdate(localUserBook, 'delete');
@@ -118,6 +117,11 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 削除モーダルを開く
+  const handleDeleteClick = () => {
+    setIsDeleteModalOpen(true);
   };
 
   // ステータス値からテキストを取得
@@ -189,7 +193,7 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
                         読了に設定
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem className="text-destructive" onClick={handleDelete}>
+                    <DropdownMenuItem className="text-destructive" onClick={handleDeleteClick}>
                       本棚から削除
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -228,6 +232,15 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
           </div>
         </CardContent>
       </Card>
+
+      {/* 削除確認モーダル */}
+      <DeleteBookModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        bookTitle={localUserBook.book.title}
+        isLoading={isLoading}
+      />
     </motion.div>
   );
 }

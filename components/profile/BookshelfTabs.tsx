@@ -160,7 +160,7 @@ export default function BookshelfTabs() {
                 <span>書籍を追加</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>書籍を追加</DialogTitle>
               </DialogHeader>
