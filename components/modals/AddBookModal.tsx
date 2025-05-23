@@ -334,7 +334,7 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
             className="space-y-2 overflow-hidden"
           >
             <h3 className="text-sm font-medium">検索結果</h3>
-            <div className="max-h-60 overflow-y-auto space-y-2" ref={resultsContainerRef}>
+            <div className="max-h-80 overflow-y-auto space-y-2" ref={resultsContainerRef}>
               {searchResults.map(book => (
                 <Card
                   key={book.id}
@@ -404,64 +404,79 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
             className="space-y-4"
           >
             <h3 className="text-sm font-medium">選択した書籍</h3>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-col gap-4">
-                  <div className="mx-auto relative h-48 w-36">
-                    <Image
-                      src={selectedBook.img_url || '/images/book-placeholder.png'}
-                      alt={selectedBook.title}
-                      fill
-                      className="object-cover rounded-md shadow-md"
-                      sizes="(max-width: 768px) 144px, 192px"
-                    />
-                  </div>
-                  <div className="text-center">
-                    <h4 className="font-medium text-lg">{selectedBook.title}</h4>
-                    <p className="text-sm text-muted-foreground">{selectedBook.author}</p>
-                    {selectedBook.publisherName && (
-                      <p className="text-sm text-muted-foreground">{selectedBook.publisherName}</p>
-                    )}
-                    {selectedBook.isbn && !selectedBook.isbn.startsWith('N-') ? (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ISBN: {selectedBook.isbn}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 書籍情報カラム */}
+              <Card className="h-fit">
+                <CardContent className="p-4">
+                  <div className="flex gap-4">
+                    <div className="relative h-32 w-24 flex-shrink-0">
+                      <Image
+                        src={selectedBook.img_url || '/images/book-placeholder.png'}
+                        alt={selectedBook.title}
+                        fill
+                        className="object-cover rounded-md shadow-md"
+                        sizes="96px"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-lg line-clamp-2">{selectedBook.title}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {selectedBook.author}
                       </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground mt-1 italic">ISBN情報なし</p>
-                    )}
+                      {selectedBook.publisherName && (
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {selectedBook.publisherName}
+                        </p>
+                      )}
+                      {selectedBook.isbn && !selectedBook.isbn.startsWith('N-') ? (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          ISBN: {selectedBook.isbn}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1 italic">ISBN情報なし</p>
+                      )}
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* ステータス選択カラム */}
+              <div className="space-y-4 flex flex-col justify-center min-h-[200px]">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">ステータス</h3>
+                  <Tabs
+                    value={selectedStatus}
+                    onValueChange={value => setSelectedStatus(value as BookStatus)}
+                  >
+                    <TabsList className="grid grid-cols-3 w-full">
+                      <TabsTrigger value="unread">未読</TabsTrigger>
+                      <TabsTrigger value="reading">読書中</TabsTrigger>
+                      <TabsTrigger value="done">読了</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
-              </CardContent>
-            </Card>
 
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">ステータス</h3>
-              <Tabs
-                value={selectedStatus}
-                onValueChange={value => setSelectedStatus(value as BookStatus)}
-              >
-                <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="unread">未読</TabsTrigger>
-                  <TabsTrigger value="reading">読書中</TabsTrigger>
-                  <TabsTrigger value="done">読了</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setSelectedBook(null)}>
-                キャンセル
-              </Button>
-              <Button className="flex-1" onClick={handleAddBook} disabled={isAdding}>
-                {isAdding ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    追加中...
-                  </>
-                ) : (
-                  '追加する'
-                )}
-              </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setSelectedBook(null)}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button className="flex-1" onClick={handleAddBook} disabled={isAdding}>
+                    {isAdding ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        追加中...
+                      </>
+                    ) : (
+                      '追加する'
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
