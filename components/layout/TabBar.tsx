@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Home, User } from 'lucide-react';
+import { BookOpen, Home } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -20,7 +20,7 @@ export default function TabBar() {
     {
       name: '本棚',
       href: '/profile',
-      icon: User,
+      icon: BookOpen,
       active: pathname.startsWith('/profile'),
     },
   ];
