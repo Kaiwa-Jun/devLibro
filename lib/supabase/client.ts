@@ -99,12 +99,19 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signInWithGitHub = async () => {
   const client = getSupabaseClient();
 
-  // ホスト名で本番環境を判定（より確実な方法）
+  // より確実なドメイン判定
+  const currentDomain = window.location.origin;
   let redirectUrl;
-  if (window.location.hostname === 'dev-libro.vercel.app') {
+
+  if (currentDomain.includes('dev-libro.vercel.app') || currentDomain.includes('vercel.app')) {
+    // 本番環境（Vercel）
     redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
+  } else if (currentDomain.includes('localhost')) {
+    // 開発環境
+    redirectUrl = `${currentDomain}/auth/callback`;
   } else {
-    redirectUrl = `${window.location.origin}/auth/callback`;
+    // フォールバック
+    redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
   }
 
   const { data, error } = await client.auth.signInWithOAuth({
@@ -120,26 +127,20 @@ export const signInWithGitHub = async () => {
 export const signInWithGoogle = async () => {
   const client = getSupabaseClient();
 
-  // デバッグ情報をログ出力
-  console.log('=== Google OAuth Debug Info ===');
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('NEXT_PUBLIC_VERCEL_URL:', process.env.NEXT_PUBLIC_VERCEL_URL);
-  console.log('window.location.origin:', window.location.origin);
-  console.log('window.location.href:', window.location.href);
-  console.log('window.location.hostname:', window.location.hostname);
-
-  // ホスト名で本番環境を判定（より確実な方法）
+  // より確実なドメイン判定
+  const currentDomain = window.location.origin;
   let redirectUrl;
-  if (window.location.hostname === 'dev-libro.vercel.app') {
-    redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
-    console.log('Using production redirect URL (hostname-based detection)');
-  } else {
-    redirectUrl = `${window.location.origin}/auth/callback`;
-    console.log('Using development redirect URL (hostname-based detection)');
-  }
 
-  console.log('Final redirect URL:', redirectUrl);
-  console.log('=== End Debug Info ===');
+  if (currentDomain.includes('dev-libro.vercel.app') || currentDomain.includes('vercel.app')) {
+    // 本番環境（Vercel）
+    redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
+  } else if (currentDomain.includes('localhost')) {
+    // 開発環境
+    redirectUrl = `${currentDomain}/auth/callback`;
+  } else {
+    // フォールバック
+    redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
+  }
 
   const { data, error } = await client.auth.signInWithOAuth({
     provider: 'google',
@@ -147,10 +148,6 @@ export const signInWithGoogle = async () => {
       redirectTo: redirectUrl,
     },
   });
-
-  if (error) {
-    console.error('OAuth error:', error);
-  }
 
   return { data, error };
 };

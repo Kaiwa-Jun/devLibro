@@ -5,7 +5,6 @@ import CookieConsent from '@/components/analytics/CookieConsent';
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics';
 import AuthProvider from '@/components/auth/AuthProvider';
 import ExperienceCheck from '@/components/auth/ExperienceCheck';
-import DebugInfo from '@/components/debug/DebugInfo';
 import Header from '@/components/layout/Header';
 import TabBar from '@/components/layout/TabBar';
 import AnalyticsProvider from '@/components/providers/AnalyticsProvider';
@@ -40,7 +39,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ExperienceCheck />
               <Toaster />
               <CookieConsent />
-              <DebugInfo />
             </AnalyticsProvider>
           </ThemeProvider>
         </AuthProvider>
