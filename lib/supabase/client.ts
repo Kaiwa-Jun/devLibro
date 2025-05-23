@@ -99,9 +99,9 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signInWithGitHub = async () => {
   const client = getSupabaseClient();
 
-  // 本番環境では明示的にドメインを指定、開発環境ではlocalhostを使用
+  // ホスト名で本番環境を判定（より確実な方法）
   let redirectUrl;
-  if (process.env.NODE_ENV === 'production') {
+  if (window.location.hostname === 'dev-libro.vercel.app') {
     redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
   } else {
     redirectUrl = `${window.location.origin}/auth/callback`;
@@ -126,15 +126,16 @@ export const signInWithGoogle = async () => {
   console.log('NEXT_PUBLIC_VERCEL_URL:', process.env.NEXT_PUBLIC_VERCEL_URL);
   console.log('window.location.origin:', window.location.origin);
   console.log('window.location.href:', window.location.href);
+  console.log('window.location.hostname:', window.location.hostname);
 
-  // 本番環境では明示的にドメインを指定、開発環境ではlocalhostを使用
+  // ホスト名で本番環境を判定（より確実な方法）
   let redirectUrl;
-  if (process.env.NODE_ENV === 'production') {
+  if (window.location.hostname === 'dev-libro.vercel.app') {
     redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
-    console.log('Using production redirect URL');
+    console.log('Using production redirect URL (hostname-based detection)');
   } else {
     redirectUrl = `${window.location.origin}/auth/callback`;
-    console.log('Using development redirect URL');
+    console.log('Using development redirect URL (hostname-based detection)');
   }
 
   console.log('Final redirect URL:', redirectUrl);
