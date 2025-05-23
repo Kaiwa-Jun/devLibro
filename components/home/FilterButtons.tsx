@@ -326,7 +326,7 @@ export default function FilterButtons() {
             <SheetHeader>
               <SheetTitle>難易度</SheetTitle>
             </SheetHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 overflow-y-auto pb-24 max-h-[calc(70vh-160px)]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 overflow-y-auto max-h-[calc(70vh-100px)]">
               {filterOptions.difficulty.map(diff => {
                 const Icon = diff.icon;
                 return (
@@ -334,7 +334,8 @@ export default function FilterButtons() {
                     key={diff.value}
                     variant={difficulty.includes(diff.value) ? 'default' : 'outline'}
                     className={cn(
-                      'flex-col justify-center items-center h-auto py-4 px-2 hover:bg-primary/5',
+                      'flex-col justify-center items-center h-auto py-4 px-2',
+                      !difficulty.includes(diff.value) && 'hover:bg-primary/5',
                       difficulty.includes(diff.value) && 'bg-primary text-primary-foreground'
                     )}
                     onClick={() => handleFilterSelect('difficulty', diff.value)}
@@ -344,12 +345,6 @@ export default function FilterButtons() {
                   </Button>
                 );
               })}
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-              <Button className="w-full" onClick={() => setActiveSheet(null)}>
-                適用する
-              </Button>
             </div>
           </SheetContent>
         </Sheet>
@@ -367,7 +362,7 @@ export default function FilterButtons() {
             <SheetHeader>
               <SheetTitle>ジャンル</SheetTitle>
             </SheetHeader>
-            <div className="mt-4 overflow-y-auto max-h-[calc(70vh-160px)] pr-1 pb-24">
+            <div className="mt-4 overflow-y-auto max-h-[calc(70vh-100px)] pr-1">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {filterOptions.language.map(item => (
                   <Button
@@ -376,7 +371,8 @@ export default function FilterButtons() {
                       isSelectedLanguageOrFramework(item.value, item.type) ? 'default' : 'outline'
                     }
                     className={cn(
-                      'flex-col justify-center items-center h-auto py-4 px-2 hover:bg-primary/5',
+                      'flex-col justify-center items-center h-auto py-4 px-2',
+                      !isSelectedLanguageOrFramework(item.value, item.type) && 'hover:bg-primary/5',
                       isSelectedLanguageOrFramework(item.value, item.type) &&
                         'bg-primary text-primary-foreground'
                     )}
@@ -396,12 +392,6 @@ export default function FilterButtons() {
                 ))}
               </div>
             </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-              <Button className="w-full" onClick={() => setActiveSheet(null)}>
-                適用する
-              </Button>
-            </div>
           </SheetContent>
         </Sheet>
 
@@ -419,7 +409,7 @@ export default function FilterButtons() {
             <SheetHeader>
               <SheetTitle>カテゴリ</SheetTitle>
             </SheetHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 overflow-y-auto pb-24 max-h-[calc(70vh-160px)]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4 overflow-y-auto max-h-[calc(70vh-100px)]">
               {filterOptions.category.map(cat => {
                 const Icon = cat.icon;
                 return (
@@ -427,7 +417,8 @@ export default function FilterButtons() {
                     key={cat.value}
                     variant={category.includes(cat.value) ? 'default' : 'outline'}
                     className={cn(
-                      'flex-col justify-center items-center h-auto py-4 px-2 hover:bg-primary/5',
+                      'flex-col justify-center items-center h-auto py-4 px-2',
+                      !category.includes(cat.value) && 'hover:bg-primary/5',
                       category.includes(cat.value) && 'bg-primary text-primary-foreground'
                     )}
                     onClick={() => handleFilterSelect('category', cat.value)}
@@ -437,12 +428,6 @@ export default function FilterButtons() {
                   </Button>
                 );
               })}
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-              <Button className="w-full" onClick={() => setActiveSheet(null)}>
-                適用する
-              </Button>
             </div>
           </SheetContent>
         </Sheet> */}
