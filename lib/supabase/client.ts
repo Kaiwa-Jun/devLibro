@@ -120,13 +120,25 @@ export const signInWithGitHub = async () => {
 export const signInWithGoogle = async () => {
   const client = getSupabaseClient();
 
+  // デバッグ情報をログ出力
+  console.log('=== Google OAuth Debug Info ===');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('NEXT_PUBLIC_VERCEL_URL:', process.env.NEXT_PUBLIC_VERCEL_URL);
+  console.log('window.location.origin:', window.location.origin);
+  console.log('window.location.href:', window.location.href);
+
   // 本番環境では明示的にドメインを指定、開発環境ではlocalhostを使用
   let redirectUrl;
   if (process.env.NODE_ENV === 'production') {
     redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
+    console.log('Using production redirect URL');
   } else {
     redirectUrl = `${window.location.origin}/auth/callback`;
+    console.log('Using development redirect URL');
   }
+
+  console.log('Final redirect URL:', redirectUrl);
+  console.log('=== End Debug Info ===');
 
   const { data, error } = await client.auth.signInWithOAuth({
     provider: 'google',
@@ -134,6 +146,10 @@ export const signInWithGoogle = async () => {
       redirectTo: redirectUrl,
     },
   });
+
+  if (error) {
+    console.error('OAuth error:', error);
+  }
 
   return { data, error };
 };
