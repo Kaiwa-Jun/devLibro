@@ -52,7 +52,7 @@ export default function WriteReviewButton({ bookId = '1' }: WriteReviewButtonPro
         whileTap={{ scale: 0.95 }}
       >
         <Button
-          className="h-11 px-6 font-medium gap-2 bg-accent hover:bg-accent/90 text-accent-foreground rounded-lg"
+          className="h-11 px-6 font-medium gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
           onClick={handleButtonClick}
         >
           <MessageSquarePlus className="h-5 w-5" />
