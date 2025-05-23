@@ -32,10 +32,10 @@ describe('PurchaseLinks コンポーネント', () => {
   test('AmazonとRakutenのリンクが表示される', async () => {
     // モック関数の戻り値を設定
     (commerce.generateAmazonURL as jest.Mock).mockReturnValue(
-      'https://www.amazon.co.jp/dp/9784873113364'
+      'https://www.amazon.co.jp/exec/obidos/ASIN/4873113362/devlibro-22'
     );
     (commerce.generateRakutenURL as jest.Mock).mockReturnValue(
-      'https://books.rakuten.co.jp/search?sitem=9784873113364'
+      'https://books.rakuten.co.jp/search?sitem=9784873113364&afid=12345678.abcdefgh'
     );
 
     render(<PurchaseLinks isbn="9784873113364" title="プログラミングの本" />);
@@ -44,18 +44,29 @@ describe('PurchaseLinks コンポーネント', () => {
     await waitFor(() => {
       // Amazonリンクの確認
       const amazonLink = screen.getByText('Amazon').closest('a');
-      expect(amazonLink).toHaveAttribute('href', 'https://www.amazon.co.jp/dp/9784873113364');
+      expect(amazonLink).toHaveAttribute(
+        'href',
+        'https://www.amazon.co.jp/exec/obidos/ASIN/4873113362/devlibro-22'
+      );
       expect(amazonLink).toHaveAttribute('target', '_blank');
       expect(amazonLink).toHaveAttribute('rel', 'noopener noreferrer');
 
-      // 楽天Booksリンクの確認
+      // Rakutenリンクの確認
       const rakutenLink = screen.getByText('楽天Books').closest('a');
       expect(rakutenLink).toHaveAttribute(
         'href',
-        'https://books.rakuten.co.jp/search?sitem=9784873113364'
+        'https://books.rakuten.co.jp/search?sitem=9784873113364&afid=12345678.abcdefgh'
       );
       expect(rakutenLink).toHaveAttribute('target', '_blank');
       expect(rakutenLink).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    // アフィリエイトIDと一緒に呼び出されることを確認
+    expect(commerce.generateAmazonURL).toHaveBeenCalledWith('9784873113364', {
+      affiliateId: process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_ID,
+    });
+    expect(commerce.generateRakutenURL).toHaveBeenCalledWith('9784873113364', {
+      affiliateId: process.env.NEXT_PUBLIC_RAKUTEN_AFFILIATE_ID,
     });
   });
 
