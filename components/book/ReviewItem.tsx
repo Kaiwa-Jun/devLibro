@@ -6,6 +6,7 @@ import { User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, getDifficultyInfo } from '@/lib/utils';
+import { truncateUserName } from '@/lib/utils/truncate';
 import { Review } from '@/types';
 
 type ReviewItemProps = {
@@ -38,7 +39,9 @@ export default function ReviewItem({ review }: ReviewItemProps) {
 
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium">{isAnonymous ? '匿名' : review.user_name}</p>
+            <p className="font-medium" title={isAnonymous ? '匿名' : review.user_name}>
+              {isAnonymous ? '匿名' : truncateUserName(review.user_name)}
+            </p>
             <Badge variant="outline" className="border">
               経験 {review.experienceLabel || `${review.experience_years}年`}
             </Badge>

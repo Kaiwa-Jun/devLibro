@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { truncateUserName } from '@/lib/utils/truncate';
 
 export default function AuthButton() {
   const { user, loading, signOut } = useAuth();
@@ -49,12 +50,14 @@ export default function AuthButton() {
     );
   }
 
+  const userName = user.user_metadata?.name || user.email || 'ユーザー';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm">
           <User className="h-4 w-4 mr-2" />
-          {user.user_metadata?.name || user.email || 'ユーザー'}
+          {truncateUserName(userName)}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

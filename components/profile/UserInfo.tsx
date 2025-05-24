@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/lib/supabase/client';
+import { truncateUserName } from '@/lib/utils/truncate';
 
 // ユーザープロフィールの型定義
 interface UserProfile {
@@ -179,7 +180,9 @@ export default function UserInfo() {
 
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-bold">{userName}</h2>
+          <h2 className="text-xl font-bold" title={userName}>
+            {truncateUserName(userName)}
+          </h2>
           <Dialog open={editMode} onOpenChange={setEditMode}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">

@@ -14,6 +14,7 @@ import { REVIEW_ADDED, reviewEvents } from '@/lib/events/reviewEvents';
 import { getUserProfile } from '@/lib/supabase/client';
 import { addReview } from '@/lib/supabase/reviews';
 import { getDifficultyInfo } from '@/lib/utils';
+import { truncateUserName } from '@/lib/utils/truncate';
 
 interface ReviewModalProps {
   bookId: string;
@@ -160,7 +161,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
               disabled={isLoading}
             />
             <p className="text-sm text-muted-foreground">
-              {isLoading ? '読み込み中...' : `表示名プレビュー：${userName}`}
+              {isLoading ? '読み込み中...' : `表示名プレビュー：${truncateUserName(userName)}`}
             </p>
           </div>
         )}
