@@ -92,7 +92,8 @@ const getActualBookId = async (bookId: string): Promise<number | null> => {
     if (allBooks) {
       console.log(
         '利用可能な書籍ID例:',
-        allBooks.map(b => ({ id: b.id, title: b.title }))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        allBooks.map((b: any) => ({ id: b.id, title: b.title }))
       );
     }
 

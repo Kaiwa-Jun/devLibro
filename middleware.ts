@@ -12,7 +12,21 @@ export async function middleware(request: NextRequest) {
     const supabase = createMiddlewareClient({ req: request, res });
 
     // セッションを更新・リフレッシュする
-    await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+
+    // 認証関連のパスでのみログを出力
+    if (
+      request.nextUrl.pathname.startsWith('/auth') ||
+      request.nextUrl.pathname.startsWith('/login')
+    ) {
+      // eslint-disable-next-line no-console
+      console.log('Middleware session check:', {
+        path: request.nextUrl.pathname,
+        hasSession: !!data.session,
+        hasUser: !!data.session?.user,
+        error: error?.message,
+      });
+    }
 
     return res;
   } catch (error) {

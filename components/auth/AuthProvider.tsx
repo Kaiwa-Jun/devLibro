@@ -38,20 +38,37 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // クライアントサイドでのみ実行
     if (typeof window === 'undefined' || !supabase) {
+      // eslint-disable-next-line no-console
+      console.log('AuthProvider: Skipping - not in browser or supabase not available');
       setLoading(false);
       return;
     }
+
+    // eslint-disable-next-line no-console
+    console.log('=== AuthProvider Init Debug ===');
+    // eslint-disable-next-line no-console
+    console.log('Window location:', window.location.href);
+    // eslint-disable-next-line no-console
+    console.log('Supabase client available:', !!supabase);
 
     // 初期セッションと認証状態の変更を監視
     const fetchUser = async () => {
       try {
         // supabaseがnullでないことがわかっている
         const client = supabase as ReturnType<typeof createClient>;
-        const { data } = await client.auth.getSession();
+        const { data, error } = await client.auth.getSession();
+
+        // eslint-disable-next-line no-console
+        console.log('Initial session check:', {
+          hasSession: !!data.session,
+          hasUser: !!data.session?.user,
+          error: error?.message,
+        });
 
         setUser(data.session?.user || null);
       } catch (error) {
-        // エラー処理
+        // eslint-disable-next-line no-console
+        console.error('Initial session fetch error:', error);
       } finally {
         setLoading(false);
       }
@@ -64,6 +81,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((event, session) => {
+      // eslint-disable-next-line no-console
+      console.log('Auth state change:', {
+        event,
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id,
+      });
       setUser(session?.user || null);
       setLoading(false);
     });
