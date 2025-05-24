@@ -88,23 +88,32 @@ export default function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
   const handleSocialLogin = async (provider: 'github' | 'google') => {
     try {
       setLoading(true);
+      // eslint-disable-next-line no-console
+      console.log(`=== ${provider} login attempt from AuthDialog ===`);
 
       if (provider === 'github') {
         const { error } = await signInWithGitHub();
         if (error) {
+          // eslint-disable-next-line no-console
+          console.error('GitHub login error:', error);
           toast.error(error.message);
           return;
         }
       } else if (provider === 'google') {
         const { error } = await signInWithGoogle();
         if (error) {
+          // eslint-disable-next-line no-console
+          console.error('Google login error:', error);
           toast.error(error.message);
           return;
         }
       }
 
+      // eslint-disable-next-line no-console
+      console.log(`${provider} OAuth redirect should happen now...`);
       // OAuthリダイレクトが行われるので、ここにはたどり着かない
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(`${provider} login error:`, error);
       toast.error(`${provider}ログインに失敗しました`);
     } finally {

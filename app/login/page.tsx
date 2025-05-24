@@ -31,10 +31,20 @@ export default function LoginPage() {
   // URLパラメータからリダイレクト元を確認
   useEffect(() => {
     const redirectFrom = searchParams.get('redirectFrom');
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+
     if (redirectFrom === 'bookshelf') {
       setShowBookshelfMessage(true);
     } else if (redirectFrom === 'review') {
       setShowReviewMessage(true);
+    }
+
+    // OAuth認証エラーがある場合は表示
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('OAuth error on login page:', { error, errorDescription });
+      toast.error(`認証エラー: ${errorDescription || error}`);
     }
   }, [searchParams]);
 
@@ -106,23 +116,32 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: 'github' | 'google') => {
     try {
       setLoading(true);
+      // eslint-disable-next-line no-console
+      console.log(`=== ${provider} login attempt from LoginPage ===`);
 
       if (provider === 'github') {
         const { error } = await signInWithGitHub();
         if (error) {
+          // eslint-disable-next-line no-console
+          console.error('GitHub login error:', error);
           toast.error(error.message);
           return;
         }
       } else if (provider === 'google') {
         const { error } = await signInWithGoogle();
         if (error) {
+          // eslint-disable-next-line no-console
+          console.error('Google login error:', error);
           toast.error(error.message);
           return;
         }
       }
 
+      // eslint-disable-next-line no-console
+      console.log(`${provider} OAuth redirect should happen now...`);
       // OAuthリダイレクトが行われるので、ここにはたどり着かない
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(`${provider} login error:`, error);
       toast.error(`${provider}ログイン中にエラーが発生しました`);
       setLoading(false);

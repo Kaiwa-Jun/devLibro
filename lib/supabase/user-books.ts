@@ -184,7 +184,8 @@ export const getUserBooks = async (userId: string): Promise<UserBook[]> => {
 
     // 各書籍の詳細データを取得
     const userBooksWithDetails = await Promise.all(
-      (userBooks || []).map(async item => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (userBooks || []).map(async (item: any) => {
         // 型を明示的に指定
         const bookId = item.book_id as string;
 

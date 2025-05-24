@@ -1,20 +1,50 @@
 import { createClient } from '@supabase/supabase-js';
 
 // クライアントサイドでのみ実行されるようにする
-let supabase: ReturnType<typeof createClient> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let supabase: any = null;
 
-// ブラウザ環境でのみ初期化する
-if (typeof window !== 'undefined') {
+// Supabaseクライアントを初期化する関数
+const initializeSupabaseClient = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+  // eslint-disable-next-line no-console
+  console.log('Initializing Supabase client:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    url: supabaseUrl.substring(0, 30) + '...',
+  });
+
   if (supabaseUrl && supabaseAnonKey) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
   }
+  return null;
+};
+
+// ブラウザ環境でのみ初期化する
+if (typeof window !== 'undefined') {
+  supabase = initializeSupabaseClient();
 }
 
 // クライアントが初期化されていない場合のフォールバック
 export const getSupabaseClient = () => {
+  if (typeof window !== 'undefined' && !supabase) {
+    // eslint-disable-next-line no-console
+    console.log('Supabase client not found, attempting to initialize...');
+    supabase = initializeSupabaseClient();
+  }
+
   if (!supabase) {
     throw new Error(
       'Supabase client not initialized. Make sure you are using this client only on the client side.'
@@ -131,6 +161,16 @@ export const signInWithGoogle = async () => {
   const currentDomain = window.location.origin;
   let redirectUrl;
 
+  // デバッグログを追加
+  // eslint-disable-next-line no-console
+  console.log('=== Google Sign In Debug ===');
+  // eslint-disable-next-line no-console
+  console.log('Current domain:', currentDomain);
+  // eslint-disable-next-line no-console
+  console.log('User agent:', navigator.userAgent);
+  // eslint-disable-next-line no-console
+  console.log('Location:', window.location.href);
+
   if (currentDomain.includes('dev-libro.vercel.app') || currentDomain.includes('vercel.app')) {
     // 本番環境（Vercel）
     redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
@@ -142,14 +182,29 @@ export const signInWithGoogle = async () => {
     redirectUrl = 'https://dev-libro.vercel.app/auth/callback';
   }
 
-  const { data, error } = await client.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirectUrl,
-    },
-  });
+  // eslint-disable-next-line no-console
+  console.log('Redirect URL:', redirectUrl);
 
-  return { data, error };
+  try {
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+      },
+    });
+
+    // eslint-disable-next-line no-console
+    console.log('OAuth response:', { data: !!data, error: error?.message });
+    // eslint-disable-next-line no-console
+    console.log('=== End Google Sign In Debug ===');
+
+    return { data, error };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Google sign in error:', err);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { data: null, error: err as any };
+  }
 };
 
 export const signOut = async () => {
