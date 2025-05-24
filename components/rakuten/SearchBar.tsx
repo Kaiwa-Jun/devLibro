@@ -4,6 +4,7 @@ import { Camera, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -15,6 +16,9 @@ export default function RakutenSearchBar() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // 認証状態を取得
+  const { user } = useAuth();
 
   // 検索ストアから状態と更新関数を取得
   const {
@@ -95,7 +99,7 @@ export default function RakutenSearchBar() {
         </div>
       )}
 
-      {!searchTerm && (
+      {!searchTerm && user && (
         <Button
           variant="outline"
           size="sm"

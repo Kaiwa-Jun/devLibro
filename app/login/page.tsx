@@ -30,6 +30,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showBookshelfMessage, setShowBookshelfMessage] = useState(false);
   const [showReviewMessage, setShowReviewMessage] = useState(false);
+  const [showScanMessage, setShowScanMessage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -44,6 +45,8 @@ export default function LoginPage() {
       setShowBookshelfMessage(true);
     } else if (redirectFrom === 'review') {
       setShowReviewMessage(true);
+    } else if (redirectFrom === 'scan') {
+      setShowScanMessage(true);
     }
 
     // OAuth認証エラーがある場合は表示
@@ -81,6 +84,8 @@ export default function LoginPage() {
           // 直前のページに戻りたい場合は、referrer情報を使用するか、
           // 遷移前のURLをローカルストレージに保存する実装も考えられます
           router.back();
+        } else if (redirectFrom === 'scan') {
+          router.push('/scan');
         } else {
           router.push('/');
         }
@@ -224,6 +229,14 @@ export default function LoginPage() {
           <Alert className="bg-amber-50 border-amber-200 text-amber-800">
             <AlertDescription>
               レビューを投稿するにはログインが必要です。ログインまたは新規登録してください。
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {showScanMessage && (
+          <Alert className="bg-green-50 border-green-200 text-green-800">
+            <AlertDescription>
+              バーコードスキャンによる書籍検索にはログインが必要です。ログインまたは新規登録してください。
             </AlertDescription>
           </Alert>
         )}
