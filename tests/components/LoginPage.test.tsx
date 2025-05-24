@@ -113,7 +113,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByPlaceholderText('example@email.com'), {
       target: { value: 'test@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'), {
+    fireEvent.change(screen.getByPlaceholderText('パスワード'), {
       target: { value: 'password123' },
     });
 
@@ -151,7 +151,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByPlaceholderText('example@email.com'), {
       target: { value: 'test@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'), {
+    fireEvent.change(screen.getByPlaceholderText('パスワード'), {
       target: { value: 'password123' },
     });
 
