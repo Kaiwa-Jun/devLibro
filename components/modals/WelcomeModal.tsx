@@ -1,5 +1,7 @@
 'use client';
 
+import { motion } from 'framer-motion';
+import { BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -83,9 +85,28 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       }}
     >
       <DialogContent className="sm:max-w-md">
+        <div className="text-center mb-6">
+          <motion.div
+            className="flex justify-center mb-4"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{
+              type: 'spring',
+              stiffness: 200,
+              damping: 20,
+              duration: 0.8,
+            }}
+            whileHover={{ rotate: 10 }}
+          >
+            <div className="bg-primary/10 p-4 rounded-full">
+              <BookOpen className="h-12 w-12 text-primary" />
+            </div>
+          </motion.div>
+        </div>
+
         <DialogHeader>
-          <DialogTitle>DevLibroへようこそ！</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-center">DevLibroへようこそ！</DialogTitle>
+          <DialogDescription className="text-center">
             あなたの経験年数を設定すると、より適切な書籍の推薦やレビューの表示ができるようになります。
           </DialogDescription>
         </DialogHeader>

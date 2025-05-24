@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, Chrome, Github, Lock, Mail, User } from 'lucide-react';
+import { BookOpen, Chrome, Eye, EyeOff, Github, Lock, Mail, User } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -23,10 +23,14 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showBookshelfMessage, setShowBookshelfMessage] = useState(false);
   const [showReviewMessage, setShowReviewMessage] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // URLパラメータからリダイレクト元を確認
   useEffect(() => {
@@ -89,8 +93,13 @@ export default function LoginPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !name) {
+    if (!email || !password || !confirmPassword || !name) {
       toast.error('すべての項目を入力してください');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('パスワードが一致しません');
       return;
     }
 
@@ -245,13 +254,25 @@ export default function LoginPage() {
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="login-password"
-                        type="password"
-                        placeholder="••••••••"
-                        className="pl-10"
+                        type={showLoginPassword ? 'text' : 'password'}
+                        placeholder="パスワード"
+                        className="pl-10 pr-10"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         disabled={loading}
                       />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        disabled={loading}
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -316,13 +337,53 @@ export default function LoginPage() {
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        className="pl-10"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="パスワード"
+                        className="pl-10 pr-10"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         disabled={loading}
                       />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={loading}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="signup-confirm-password">パスワード（確認）</Label>
+                    <div className="mt-1 relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-confirm-password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="パスワード（確認）"
+                        className="pl-10 pr-10"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={loading}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
