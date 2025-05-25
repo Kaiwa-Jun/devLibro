@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Trophy, Twitter } from 'lucide-react';
+import { ExternalLink, Trophy, Twitter } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -29,17 +29,35 @@ export default function CongratulationsModal({ isOpen, onClose, book }: Congratu
   const handleTwitterShare = async () => {
     setIsSharing(true);
     try {
-      const shareText = `📚 「${book.title}」を読み終えました！\n著者: ${book.author}\n\n#読書記録 #DevLibro`;
+      // 書籍詳細ページのURL（OGP画像を含む）
+      const bookDetailUrl = `${window.location.origin}/book/${book.id}`;
+      const shareText = `📚 「${book.title}」を読み終えました！\n著者: ${book.author}\n\n${bookDetailUrl}\n\n#読書記録 #DevLibro`;
       const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
       window.open(shareUrl, '_blank', 'width=550,height=420');
       trackShare(book.id, book.title, 'twitter');
-      toast.success('Twitterで共有しました！');
+      toast.success('Xで共有しました！');
     } catch (error) {
-      console.error('Twitter共有エラー:', error);
+      console.error('X共有エラー:', error);
       toast.error('共有に失敗しました');
     } finally {
       setIsSharing(false);
     }
+  };
+
+  const handleOgpValidation = () => {
+    const bookDetailUrl = `${window.location.origin}/book/${book.id}`;
+
+    // 開発環境（localhost）の場合は警告を表示
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      toast.warning(
+        'OGP検証は本番環境でのみ利用可能です。\nローカル環境では外部からアクセスできません。'
+      );
+      return;
+    }
+
+    const validationUrl = `https://cards-dev.twitter.com/validator?url=${encodeURIComponent(bookDetailUrl)}`;
+    window.open(validationUrl, '_blank');
+    toast.info('OGP検証ツールを開きました');
   };
 
   return (
@@ -91,18 +109,35 @@ export default function CongratulationsModal({ isOpen, onClose, book }: Congratu
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Button
+                onClick={handleTwitterShare}
+                disabled={isSharing}
+                className="flex-1 gap-2"
+                variant="outline"
+              >
+                <Twitter className="h-4 w-4" />
+                {isSharing ? '共有中...' : 'Xで共有'}
+              </Button>
+              <Button onClick={onClose} className="flex-1">
+                閉じる
+              </Button>
+            </div>
+
+            {/* OGP検証ツールボタン */}
             <Button
-              onClick={handleTwitterShare}
-              disabled={isSharing}
-              className="flex-1 gap-2"
-              variant="outline"
+              onClick={handleOgpValidation}
+              variant="ghost"
+              size="sm"
+              className="w-full gap-2 text-xs"
             >
-              <Twitter className="h-4 w-4" />
-              {isSharing ? '共有中...' : 'Xで共有'}
-            </Button>
-            <Button onClick={onClose} className="flex-1">
-              閉じる
+              <ExternalLink className="h-3 w-3" />
+              OGP検証ツールで確認
+              {(window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1') && (
+                <span className="text-orange-500">（本番環境のみ）</span>
+              )}
             </Button>
           </div>
         </div>
