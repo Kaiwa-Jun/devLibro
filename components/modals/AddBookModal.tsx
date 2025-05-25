@@ -23,9 +23,10 @@ type BookStatus = 'unread' | 'reading' | 'done';
 
 interface AddBookModalProps {
   onClose?: () => void;
+  onBookAdded?: (status: BookStatus) => void;
 }
 
-export default function AddBookModal({ onClose }: AddBookModalProps) {
+export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -250,6 +251,11 @@ export default function AddBookModal({ onClose }: AddBookModalProps) {
       if (result) {
         toast.success('本棚に追加しました');
         console.log('書籍追加成功:', result);
+
+        // 親コンポーネントに追加されたステータスを通知
+        if (onBookAdded) {
+          onBookAdded(selectedStatus);
+        }
 
         // モーダルを閉じる
         if (onClose) {

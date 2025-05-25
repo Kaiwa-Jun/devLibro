@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import AddBookModal from '@/components/modals/AddBookModal';
+import BookCoverItem from '@/components/profile/BookCoverItem';
 import BookshelfItem from '@/components/profile/BookshelfItem';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +27,7 @@ export default function BookshelfTabs() {
   const [userBooks, setUserBooks] = useState<UserBook[]>([]);
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'unread' | 'reading' | 'done'>('unread');
+  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'reading' | 'done'>('all');
 
   useEffect(() => {
     async function fetchUserBooks() {
@@ -119,6 +120,25 @@ export default function BookshelfTabs() {
     refreshUserBooks(false);
   };
 
+  // 書籍追加時の処理
+  const handleBookAdded = (status: 'unread' | 'reading' | 'done') => {
+    console.log('BookshelfTabs: handleBookAdded called', { status, currentTab: activeTab });
+
+    // 「すべて」以外のタブが選択されている場合、追加されたステータスのタブに切り替え
+    if (activeTab !== 'all') {
+      console.log(`書籍追加後にタブを切り替えます: ${status}`);
+      setActiveTab(status);
+    }
+
+    // データを更新
+    refreshUserBooks(false);
+  };
+
+  // 書影クリック時の処理（すべての書籍タブから該当するタブに切り替え）
+  const handleBookCoverClick = (status: 'unread' | 'reading' | 'done') => {
+    setActiveTab(status);
+  };
+
   if (loading) {
     // すでに本の情報が読み込まれている場合は、スケルトン表示せずに現在のコンテンツを表示
     if (userBooks.length > 0) {
@@ -169,6 +189,7 @@ export default function BookshelfTabs() {
                   setIsAddBookOpen(false);
                   refreshUserBooks(false);
                 }}
+                onBookAdded={handleBookAdded}
               />
             </DialogContent>
           </Dialog>
@@ -179,12 +200,15 @@ export default function BookshelfTabs() {
           value={activeTab}
           onValueChange={value => {
             console.log(`タブが手動で切り替えられました: ${value}`);
-            setActiveTab(value as 'unread' | 'reading' | 'done');
+            setActiveTab(value as 'all' | 'unread' | 'reading' | 'done');
           }}
           className="relative"
         >
           <div className="relative">
-            <TabsList className="grid w-full grid-cols-3 relative z-10">
+            <TabsList className="grid w-full grid-cols-4 relative z-10">
+              <TabsTrigger value="all" className="relative z-10">
+                すべて ({userBooks.length})
+              </TabsTrigger>
               <TabsTrigger value="unread" className="relative z-10">
                 これから読む ({unreadBooks.length})
               </TabsTrigger>
@@ -199,10 +223,17 @@ export default function BookshelfTabs() {
             <motion.div
               className="absolute h-[calc(100%-8px)] top-[4px] rounded-sm bg-background shadow-sm z-0"
               style={{
-                width: `calc(100% / 3)`,
+                width: `calc(100% / 4)`,
               }}
               animate={{
-                x: activeTab === 'unread' ? 0 : activeTab === 'reading' ? `100%` : `200%`,
+                x:
+                  activeTab === 'all'
+                    ? 0
+                    : activeTab === 'unread'
+                      ? `100%`
+                      : activeTab === 'reading'
+                        ? `200%`
+                        : `300%`,
               }}
               transition={{
                 type: 'spring',
@@ -214,6 +245,35 @@ export default function BookshelfTabs() {
               layout
             />
           </div>
+
+          <TabsContent
+            value="all"
+            className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+            asChild
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {userBooks.length > 0 ? (
+                  userBooks.map(userBook => (
+                    <BookCoverItem
+                      key={userBook.id}
+                      userBook={userBook}
+                      onBookClick={handleBookCoverClick}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center text-muted-foreground py-8">
+                    本棚に書籍がありません
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </TabsContent>
 
           <TabsContent
             value="unread"

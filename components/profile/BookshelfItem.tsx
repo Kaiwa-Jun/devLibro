@@ -149,16 +149,16 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
       transition={{ duration: 0.3 }}
     >
       <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
+        <CardContent className="p-6">
+          <div className="flex gap-6">
             <Link href={`/book/${localUserBook.book.id}`} className="flex-shrink-0">
-              <div className="relative h-20 w-16">
+              <div className="relative h-28 w-20">
                 <Image
                   src={localUserBook.book.img_url}
                   alt={localUserBook.book.title}
                   fill
                   className="object-cover rounded-sm"
-                  sizes="64px"
+                  sizes="80px"
                 />
               </div>
             </Link>
