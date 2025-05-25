@@ -5,7 +5,7 @@ import BookDetailTracking from '@/components/book/BookDetailTracking';
 import ReviewList from '@/components/book/ReviewList';
 import WriteReviewButton from '@/components/book/WriteReviewButton';
 import BookJsonLd from '@/components/seo/BookJsonLd';
-import { BookJsonLd as BookJsonLdType, generatePageMetadata } from '@/lib/seo/metadata';
+import { BookJsonLd as BookJsonLdType, generateBookPageMetadata } from '@/lib/seo/metadata';
 
 type Props = {
   params: { id: string };
@@ -65,11 +65,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = params;
   const book = await getBookDetails(id);
 
-  return generatePageMetadata({
+  return generateBookPageMetadata({
     title: book.title,
     description: book.description,
     path: `/book/${id}`,
-    images: book.image ? [book.image] : undefined,
+    bookImage: book.image,
   });
 }
 

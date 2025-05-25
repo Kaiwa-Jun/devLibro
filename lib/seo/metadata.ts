@@ -151,6 +151,60 @@ export function generatePageMetadata({
 }
 
 /**
+ * 書籍ページ専用のメタデータを生成（書影画像に最適化）
+ */
+export function generateBookPageMetadata({
+  title,
+  description,
+  path = '',
+  bookImage,
+  noIndex = false,
+}: {
+  title?: string;
+  description?: string;
+  path?: string;
+  bookImage?: string;
+  noIndex?: boolean;
+}): Metadata {
+  const fullUrl = `${siteConfig.url}${path}`;
+  const imageUrl = bookImage?.startsWith('http') ? bookImage : `${siteConfig.url}${bookImage}`;
+
+  return {
+    title: title,
+    description: description,
+    openGraph: {
+      url: fullUrl,
+      title: title,
+      description: description,
+      images: bookImage
+        ? [
+            {
+              url: imageUrl,
+              width: 400,
+              height: 600,
+              alt: title,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: 'summary', // 書影画像には summary カードを使用
+      title: title,
+      description: description,
+      images: bookImage ? [imageUrl] : undefined,
+    },
+    alternates: {
+      canonical: fullUrl,
+      languages: {
+        ja: `${siteConfig.url}/ja${path}`,
+        en: `${siteConfig.url}/en${path}`,
+      },
+    },
+    robots: noIndex ? { index: false, follow: false } : undefined,
+  };
+}
+
+/**
  * 書籍ページ向けのJSON-LDを生成
  */
 export function generateBookJsonLd(book: BookJsonLd): Record<string, unknown> {
