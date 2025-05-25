@@ -80,6 +80,9 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
         toast.success(
           `「${localUserBook.book.title}」を${getStatusTextByValue(newStatus)}に設定しました`
         );
+
+        // 読了モーダルは親コンポーネント（BookshelfTabs）で管理されるため、ここでは何もしない
+
         if (onUpdate) {
           // 親コンポーネントに更新情報を通知
           onUpdate(updatedUserBook, 'update', newStatus);

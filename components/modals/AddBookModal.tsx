@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import CongratulationsModal from '@/components/modals/CongratulationsModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DialogClose } from '@/components/ui/dialog';
@@ -38,6 +39,7 @@ export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps
   const [dialogCloseRef, setDialogCloseRef] = useState<HTMLButtonElement | null>(null);
   const [userBooks, setUserBooks] = useState<UserBook[]>([]);
   const [isLoadingUserBooks, setIsLoadingUserBooks] = useState(false);
+  const [isCongratulationsModalOpen, setIsCongratulationsModalOpen] = useState(false);
 
   // 無限スクロール用の状態
   const [page, setPage] = useState(1);
@@ -252,16 +254,22 @@ export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps
         toast.success('本棚に追加しました');
         console.log('書籍追加成功:', result);
 
+        if (selectedStatus === 'done') {
+          setIsCongratulationsModalOpen(true);
+        }
+
         // 親コンポーネントに追加されたステータスを通知
         if (onBookAdded) {
           onBookAdded(selectedStatus);
         }
 
-        // モーダルを閉じる
-        if (onClose) {
-          onClose();
-        } else if (dialogCloseRef) {
-          dialogCloseRef.click();
+        // モーダルを閉じる（読了モーダルが表示される場合は後で閉じる）
+        if (selectedStatus !== 'done') {
+          if (onClose) {
+            onClose();
+          } else if (dialogCloseRef) {
+            dialogCloseRef.click();
+          }
         }
 
         // プロフィールページにリダイレクト
@@ -294,6 +302,15 @@ export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps
 
     // バーコードスキャン画面に遷移
     router.push('/scan');
+  };
+
+  const handleCongratulationsClose = () => {
+    setIsCongratulationsModalOpen(false);
+    if (onClose) {
+      onClose();
+    } else if (dialogCloseRef) {
+      dialogCloseRef.click();
+    }
   };
 
   return (
@@ -488,6 +505,15 @@ export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 読了おめでとうモーダル */}
+      {selectedBook && (
+        <CongratulationsModal
+          isOpen={isCongratulationsModalOpen}
+          onClose={handleCongratulationsClose}
+          book={selectedBook}
+        />
+      )}
     </div>
   );
 }

@@ -11,21 +11,54 @@ type Props = {
   params: { id: string };
 };
 
-// 書籍の詳細を取得する関数（実際のアプリでは適切なデータ取得ロジックを実装）
+// 書籍の詳細を取得する関数
 async function getBookDetails(id: string): Promise<BookJsonLdType> {
-  // この例では静的なデータを返しています
-  // 実際のアプリでは、データベースから書籍情報を取得します
-  return {
-    title: `技術書タイトル${id}`,
-    authors: ['著者名1', '著者名2'],
-    publisher: '出版社名',
-    publishDate: '2023-01-15',
-    description: `技術書${id}の詳細な説明文がここに入ります。この本は開発者向けの実践的な内容を提供しています。`,
-    isbn: `978-4-xxxx-xxxx-${id}`,
-    image: `/books/book${id}.jpg`,
-    url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${id}`,
-    genre: ['プログラミング', '技術書'],
-  };
+  try {
+    // データベースから実際の書籍情報を取得
+    const { getBookByIdFromDB } = await import('@/lib/supabase/books');
+    const book = await getBookByIdFromDB(id);
+
+    if (!book) {
+      // 書籍が見つからない場合のデフォルト値
+      return {
+        title: '書籍が見つかりません',
+        authors: ['不明'],
+        publisher: '不明',
+        publishDate: '',
+        description: '指定された書籍が見つかりませんでした。',
+        isbn: '',
+        image: '/images/book-placeholder.png',
+        url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${id}`,
+        genre: [],
+      };
+    }
+
+    return {
+      title: book.title,
+      authors: [book.author],
+      publisher: book.publisherName || '不明',
+      publishDate: '',
+      description: book.description || `${book.title}の詳細情報`,
+      isbn: book.isbn || '',
+      image: book.img_url || '/images/book-placeholder.png',
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${id}`,
+      genre: book.frameworks || ['技術書'],
+    };
+  } catch (error) {
+    console.error('書籍詳細の取得に失敗しました:', error);
+    // エラー時のデフォルト値
+    return {
+      title: '書籍情報の取得に失敗しました',
+      authors: ['不明'],
+      publisher: '不明',
+      publishDate: '',
+      description: '書籍情報の取得中にエラーが発生しました。',
+      isbn: '',
+      image: '/images/book-placeholder.png',
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/book/${id}`,
+      genre: [],
+    };
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
