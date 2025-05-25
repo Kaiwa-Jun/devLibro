@@ -120,6 +120,20 @@ export default function BookshelfTabs() {
     refreshUserBooks(false);
   };
 
+  // 書籍追加時の処理
+  const handleBookAdded = (status: 'unread' | 'reading' | 'done') => {
+    console.log('BookshelfTabs: handleBookAdded called', { status, currentTab: activeTab });
+
+    // 「すべて」以外のタブが選択されている場合、追加されたステータスのタブに切り替え
+    if (activeTab !== 'all') {
+      console.log(`書籍追加後にタブを切り替えます: ${status}`);
+      setActiveTab(status);
+    }
+
+    // データを更新
+    refreshUserBooks(false);
+  };
+
   // 書影クリック時の処理（すべての書籍タブから該当するタブに切り替え）
   const handleBookCoverClick = (status: 'unread' | 'reading' | 'done') => {
     setActiveTab(status);
@@ -175,6 +189,7 @@ export default function BookshelfTabs() {
                   setIsAddBookOpen(false);
                   refreshUserBooks(false);
                 }}
+                onBookAdded={handleBookAdded}
               />
             </DialogContent>
           </Dialog>
