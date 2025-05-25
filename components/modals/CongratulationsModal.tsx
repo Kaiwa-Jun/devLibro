@@ -31,11 +31,8 @@ export default function CongratulationsModal({ isOpen, onClose, book }: Congratu
     try {
       const shareText = `📚 「${book.title}」を読み終えました！\n著者: ${book.author}\n\n#読書記録 #DevLibro`;
       const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-      
       window.open(shareUrl, '_blank', 'width=550,height=420');
-      
       trackShare(book.id, book.title, 'twitter');
-      
       toast.success('Twitterで共有しました！');
     } catch (error) {
       console.error('Twitter共有エラー:', error);
@@ -89,9 +86,7 @@ export default function CongratulationsModal({ isOpen, onClose, book }: Congratu
               <h4 className="font-medium line-clamp-2">{book.title}</h4>
               <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
               {book.publisherName && (
-                <p className="text-xs text-muted-foreground line-clamp-1">
-                  {book.publisherName}
-                </p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{book.publisherName}</p>
               )}
             </div>
           </div>
