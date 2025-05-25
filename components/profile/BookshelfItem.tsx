@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import CongratulationsModal from '@/components/modals/CongratulationsModal';
 import DeleteBookModal from '@/components/modals/DeleteBookModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCongratulationsModalOpen, setIsCongratulationsModalOpen] = useState(false);
   // ローカルでユーザーブックの状態を管理
   const [localUserBook, setLocalUserBook] = useState<UserBook>(userBook);
 
@@ -80,6 +82,11 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
         toast.success(
           `「${localUserBook.book.title}」を${getStatusTextByValue(newStatus)}に設定しました`
         );
+        
+        if (newStatus === 'done') {
+          setIsCongratulationsModalOpen(true);
+        }
+        
         if (onUpdate) {
           // 親コンポーネントに更新情報を通知
           onUpdate(updatedUserBook, 'update', newStatus);
@@ -240,6 +247,13 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
         onConfirm={handleDelete}
         bookTitle={localUserBook.book.title}
         isLoading={isLoading}
+      />
+
+      {/* 読了おめでとうモーダル */}
+      <CongratulationsModal
+        isOpen={isCongratulationsModalOpen}
+        onClose={() => setIsCongratulationsModalOpen(false)}
+        book={localUserBook.book}
       />
     </motion.div>
   );
