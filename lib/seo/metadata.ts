@@ -151,6 +151,24 @@ export function generatePageMetadata({
 }
 
 /**
+ * 書影画像を正方形にリサイズするためのURL処理
+ */
+function processBookImageForTwitterCard(imageUrl: string): string {
+  if (!imageUrl || !imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+
+  // 楽天の画像URLの場合、正方形にリサイズ
+  if (imageUrl.includes('thumbnail.image.rakuten.co.jp')) {
+    // 既存のパラメータを削除して、正方形のパラメータを追加
+    const baseUrl = imageUrl.split('?')[0];
+    return `${baseUrl}?_ex=400x400`;
+  }
+
+  return imageUrl;
+}
+
+/**
  * 書籍ページ専用のメタデータを生成（書影画像に最適化）
  */
 export function generateBookPageMetadata({
@@ -167,7 +185,12 @@ export function generateBookPageMetadata({
   noIndex?: boolean;
 }): Metadata {
   const fullUrl = `${siteConfig.url}${path}`;
-  const imageUrl = bookImage?.startsWith('http') ? bookImage : `${siteConfig.url}${bookImage}`;
+  const originalImageUrl = bookImage?.startsWith('http')
+    ? bookImage
+    : `${siteConfig.url}${bookImage}`;
+  const optimizedImageUrl = bookImage
+    ? processBookImageForTwitterCard(originalImageUrl)
+    : originalImageUrl;
 
   return {
     title: title,
@@ -181,7 +204,7 @@ export function generateBookPageMetadata({
       images: bookImage
         ? [
             {
-              url: imageUrl,
+              url: optimizedImageUrl,
               width: 400,
               height: 400,
               alt: title,
@@ -194,7 +217,7 @@ export function generateBookPageMetadata({
       card: 'summary', // 書影画像を左側正方形エリアに表示
       title: title,
       description: description,
-      images: bookImage ? [imageUrl] : undefined,
+      images: bookImage ? [optimizedImageUrl] : undefined,
       site: siteConfig.twitter.site,
     },
     alternates: {
@@ -208,7 +231,7 @@ export function generateBookPageMetadata({
     // 追加のメタタグ（書影画像の表示最適化）
     other: {
       'twitter:image:alt': title || '書籍の書影',
-      'og:image:secure_url': imageUrl,
+      'og:image:secure_url': optimizedImageUrl,
       'og:image:width': '400',
       'og:image:height': '400',
     },
