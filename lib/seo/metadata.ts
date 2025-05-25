@@ -5,7 +5,7 @@ export const siteConfig = {
   name: 'DevLibro',
   description: '開発者のための技術書レビュー・管理プラットフォーム',
   url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  ogImage: '/og-image.png',
+  ogImage: '/images/devlibro-logo.svg',
   twitter: {
     card: 'summary_large_image',
     site: '@devlibro',
@@ -90,9 +90,9 @@ export function getDefaultMetadata(): Metadata {
       },
     },
     icons: {
-      icon: '/favicon.ico',
-      shortcut: '/favicon-16x16.png',
-      apple: '/apple-touch-icon.png',
+      icon: '/favicon.svg',
+      shortcut: '/favicon.svg',
+      apple: '/favicon.svg',
     },
     manifest: '/site.webmanifest',
     // 構造化データのアプリケーションのカテゴリ情報
@@ -201,25 +201,21 @@ export function generateBookPageMetadata({
       title: title,
       description: description,
       siteName: siteConfig.name,
-      // 画像表示を一旦停止
-      // images: bookImage
-      //   ? [
-      //       {
-      //         url: optimizedImageUrl,
-      //         width: 400,
-      //         height: 400,
-      //         alt: title,
-      //         type: 'image/jpeg',
-      //       },
-      //     ]
-      //   : undefined,
+      images: [
+        {
+          url: `${siteConfig.url}${siteConfig.ogImage}`,
+          width: 400,
+          height: 400,
+          alt: `${title} - DevLibro`,
+          type: 'image/svg+xml',
+        },
+      ],
     },
     twitter: {
-      card: 'summary', // テキストのみの表示
+      card: 'summary', // DevLibroロゴを表示
       title: title,
       description: description,
-      // 画像表示を一旦停止
-      // images: bookImage ? [optimizedImageUrl] : undefined,
+      images: [siteConfig.ogImage], // 共通のDevLibroロゴを使用
       site: siteConfig.twitter.site,
     },
     alternates: {
