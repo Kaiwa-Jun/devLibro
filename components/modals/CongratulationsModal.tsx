@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ExternalLink, Trophy, Twitter } from 'lucide-react';
+import { Trophy, Twitter } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -42,22 +42,6 @@ export default function CongratulationsModal({ isOpen, onClose, book }: Congratu
     } finally {
       setIsSharing(false);
     }
-  };
-
-  const handleOgpValidation = () => {
-    const bookDetailUrl = `${window.location.origin}/book/${book.id}`;
-
-    // 開発環境（localhost）の場合は警告を表示
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      toast.warning(
-        'OGP検証は本番環境でのみ利用可能です。\nローカル環境では外部からアクセスできません。'
-      );
-      return;
-    }
-
-    const validationUrl = `https://cards-dev.twitter.com/validator?url=${encodeURIComponent(bookDetailUrl)}`;
-    window.open(validationUrl, '_blank');
-    toast.info('OGP検証ツールを開きました');
   };
 
   return (
@@ -124,21 +108,6 @@ export default function CongratulationsModal({ isOpen, onClose, book }: Congratu
                 閉じる
               </Button>
             </div>
-
-            {/* OGP検証ツールボタン */}
-            <Button
-              onClick={handleOgpValidation}
-              variant="ghost"
-              size="sm"
-              className="w-full gap-2 text-xs"
-            >
-              <ExternalLink className="h-3 w-3" />
-              OGP検証ツールで確認
-              {(window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1') && (
-                <span className="text-orange-500">（本番環境のみ）</span>
-              )}
-            </Button>
           </div>
         </div>
       </DialogContent>
