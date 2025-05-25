@@ -56,12 +56,15 @@ export default function BookCard({ book }: BookCardProps) {
               blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJNQNlw9Q6ZAAAAABJRU5ErkJggg=="
               placeholder="blur"
             />
-            <div className="absolute inset-x-0 bottom-0 h-[33%] bg-gradient-to-t from-white via-white/80 to-transparent flex flex-col justify-end p-4">
-              <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                {book.title}
+            <div className="absolute inset-x-0 bottom-0 h-[33%] bg-transparent flex flex-col justify-end p-4">
+              {/* グラデーション実装（一時的に無効化）: bg-gradient-to-t from-gray-800 via-gray-800/80 to-transparent dark:from-white dark:via-white/80 dark:to-transparent */}
+              <h3 className="hidden font-semibold text-white dark:text-black truncate group-hover:text-primary transition-colors">
+                {/* タイトル実装（一時的に非表示）: {book.title} */}
               </h3>
               <div className="flex items-center justify-between mt-1.5">
-                <p className="text-xs text-muted-foreground truncate max-w-[60%]">{book.author}</p>
+                <p className="hidden text-xs text-gray-300 dark:text-gray-600 truncate max-w-[60%]">
+                  {/* 著者名実装（一時的に非表示）: {book.author} */}
+                </p>
                 {difficultyInfo.label !== '不明' && (
                   <div
                     className={`text-xs py-0.5 px-2 rounded-full whitespace-nowrap w-fit min-w-[4rem] flex-shrink-0 ml-1 font-medium flex items-center justify-center border ${
