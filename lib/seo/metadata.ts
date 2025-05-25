@@ -201,23 +201,25 @@ export function generateBookPageMetadata({
       title: title,
       description: description,
       siteName: siteConfig.name,
-      images: bookImage
-        ? [
-            {
-              url: optimizedImageUrl,
-              width: 400,
-              height: 400,
-              alt: title,
-              type: 'image/jpeg',
-            },
-          ]
-        : undefined,
+      // 画像表示を一旦停止
+      // images: bookImage
+      //   ? [
+      //       {
+      //         url: optimizedImageUrl,
+      //         width: 400,
+      //         height: 400,
+      //         alt: title,
+      //         type: 'image/jpeg',
+      //       },
+      //     ]
+      //   : undefined,
     },
     twitter: {
-      card: 'summary', // 書影画像を左側正方形エリアに表示
+      card: 'summary', // テキストのみの表示
       title: title,
       description: description,
-      images: bookImage ? [optimizedImageUrl] : undefined,
+      // 画像表示を一旦停止
+      // images: bookImage ? [optimizedImageUrl] : undefined,
       site: siteConfig.twitter.site,
     },
     alternates: {
@@ -228,13 +230,13 @@ export function generateBookPageMetadata({
       },
     },
     robots: noIndex ? { index: false, follow: false } : undefined,
-    // 追加のメタタグ（書影画像の表示最適化）
-    other: {
-      'twitter:image:alt': title || '書籍の書影',
-      'og:image:secure_url': optimizedImageUrl,
-      'og:image:width': '400',
-      'og:image:height': '400',
-    },
+    // 画像関連のメタタグを一旦停止
+    // other: {
+    //   'twitter:image:alt': title || '書籍の書影',
+    //   'og:image:secure_url': optimizedImageUrl,
+    //   'og:image:width': '400',
+    //   'og:image:height': '400',
+    // },
   };
 }
 
