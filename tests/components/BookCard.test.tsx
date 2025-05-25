@@ -54,9 +54,9 @@ describe('BookCard Component', () => {
   it('renders book information correctly', () => {
     render(<BookCard book={mockBook} />);
 
-    // タイトルと著者の確認
-    expect(screen.getByText('テスト書籍')).toBeInTheDocument();
-    expect(screen.getByText('テスト著者')).toBeInTheDocument();
+    // タイトルと著者は現在非表示になっている
+    expect(screen.queryByText('テスト書籍')).not.toBeInTheDocument();
+    expect(screen.queryByText('テスト著者')).not.toBeInTheDocument();
 
     // 画像の確認
     const image = screen.getByAltText('テスト書籍');
@@ -81,7 +81,8 @@ describe('BookCard Component', () => {
     const unknownBook = { ...mockBook, avg_difficulty: 0 };
     rerender(<BookCard book={unknownBook} />);
 
-    expect(screen.getByText('テスト著者')).toBeInTheDocument();
+    // 著者名は非表示、難易度「不明」も表示されない
+    expect(screen.queryByText('テスト著者')).not.toBeInTheDocument();
     expect(screen.queryByText('不明')).not.toBeInTheDocument();
   });
 });

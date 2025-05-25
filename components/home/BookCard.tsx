@@ -61,10 +61,8 @@ export default function BookCard({ book }: BookCardProps) {
               <h3 className="hidden font-semibold text-white dark:text-black truncate group-hover:text-primary transition-colors">
                 {/* タイトル実装（一時的に非表示）: {book.title} */}
               </h3>
-              <div className="flex items-center justify-between mt-1.5">
-                <p className="hidden text-xs text-gray-300 dark:text-gray-600 truncate max-w-[60%]">
-                  {/* 著者名実装（一時的に非表示）: {book.author} */}
-                </p>
+              <div className="flex items-center justify-end mt-1.5">
+                {/* <p className="text-xs text-gray-300 dark:text-gray-600 truncate max-w-[60%]">{book.author}</p> */}
                 {difficultyInfo.label !== '不明' && (
                   <div
                     className={`text-xs py-0.5 px-2 rounded-full whitespace-nowrap w-fit min-w-[4rem] flex-shrink-0 ml-1 font-medium flex items-center justify-center border ${
