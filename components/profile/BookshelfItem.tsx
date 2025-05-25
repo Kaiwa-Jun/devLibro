@@ -82,11 +82,9 @@ export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps
         toast.success(
           `「${localUserBook.book.title}」を${getStatusTextByValue(newStatus)}に設定しました`
         );
-        
         if (newStatus === 'done') {
           setIsCongratulationsModalOpen(true);
         }
-        
         if (onUpdate) {
           // 親コンポーネントに更新情報を通知
           onUpdate(updatedUserBook, 'update', newStatus);
