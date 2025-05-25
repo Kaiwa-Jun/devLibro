@@ -45,19 +45,17 @@ export default function BookCoverItem({ userBook, onBookClick }: BookCoverItemPr
       transition={{ duration: 0.2 }}
       className="relative cursor-pointer group"
       onClick={handleClick}
+      whileHover={{ y: -5 }}
     >
       {/* 書影 */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-200">
+      <div className="relative aspect-[3/4] w-full overflow-hidden shadow-md transition-shadow duration-200">
         <Image
           src={userBook.book.img_url}
           alt={userBook.book.title}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-200"
+          className="object-cover transition-transform duration-200 group-hover:scale-[1.01]"
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
         />
-
-        {/* ホバー時のオーバーレイ */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
 
         {/* 読書進捗アイコン */}
         <div
@@ -65,14 +63,6 @@ export default function BookCoverItem({ userBook, onBookClick }: BookCoverItemPr
         >
           {getStatusIcon()}
         </div>
-      </div>
-
-      {/* 書籍タイトル（ホバー時に表示） */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-b-lg">
-        <h3 className="text-white text-xs font-medium line-clamp-2 leading-tight">
-          {userBook.book.title}
-        </h3>
-        <p className="text-white/80 text-xs mt-1 line-clamp-1">{userBook.book.author}</p>
       </div>
     </motion.div>
   );
