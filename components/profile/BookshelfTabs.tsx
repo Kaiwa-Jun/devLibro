@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import AddBookModal from '@/components/modals/AddBookModal';
+import CongratulationsModal from '@/components/modals/CongratulationsModal';
 import BookCoverItem from '@/components/profile/BookCoverItem';
 import BookshelfItem from '@/components/profile/BookshelfItem';
 import { Button } from '@/components/ui/button';
@@ -85,6 +86,15 @@ export default function BookshelfTabs() {
   const readingBooks = userBooks.filter(book => book.status === 'reading');
   const doneBooks = userBooks.filter(book => book.status === 'done');
 
+  // 読了おめでとうモーダルの状態管理
+  const [congratulationsModal, setCongratulationsModal] = useState<{
+    isOpen: boolean;
+    book: UserBook['book'] | null;
+  }>({
+    isOpen: false,
+    book: null,
+  });
+
   // 書籍ステータス更新時の処理
   const handleBookUpdate = (
     updatedBook?: UserBook,
@@ -110,6 +120,15 @@ export default function BookshelfTabs() {
               : book
           )
         );
+
+        // 読了に変更された場合はモーダルを表示
+        if (newStatus === 'done') {
+          console.log('BookshelfTabs: 読了おめでとうモーダルを表示します');
+          setCongratulationsModal({
+            isOpen: true,
+            book: updatedBook.book,
+          });
+        }
       }
 
       // タブ切り替え（状態を更新した後に）
@@ -358,6 +377,15 @@ export default function BookshelfTabs() {
             </motion.div>
           </TabsContent>
         </Tabs>
+
+        {/* 読了おめでとうモーダル */}
+        {congratulationsModal.book && (
+          <CongratulationsModal
+            isOpen={congratulationsModal.isOpen}
+            onClose={() => setCongratulationsModal({ isOpen: false, book: null })}
+            book={congratulationsModal.book}
+          />
+        )}
       </div>
     );
   }
