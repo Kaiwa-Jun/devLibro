@@ -182,8 +182,8 @@ export function generateBookPageMetadata({
         ? [
             {
               url: imageUrl,
-              width: 800,
-              height: 1200,
+              width: 400,
+              height: 400,
               alt: title,
               type: 'image/jpeg',
             },
@@ -191,7 +191,7 @@ export function generateBookPageMetadata({
         : undefined,
     },
     twitter: {
-      card: 'summary_large_image', // 書影画像の全体表示のため large_image を使用
+      card: 'summary', // 書影画像を左側正方形エリアに表示
       title: title,
       description: description,
       images: bookImage ? [imageUrl] : undefined,
@@ -209,8 +209,8 @@ export function generateBookPageMetadata({
     other: {
       'twitter:image:alt': title || '書籍の書影',
       'og:image:secure_url': imageUrl,
-      'og:image:width': '800',
-      'og:image:height': '1200',
+      'og:image:width': '400',
+      'og:image:height': '400',
     },
   };
 }
