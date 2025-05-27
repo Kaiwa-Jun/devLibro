@@ -10,7 +10,11 @@ import { Input } from '@/components/ui/input';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchStore } from '@/store/searchStore';
 
-export default function RakutenSearchBar() {
+interface RakutenSearchBarProps {
+  onSearchStateChange?: (isSearching: boolean) => void;
+}
+
+export default function RakutenSearchBar({ onSearchStateChange }: RakutenSearchBarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -21,12 +25,7 @@ export default function RakutenSearchBar() {
   const { user } = useAuth();
 
   // 検索ストアから状態と更新関数を取得
-  const {
-    setSearchTerm: setGlobalSearchTerm,
-    resetPagination,
-    clearSearch,
-    setUseRakuten,
-  } = useSearchStore();
+  const { setSearchTerm: setGlobalSearchTerm, clearSearch, setUseRakuten } = useSearchStore();
 
   // 楽天APIを使用することを設定
   useEffect(() => {
@@ -40,13 +39,15 @@ export default function RakutenSearchBar() {
   useEffect(() => {
     if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
       setGlobalSearchTerm('');
+      onSearchStateChange?.(false);
       return;
     }
 
     setIsLocalLoading(true);
     setGlobalSearchTerm(debouncedSearchTerm);
+    onSearchStateChange?.(true);
     setIsLocalLoading(false);
-  }, [debouncedSearchTerm, setGlobalSearchTerm]);
+  }, [debouncedSearchTerm, setGlobalSearchTerm, onSearchStateChange]);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) {
@@ -67,6 +68,7 @@ export default function RakutenSearchBar() {
   const handleClear = () => {
     setSearchTerm('');
     clearSearch();
+    onSearchStateChange?.(false);
   };
 
   return (
