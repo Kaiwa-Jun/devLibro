@@ -59,20 +59,41 @@ jobs:
       - name: ビルドの確認
         run: npm run build
 
-  deploy-dev:
+  deploy-production:
     needs: lint-test-build
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || github.event.inputs.deploy == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Vercelへのデプロイ
+      - name: 本番環境へのデプロイ
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: ./
           vercel-args: '--prod'
+
+  deploy-preview:
+    needs: lint-test-build
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/develop') || github.event.inputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: プレビュー環境へのデプロイ
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./

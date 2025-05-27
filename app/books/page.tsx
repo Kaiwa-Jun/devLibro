@@ -1,22 +1,21 @@
-import { Metadata } from 'next';
+'use client';
+
+import { useState } from 'react';
 
 import FilterButtons from '@/components/home/FilterButtons';
 import RakutenBookGrid from '@/components/rakuten/BookGrid';
 import RakutenSearchBar from '@/components/rakuten/SearchBar';
-import { generatePageMetadata } from '@/lib/seo/metadata';
-
-export const metadata: Metadata = generatePageMetadata({
-  title: 'DevLibro - 書籍検索',
-  description: '技術書の検索と閲覧。高解像度の書籍画像でより詳細に確認できます。',
-  path: '/books',
-});
+import RecommendationSection from '@/components/recommendations/RecommendationSection';
 
 export default function BooksSearchPage() {
+  const [isSearching, setIsSearching] = useState(false);
+
   return (
     <div className="space-y-6 pb-8 pt-8">
       <div className="max-w-2xl mx-auto relative">
-        <RakutenSearchBar />
+        <RakutenSearchBar onSearchStateChange={setIsSearching} />
       </div>
+      {!isSearching && <RecommendationSection />}
       <FilterButtons />
       <RakutenBookGrid />
     </div>
