@@ -42,3 +42,38 @@ export type UserBook = {
   added_at: string | null;
   finished_at: string | null;
 };
+
+// レコメンド機能関連の型定義
+export enum ExperienceLevel {
+  BEGINNER = 'beginner', // 0-2年 (未経験、1年未満、1-3年)
+  INTERMEDIATE = 'intermediate', // 3-4年 (3-5年)
+  EXPERT = 'expert', // 5年以上
+}
+
+export type RecommendationScore = {
+  bookId: string;
+  score: number;
+  reasons: string[];
+  avgDifficulty: number;
+  reviewCount: number;
+  experienceLevelMatch: number; // 同じ経験レベルのレビュー数
+};
+
+export type RecommendationWithBook = {
+  book: Book;
+  score: number;
+  reasons: string[];
+  avgDifficulty: number;
+  reviewCount: number;
+  experienceLevelMatch: number;
+};
+
+export type RecommendationCache = {
+  experienceLevel: ExperienceLevel;
+  bookId: string;
+  avgDifficulty: number;
+  reviewCount: number;
+  sameLevelReviews: number;
+  positiveRate: number;
+  updatedAt: string;
+};
