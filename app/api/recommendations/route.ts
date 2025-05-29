@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
 
     // 書籍ごとにレビューをグループ化
     const bookReviewsMap = new Map<string, { book: Book; reviews: Review[] }>();
+    const excludedBooks = new Map<string, { book: Book; reviews: Review[]; reason: string }>();
     let excludedCount = 0;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,22 +101,6 @@ export async function GET(request: NextRequest) {
       if (!item.books) return;
 
       const bookId = item.books.id;
-
-      // ユーザーが既にレビューを書いている書籍または本棚にある書籍は除外
-      if (reviewedBookIds.has(bookId) || bookshelfBookIds.has(bookId)) {
-        excludedCount++;
-        console.log('🚫 除外された書籍:', {
-          bookId,
-          title: item.books.title,
-          reason: reviewedBookIds.has(bookId) ? 'レビュー済み' : '本棚にあり',
-        });
-        return;
-      }
-
-      console.log('✅ 対象書籍:', {
-        bookId,
-        title: item.books.title,
-      });
 
       const book: Book = {
         id: item.books.id,
@@ -145,6 +130,28 @@ export async function GET(request: NextRequest) {
         anonymous: item.display_type === 'anon',
       };
 
+      // ユーザーが既にレビューを書いている書籍または本棚にある書籍は一旦除外リストに
+      if (reviewedBookIds.has(bookId) || bookshelfBookIds.has(bookId)) {
+        excludedCount++;
+        const reason = reviewedBookIds.has(bookId) ? 'レビュー済み' : '本棚に追加済み';
+        console.log('🚫 除外された書籍:', {
+          bookId,
+          title: item.books.title,
+          reason,
+        });
+
+        if (!excludedBooks.has(bookId)) {
+          excludedBooks.set(bookId, { book, reviews: [], reason });
+        }
+        excludedBooks.get(bookId)!.reviews.push(review);
+        return;
+      }
+
+      console.log('✅ 対象書籍:', {
+        bookId,
+        title: item.books.title,
+      });
+
       if (!bookReviewsMap.has(book.id)) {
         bookReviewsMap.set(book.id, { book, reviews: [] });
       }
@@ -156,6 +163,12 @@ export async function GET(request: NextRequest) {
       excludedCount,
       reviewedBooksCount: reviewedBookIds.size,
       bookshelfBooksCount: bookshelfBookIds.size,
+      excludedByReview: Array.from(excludedBooks.values()).filter(
+        item => item.reason === 'レビュー済み'
+      ).length,
+      excludedByBookshelf: Array.from(excludedBooks.values()).filter(
+        item => item.reason === '本棚に追加済み'
+      ).length,
     });
 
     // 各書籍のレコメンドスコアを計算
@@ -183,6 +196,17 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    console.log('📊 レコメンド計算完了:', {
+      totalCandidates: bookReviewsMap.size,
+      validRecommendations: recommendations.length,
+      excludedByReview: Array.from(excludedBooks.values()).filter(
+        item => item.reason === 'レビュー済み'
+      ).length,
+      excludedByBookshelf: Array.from(excludedBooks.values()).filter(
+        item => item.reason === '本棚に追加済み'
+      ).length,
+    });
+
     // スコア順にソートしてページネーション適用
     const sortedRecommendations = recommendations
       .sort((a, b) => b.score - a.score)
@@ -200,6 +224,7 @@ export async function GET(request: NextRequest) {
       recommendations: sortedRecommendations,
       userExperienceLevel,
       totalBooks: bookReviewsMap.size,
+      hasEligibleBooks: bookReviewsMap.size > 0,
       excludedBooks: {
         reviewedCount: reviewedBookIds.size,
         bookshelfCount: bookshelfBookIds.size,

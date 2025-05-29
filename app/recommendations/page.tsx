@@ -1,5 +1,7 @@
 'use client';
 
+import { BookOpen, Heart, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -16,6 +18,7 @@ export default function RecommendationsPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [hasEligibleBooks, setHasEligibleBooks] = useState<boolean | null>(null); // null = 未確定
   const userRef = useRef(user);
   const fetchRecommendationsRef = useRef<(pageNum?: number, append?: boolean) => void>(() => {});
 
@@ -51,11 +54,15 @@ export default function RecommendationsPage() {
           setRecommendations(prev => [...prev, ...data.recommendations]);
         } else {
           setRecommendations(data.recommendations);
+          setHasEligibleBooks(data.hasEligibleBooks); // 初回のみ設定
         }
 
         setHasMore(data.recommendations.length === limit);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'エラーが発生しました');
+        if (pageNum === 1) {
+          setHasEligibleBooks(false); // エラー時は対象書籍なしとして扱う
+        }
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -98,8 +105,46 @@ export default function RecommendationsPage() {
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <p className="text-muted-foreground">ログインしてレコメンドを表示してください</p>
+        <div className="text-center py-12">
+          <div className="flex justify-center mb-4">
+            <div className="bg-muted p-4 rounded-full">
+              <Sparkles className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </div>
+          <h2 className="text-xl font-medium mb-2">ログインが必要です</h2>
+          <p className="text-muted-foreground mb-6">
+            あなたに最適な書籍をおすすめするために、ログインしてください
+          </p>
+          <Link href="/auth/signin">
+            <Button>ログイン</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // 対象書籍がない場合は専用メッセージを表示
+  if (!loading && hasEligibleBooks === false) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">📚 あなたへのおすすめ</h1>
+          <p className="text-muted-foreground">
+            あなたの経験年数とレビューデータに基づいて、最適な書籍をおすすめします
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <div className="flex justify-center mb-4">
+            <div className="bg-muted p-4 rounded-full">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </div>
+          <h2 className="text-xl font-medium mb-2">おすすめできる書籍がありません</h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            現在、レビューデータが蓄積されている書籍がないため、おすすめを表示できません。
+            <br />
+            今後、書籍のレビューが投稿されると、おすすめ機能をご利用いただけます。
+          </p>
         </div>
       </div>
     );
@@ -126,17 +171,36 @@ export default function RecommendationsPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-red-500 mb-4">{error}</p>
+          <div className="flex justify-center mb-4">
+            <div className="bg-red-50 p-4 rounded-full">
+              <BookOpen className="h-8 w-8 text-red-500" />
+            </div>
+          </div>
+          <h2 className="text-xl font-medium mb-2">エラーが発生しました</h2>
+          <p className="text-red-500 mb-6">{error}</p>
           <Button onClick={() => fetchRecommendations(1, false)} variant="outline">
             再試行
           </Button>
         </div>
       ) : recommendations.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">現在おすすめできる書籍がありません</p>
-          <p className="text-sm text-muted-foreground">
-            書籍にレビューを投稿すると、より良いレコメンドを提供できます
+          <div className="flex justify-center mb-4">
+            <div className="bg-muted p-4 rounded-full">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </div>
+          <h2 className="text-xl font-medium mb-2">おすすめ書籍を準備中です</h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            本棚に書籍を追加したり、レビューを書くことで、より精度の高いおすすめを提供できます。
           </p>
+          <div className="flex justify-center">
+            <Link href="/profile">
+              <Button variant="outline">
+                <Heart className="h-4 w-4 mr-2" />
+                本棚を設定
+              </Button>
+            </Link>
+          </div>
         </div>
       ) : (
         <>
