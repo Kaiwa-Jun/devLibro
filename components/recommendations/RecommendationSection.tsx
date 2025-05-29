@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronRight, Heart, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
@@ -20,6 +20,7 @@ interface RecommendationResponse {
   recommendations: RecommendationWithBook[];
   userExperienceLevel: ExperienceLevel;
   totalBooks: number;
+  hasEligibleBooks: boolean;
   excludedBooks?: {
     reviewedCount: number;
     bookshelfCount: number;
@@ -36,6 +37,8 @@ const RecommendationSection = forwardRef<RecommendationSectionRef, Recommendatio
     const [recommendations, setRecommendations] = useState<RecommendationWithBook[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [hasInitialLoad, setHasInitialLoad] = useState(false);
+    const [hasEligibleBooks, setHasEligibleBooks] = useState<boolean | null>(null);
     const fetchRecommendationsRef = useRef<() => void>(() => {});
     const userRef = useRef(user);
 
@@ -64,10 +67,13 @@ const RecommendationSection = forwardRef<RecommendationSectionRef, Recommendatio
         const data: RecommendationResponse = await response.json();
 
         setRecommendations(data.recommendations);
+        setHasEligibleBooks(data.hasEligibleBooks);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'エラーが発生しました');
+        setHasEligibleBooks(false);
       } finally {
         setLoading(false);
+        setHasInitialLoad(true);
       }
     }, [user, maxItems]);
 
@@ -111,13 +117,23 @@ const RecommendationSection = forwardRef<RecommendationSectionRef, Recommendatio
       return null;
     }
 
+    // 初回ロード前は表示しない（ちらつき防止）
+    if (!hasInitialLoad) {
+      return null;
+    }
+
     // エラーの場合は表示しない
     if (error) {
       return null;
     }
 
-    // ローディング中の表示
-    if (loading) {
+    // 対象書籍がない場合は表示しない
+    if (hasEligibleBooks === false) {
+      return null;
+    }
+
+    // ローディング中の表示（初回ロード後の更新時のみ）
+    if (loading && hasInitialLoad) {
       return (
         <Card className="mb-6">
           <CardHeader>
@@ -137,11 +153,6 @@ const RecommendationSection = forwardRef<RecommendationSectionRef, Recommendatio
           </CardContent>
         </Card>
       );
-    }
-
-    // レコメンドがない場合は表示しない
-    if (recommendations.length === 0) {
-      return null;
     }
 
     return (
@@ -169,15 +180,38 @@ const RecommendationSection = forwardRef<RecommendationSectionRef, Recommendatio
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              {recommendations.map((recommendation, index) => (
-                <RecommendationCard
-                  key={recommendation.book.id}
-                  recommendation={recommendation}
-                  index={index}
-                />
-              ))}
-            </div>
+            {recommendations.length > 0 ? (
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {recommendations.map((recommendation, index) => (
+                  <RecommendationCard
+                    key={recommendation.book.id}
+                    recommendation={recommendation}
+                    index={index}
+                  />
+                ))}
+              </div>
+            ) : (
+              // 空状態の表示（対象書籍はあるがレコメンドが0件の場合）
+              <div className="text-center py-12">
+                <div className="flex justify-center mb-4">
+                  <div className="bg-muted p-4 rounded-full">
+                    <BookOpen className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-medium mb-2">おすすめ書籍を準備中です</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  本棚に書籍を追加したり、レビューを書くことで、より精度の高いおすすめを提供できます。
+                </p>
+                <div className="flex justify-center">
+                  <Link href="/profile">
+                    <Button variant="outline" size="sm">
+                      <Heart className="h-4 w-4 mr-2" />
+                      本棚を設定
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
