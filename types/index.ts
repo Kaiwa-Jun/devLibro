@@ -77,3 +77,91 @@ export type RecommendationCache = {
   positiveRate: number;
   updatedAt: string;
 };
+
+export type CircleStatus = 'planning' | 'active' | 'completed' | 'cancelled';
+export type ParticipantRole = 'host' | 'co-host' | 'participant';
+export type ParticipantStatus = 'pending' | 'approved' | 'declined' | 'left';
+
+export type ReadingCircle = {
+  id: string;
+  title: string;
+  description?: string;
+  book_id: string;
+  book?: Book;
+  created_by: string;
+  status: CircleStatus;
+  max_participants: number;
+  is_private: boolean;
+  start_date?: string;
+  end_date?: string;
+  cover_image_url?: string;
+  created_at: string;
+  updated_at: string;
+  participant_count?: number;
+};
+
+export type CircleParticipant = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  role: ParticipantRole;
+  status: ParticipantStatus;
+  joined_at: string;
+  last_active_at: string;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+};
+
+export type CircleSchedule = {
+  id: string;
+  circle_id: string;
+  title: string;
+  description?: string;
+  start_page?: number;
+  end_page?: number;
+  scheduled_date: string;
+  is_ai_generated: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CircleProgress = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  schedule_id?: string;
+  current_page?: number;
+  is_completed: boolean;
+  completion_date?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CircleMessage = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  message: string;
+  is_pinned: boolean;
+  parent_id?: string;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+};
+
+export type CircleMeeting = {
+  id: string;
+  circle_id: string;
+  title: string;
+  description?: string;
+  meeting_url?: string;
+  meeting_date: string;
+  duration_minutes: number;
+  is_recurring: boolean;
+  recurrence_pattern?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
