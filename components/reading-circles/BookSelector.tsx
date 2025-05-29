@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -11,15 +12,11 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { getUserBooks } from '@/lib/supabase/books';
-import { Book } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getUserBooks } from '@/lib/supabase/user-books';
+import { cn } from '@/lib/utils';
+import { Book } from '@/types';
 
 interface BookSelectorProps {
   value: string;
@@ -39,7 +36,7 @@ export default function BookSelector({ value, onChange }: BookSelectorProps) {
       setIsLoading(true);
       try {
         const userBooks = await getUserBooks(user.id);
-        const booksList = userBooks.map(ub => ub.book).filter(Boolean);
+        const booksList = userBooks.map((ub: { book: Book }) => ub.book).filter(Boolean);
         setBooks(booksList);
       } catch (error) {
         console.error('書籍取得エラー:', error);
@@ -66,8 +63,8 @@ export default function BookSelector({ value, onChange }: BookSelectorProps) {
           {value && selectedBook
             ? selectedBook.title
             : isLoading
-            ? '読み込み中...'
-            : '書籍を選択してください'}
+              ? '読み込み中...'
+              : '書籍を選択してください'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -82,12 +79,12 @@ export default function BookSelector({ value, onChange }: BookSelectorProps) {
           <Command>
             <CommandInput placeholder="書籍を検索..." />
             <CommandEmpty>
-              {books.length === 0 
-                ? '本棚に書籍がありません。まずは本棚に書籍を追加してください。' 
+              {books.length === 0
+                ? '本棚に書籍がありません。まずは本棚に書籍を追加してください。'
                 : '書籍が見つかりません'}
             </CommandEmpty>
             <CommandGroup className="max-h-[300px] overflow-y-auto">
-              {books.map((book) => (
+              {books.map(book => (
                 <CommandItem
                   key={book.id}
                   value={book.title}
@@ -97,10 +94,7 @@ export default function BookSelector({ value, onChange }: BookSelectorProps) {
                   }}
                 >
                   <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === book.id ? 'opacity-100' : 'opacity-0'
-                    )}
+                    className={cn('mr-2 h-4 w-4', value === book.id ? 'opacity-100' : 'opacity-0')}
                   />
                   <div className="flex flex-col">
                     <span>{book.title}</span>
