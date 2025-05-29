@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, Home, Moon, Sun, User } from 'lucide-react';
+import { BookOpen, Home, Moon, Sun, User, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -25,6 +25,12 @@ export default function Header() {
       href: '/profile',
       icon: User,
       active: pathname.startsWith('/profile'),
+    },
+    {
+      name: '輪読会',
+      href: '/reading-circles',
+      icon: Users,
+      active: pathname.startsWith('/reading-circles'),
     },
     // 元のGoogle Books APIを使った検索画面はコメントアウト
     // {
