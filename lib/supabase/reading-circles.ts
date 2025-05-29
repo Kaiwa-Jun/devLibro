@@ -1,4 +1,3 @@
-import { getSupabaseClient } from './client';
 import {
   ReadingCircle,
   CircleParticipant,
@@ -9,6 +8,8 @@ import {
   Book,
   User,
 } from '@/types';
+
+import { getSupabaseClient } from './client';
 
 /**
  * 輪読会を作成する関数
@@ -66,10 +67,12 @@ export const getReadingCircle = async (circleId: string): Promise<ReadingCircle 
 
     const { data, error } = await supabase
       .from('reading_circles')
-      .select(`
+      .select(
+        `
         *,
         book:book_id (*)
-      `)
+      `
+      )
       .eq('id', circleId)
       .single();
 
@@ -146,10 +149,7 @@ export const deleteReadingCircle = async (circleId: string): Promise<boolean> =>
   try {
     const supabase = getSupabaseClient();
 
-    const { error } = await supabase
-      .from('reading_circles')
-      .delete()
-      .eq('id', circleId);
+    const { error } = await supabase.from('reading_circles').delete().eq('id', circleId);
 
     if (error) {
       console.error('輪読会削除エラー:', error);
@@ -194,14 +194,16 @@ export const getUserReadingCircles = async (
       return [];
     }
 
-    const circleIds = participantData.map(p => p.circle_id);
+    const circleIds = participantData.map((p: { circle_id: string }) => p.circle_id);
 
     const { data: circlesData, error: circlesError } = await supabase
       .from('reading_circles')
-      .select(`
+      .select(
+        `
         *,
         book:book_id (*)
-      `)
+      `
+      )
       .in('id', circleIds);
 
     if (circlesError) {
@@ -214,7 +216,7 @@ export const getUserReadingCircles = async (
     }
 
     const circlesWithParticipantCount = await Promise.all(
-      circlesData.map(async circle => {
+      circlesData.map(async (circle: ReadingCircle) => {
         const { count, error: countError } = await supabase
           .from('circle_participants')
           .select('*', { count: 'exact', head: true })
@@ -256,10 +258,12 @@ export const searchPublicReadingCircles = async (
 
     let query = supabase
       .from('reading_circles')
-      .select(`
+      .select(
+        `
         *,
         book:book_id (*)
-      `)
+      `
+      )
       .eq('is_private', false)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -280,7 +284,7 @@ export const searchPublicReadingCircles = async (
     }
 
     const circlesWithParticipantCount = await Promise.all(
-      data.map(async circle => {
+      data.map(async (circle: ReadingCircle) => {
         const { count, error: countError } = await supabase
           .from('circle_participants')
           .select('*', { count: 'exact', head: true })
@@ -421,7 +425,8 @@ export const getCircleParticipants = async (
 
     let query = supabase
       .from('circle_participants')
-      .select(`
+      .select(
+        `
         *,
         user:user_id (
           id,
@@ -429,7 +434,8 @@ export const getCircleParticipants = async (
           experience_years,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('circle_id', circleId);
 
     if (status) {
@@ -506,21 +512,24 @@ export const getCircleSchedules = async (circleId: string): Promise<CircleSchedu
  * 輪読会の進捗を更新する関数
  */
 export const updateCircleProgress = async (
-  userId: string,
-  scheduleId: string,
   progressData: Partial<Omit<CircleProgress, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<CircleProgress | null> => {
   try {
     const supabase = getSupabaseClient();
 
+    if (!progressData.user_id || !progressData.circle_id) {
+      console.error('進捗更新にはuser_idとcircle_idが必要です');
+      return null;
+    }
+
     const { data: existingProgress, error: checkError } = await supabase
       .from('circle_progress')
       .select('*')
-      .eq('user_id', userId)
-      .eq('schedule_id', scheduleId)
-      .single();
+      .eq('user_id', progressData.user_id)
+      .eq('circle_id', progressData.circle_id)
+      .maybeSingle();
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError) {
       console.error('進捗確認エラー:', checkError);
       return null;
     }
@@ -548,8 +557,6 @@ export const updateCircleProgress = async (
       .from('circle_progress')
       .insert([
         {
-          user_id: userId,
-          schedule_id: scheduleId,
           ...progressData,
         },
       ])
@@ -572,9 +579,9 @@ export const updateCircleProgress = async (
  * ユーザーの輪読会進捗を取得する関数
  */
 export const getUserCircleProgress = async (
-  userId: string,
-  circleId: string
-): Promise<CircleProgress[]> => {
+  circleId: string,
+  userId: string
+): Promise<CircleProgress | null> => {
   try {
     const supabase = getSupabaseClient();
 
@@ -582,17 +589,18 @@ export const getUserCircleProgress = async (
       .from('circle_progress')
       .select('*')
       .eq('user_id', userId)
-      .eq('circle_id', circleId);
+      .eq('circle_id', circleId)
+      .maybeSingle();
 
     if (error) {
       console.error('ユーザー進捗取得エラー:', error);
-      return [];
+      return null;
     }
 
-    return (data || []) as CircleProgress[];
+    return data as CircleProgress | null;
   } catch (error) {
     console.error('ユーザー進捗取得中に例外が発生しました:', error);
-    return [];
+    return null;
   }
 };
 
@@ -636,14 +644,16 @@ export const getCircleMessages = async (
 
     const { data, error } = await supabase
       .from('circle_messages')
-      .select(`
+      .select(
+        `
         *,
         user:user_id (
           id,
           display_name,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('circle_id', circleId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

@@ -18,6 +18,12 @@ export type User = {
   id: string;
   pen_name: string;
   experience_years: number;
+  display_name?: string;
+  avatar_url?: string;
+  email?: string;
+  user_metadata?: {
+    name?: string;
+  };
 };
 
 export type Review = {

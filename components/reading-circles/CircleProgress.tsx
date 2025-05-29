@@ -1,16 +1,11 @@
 'use client';
 
+import { CheckCircle, Circle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getUserCircleProgress, updateCircleProgress } from '@/lib/supabase/reading-circles';
-import { CircleProgress as CircleProgressType, CircleSchedule } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
+
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Circle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { getCircleSchedules } from '@/lib/supabase/reading-circles';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +15,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  getUserCircleProgress,
+  updateCircleProgress,
+  getCircleSchedules,
+} from '@/lib/supabase/reading-circles';
+import { CircleProgress as CircleProgressType, CircleSchedule } from '@/types';
 
 interface CircleProgressProps {
   circleId: string;
@@ -42,23 +46,23 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-      
+
       setIsLoading(true);
-      
+
       try {
         const schedulesData = await getCircleSchedules(circleId);
         setSchedules(schedulesData);
-        
+
         if (schedulesData.length > 0) {
-          const maxEndPage = Math.max(...schedulesData
-            .filter(s => s.end_page !== undefined)
-            .map(s => s.end_page || 0));
+          const maxEndPage = Math.max(
+            ...schedulesData.filter(s => s.end_page !== undefined).map(s => s.end_page || 0)
+          );
           setTotalPages(maxEndPage);
         }
-        
+
         const progressData = await getUserCircleProgress(circleId, user.id);
         setProgress(progressData);
-        
+
         if (progressData) {
           setCurrentPage(progressData.current_page);
           setNotes(progressData.notes || '');
@@ -69,7 +73,7 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, [circleId, user]);
 
@@ -82,20 +86,21 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
       });
       return;
     }
-    
+
     setIsUpdating(true);
-    
+
     try {
       const progressData = {
         circle_id: circleId,
         user_id: user.id,
         current_page: currentPage,
         notes: notes,
-        is_completed: currentPage !== undefined && totalPages > 0 ? currentPage >= totalPages : false,
+        is_completed:
+          currentPage !== undefined && totalPages > 0 ? currentPage >= totalPages : false,
       };
-      
+
       const result = await updateCircleProgress(progressData);
-      
+
       if (result) {
         setProgress(result);
         toast({
@@ -128,7 +133,7 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
 
   const getNextSchedule = () => {
     if (!progress || !progress.current_page || schedules.length === 0) return null;
-    
+
     return schedules
       .filter(s => s.start_page !== undefined && s.start_page > (progress.current_page || 0))
       .sort((a, b) => (a.start_page || 0) - (b.start_page || 0))[0];
@@ -136,14 +141,14 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
 
   const getCurrentSchedule = () => {
     if (!progress || !progress.current_page || schedules.length === 0) return null;
-    
-    return schedules
-      .filter(s => 
-        s.start_page !== undefined && 
-        s.end_page !== undefined && 
-        s.start_page <= (progress.current_page || 0) && 
+
+    return schedules.filter(
+      s =>
+        s.start_page !== undefined &&
+        s.end_page !== undefined &&
+        s.start_page <= (progress.current_page || 0) &&
         s.end_page >= (progress.current_page || 0)
-      )[0];
+    )[0];
   };
 
   if (isLoading) {
@@ -172,11 +177,7 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
           {!progress ? (
             <div className="text-center py-4">
               <p className="text-muted-foreground mb-4">まだ進捗データがありません</p>
-              {user && (
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  進捗を記録する
-                </Button>
-              )}
+              {user && <Button onClick={() => setIsDialogOpen(true)}>進捗を記録する</Button>}
             </div>
           ) : (
             <div className="space-y-4">
@@ -185,44 +186,40 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
                   <span className="text-sm font-medium">
                     {progress.current_page || 0} / {totalPages} ページ
                   </span>
-                  <span className="text-sm font-medium">
-                    {calculateProgressPercentage()}%
-                  </span>
+                  <span className="text-sm font-medium">{calculateProgressPercentage()}%</span>
                 </div>
                 <Progress value={calculateProgressPercentage()} className="h-2" />
               </div>
-              
+
               {getCurrentSchedule() && (
                 <div className="p-3 bg-primary/5 rounded-lg">
                   <p className="text-sm font-medium mb-1">現在のセクション:</p>
                   <p className="text-sm">{getCurrentSchedule()?.title}</p>
                 </div>
               )}
-              
+
               {getNextSchedule() && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm font-medium mb-1">次のセクション:</p>
                   <p className="text-sm">{getNextSchedule()?.title}</p>
                 </div>
               )}
-              
+
               {progress.notes && (
                 <div className="mt-4">
                   <p className="text-sm font-medium mb-1">メモ:</p>
                   <p className="text-sm whitespace-pre-line">{progress.notes}</p>
                 </div>
               )}
-              
+
               <div className="flex justify-end mt-4">
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  進捗を更新
-                </Button>
+                <Button onClick={() => setIsDialogOpen(true)}>進捗を更新</Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -237,37 +234,29 @@ export default function CircleProgress({ circleId, isHost = false }: CircleProgr
                 min={1}
                 max={totalPages > 0 ? totalPages : undefined}
                 value={currentPage || ''}
-                onChange={(e) => setCurrentPage(parseInt(e.target.value) || undefined)}
+                onChange={e => setCurrentPage(parseInt(e.target.value) || undefined)}
               />
               {totalPages > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  全{totalPages}ページ中
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">全{totalPages}ページ中</p>
               )}
             </div>
-            
+
             <div>
               <Label htmlFor="notes">メモ（気づきや質問など）</Label>
               <Textarea
                 id="notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 className="min-h-[100px]"
                 placeholder="読書中の気づきや質問、議論したいポイントなどを記録しましょう"
               />
             </div>
-            
+
             <div className="flex justify-end gap-2 pt-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDialogOpen(false)}
-              >
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 キャンセル
               </Button>
-              <Button 
-                onClick={handleUpdateProgress}
-                disabled={isUpdating}
-              >
+              <Button onClick={handleUpdateProgress} disabled={isUpdating}>
                 {isUpdating ? '更新中...' : '保存'}
               </Button>
             </div>

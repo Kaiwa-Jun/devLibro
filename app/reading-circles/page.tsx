@@ -1,15 +1,15 @@
 'use client';
 
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ReadingCircle } from '@/types';
-import { getUserReadingCircles, searchPublicReadingCircles } from '@/lib/supabase/reading-circles';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getUserReadingCircles, searchPublicReadingCircles } from '@/lib/supabase/reading-circles';
+import { ReadingCircle } from '@/types';
 
 export default function ReadingCirclesPage() {
   const { user } = useAuth();
@@ -21,21 +21,21 @@ export default function ReadingCirclesPage() {
   useEffect(() => {
     const fetchCircles = async () => {
       setIsLoading(true);
-      
+
       if (user) {
         const hosting = await getUserReadingCircles(user.id, 'host');
         setHostingCircles(hosting);
-        
+
         const participating = await getUserReadingCircles(user.id, 'participant');
         setParticipatingCircles(participating);
       }
-      
+
       const public_circles = await searchPublicReadingCircles();
       setPublicCircles(public_circles);
-      
+
       setIsLoading(false);
     };
-    
+
     fetchCircles();
   }, [user]);
 
@@ -55,9 +55,7 @@ export default function ReadingCirclesPage() {
           <p className="text-sm text-muted-foreground mb-2">
             {circle.book?.title || '書籍情報なし'}
           </p>
-          <p className="text-sm line-clamp-3 mb-4">
-            {circle.description || '説明はありません'}
-          </p>
+          <p className="text-sm line-clamp-3 mb-4">{circle.description || '説明はありません'}</p>
           <div className="flex justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <span>{circle.participant_count || 0}人参加</span>
@@ -100,14 +98,14 @@ export default function ReadingCirclesPage() {
           </Link>
         )}
       </div>
-      
+
       <Tabs defaultValue="hosting" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="hosting">主催中</TabsTrigger>
           <TabsTrigger value="participating">参加中</TabsTrigger>
           <TabsTrigger value="all">すべて</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="hosting">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -115,7 +113,9 @@ export default function ReadingCirclesPage() {
             </div>
           ) : hostingCircles.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">主催している輪読会はありません。新しい輪読会を作成してみましょう！</p>
+              <p className="text-muted-foreground">
+                主催している輪読会はありません。新しい輪読会を作成してみましょう！
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -123,7 +123,7 @@ export default function ReadingCirclesPage() {
             </div>
           )}
         </TabsContent>
-        
+
         <TabsContent value="participating">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -131,7 +131,9 @@ export default function ReadingCirclesPage() {
             </div>
           ) : participatingCircles.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">参加している輪読会はありません。興味のある輪読会に参加してみましょう！</p>
+              <p className="text-muted-foreground">
+                参加している輪読会はありません。興味のある輪読会に参加してみましょう！
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -139,7 +141,7 @@ export default function ReadingCirclesPage() {
             </div>
           )}
         </TabsContent>
-        
+
         <TabsContent value="all">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

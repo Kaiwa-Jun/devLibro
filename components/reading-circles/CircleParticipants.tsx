@@ -1,16 +1,17 @@
 'use client';
 
+import { Check, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+import { useAuth } from '@/components/auth/AuthProvider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import { getCircleParticipants, updateParticipantStatus } from '@/lib/supabase/reading-circles';
 import { CircleParticipant } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Check, X } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface CircleParticipantsProps {
   circleId: string;
@@ -27,18 +28,18 @@ export default function CircleParticipants({ circleId, isHost = false }: CircleP
   useEffect(() => {
     const fetchParticipants = async () => {
       setIsLoading(true);
-      
+
       const approvedParticipants = await getCircleParticipants(circleId, 'approved');
       setParticipants(approvedParticipants);
-      
+
       if (isHost) {
         const requests = await getCircleParticipants(circleId, 'pending');
         setPendingRequests(requests);
       }
-      
+
       setIsLoading(false);
     };
-    
+
     fetchParticipants();
   }, [circleId, isHost]);
 
@@ -50,7 +51,7 @@ export default function CircleParticipants({ circleId, isHost = false }: CircleP
         setPendingRequests(prev => prev.filter(p => p.id !== participantId));
         setParticipants(prev => [...prev, { ...approvedParticipant, status: 'approved' }]);
       }
-      
+
       toast({
         title: '参加リクエストを承認しました',
       });
@@ -67,7 +68,7 @@ export default function CircleParticipants({ circleId, isHost = false }: CircleP
     const result = await updateParticipantStatus(participantId, 'declined');
     if (result) {
       setPendingRequests(prev => prev.filter(p => p.id !== participantId));
-      
+
       toast({
         title: '参加リクエストを拒否しました',
       });
@@ -117,22 +118,36 @@ export default function CircleParticipants({ circleId, isHost = false }: CircleP
           <CardContent>
             <div className="space-y-4">
               {pendingRequests.map(participant => (
-                <div key={participant.id} className="flex items-center justify-between p-2 border rounded-lg">
+                <div
+                  key={participant.id}
+                  className="flex items-center justify-between p-2 border rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage src={participant.user?.avatar_url} />
-                      <AvatarFallback>{participant.user?.display_name?.substring(0, 2) || 'ユ'}</AvatarFallback>
+                      <AvatarFallback>
+                        {participant.user?.display_name?.substring(0, 2) || 'ユ'}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{participant.user?.display_name || '名前なし'}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleApprove(participant.id)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleApprove(participant.id)}
+                    >
                       <Check className="h-4 w-4 mr-1" />
                       承認
                     </Button>
-                    <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDecline(participant.id)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive"
+                      onClick={() => handleDecline(participant.id)}
+                    >
                       <X className="h-4 w-4 mr-1" />
                       拒否
                     </Button>
@@ -154,19 +169,27 @@ export default function CircleParticipants({ circleId, isHost = false }: CircleP
           ) : (
             <div className="space-y-4">
               {participants.map(participant => (
-                <div key={participant.id} className="flex items-center justify-between p-2 border rounded-lg">
+                <div
+                  key={participant.id}
+                  className="flex items-center justify-between p-2 border rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage src={participant.user?.avatar_url} />
-                      <AvatarFallback>{participant.user?.display_name?.substring(0, 2) || 'ユ'}</AvatarFallback>
+                      <AvatarFallback>
+                        {participant.user?.display_name?.substring(0, 2) || 'ユ'}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{participant.user?.display_name || '名前なし'}</p>
+                        <p className="font-medium">
+                          {participant.user?.display_name || '名前なし'}
+                        </p>
                         {getRoleBadge(participant.role)}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {participant.joined_at && `参加: ${new Date(participant.joined_at).toLocaleDateString()}`}
+                        {participant.joined_at &&
+                          `参加: ${new Date(participant.joined_at).toLocaleDateString()}`}
                       </p>
                     </div>
                   </div>

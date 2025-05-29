@@ -1,21 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { getReadingCircle, joinReadingCircle } from '@/lib/supabase/reading-circles';
-import { ReadingCircle } from '@/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, Users } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/use-toast';
-import CircleParticipants from '@/components/reading-circles/CircleParticipants';
-import CircleSchedules from '@/components/reading-circles/CircleSchedules';
-import CircleProgress from '@/components/reading-circles/CircleProgress';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+import { useAuth } from '@/components/auth/AuthProvider';
 import CircleChat from '@/components/reading-circles/CircleChat';
+import CircleParticipants from '@/components/reading-circles/CircleParticipants';
+import CircleProgress from '@/components/reading-circles/CircleProgress';
+import CircleSchedules from '@/components/reading-circles/CircleSchedules';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
+import { getReadingCircle, joinReadingCircle } from '@/lib/supabase/reading-circles';
+import { formatDate } from '@/lib/utils';
+import { ReadingCircle } from '@/types';
 
 export default function ReadingCircleDetailPage() {
   const params = useParams();
@@ -31,19 +32,19 @@ export default function ReadingCircleDetailPage() {
   useEffect(() => {
     const fetchCircle = async () => {
       if (!params.id) return;
-      
+
       setIsLoading(true);
       const circleData = await getReadingCircle(params.id as string);
       setCircle(circleData);
-      
+
       if (user && circleData) {
         setIsHost(user.id === circleData.created_by);
         setIsParticipant(false); // 仮の実装
       }
-      
+
       setIsLoading(false);
     };
-    
+
     fetchCircle();
   }, [params.id, user]);
 
@@ -56,14 +57,14 @@ export default function ReadingCircleDetailPage() {
       });
       return;
     }
-    
+
     if (!circle) return;
-    
+
     setIsJoining(true);
-    
+
     try {
       const result = await joinReadingCircle(circle.id, user.id);
-      
+
       if (result) {
         toast({
           title: '参加リクエストを送信しました',
@@ -92,13 +93,41 @@ export default function ReadingCircleDetailPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'planning':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">計画中</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+          >
+            計画中
+          </Badge>
+        );
       case 'active':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">進行中</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+          >
+            進行中
+          </Badge>
+        );
       case 'completed':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">完了</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+          >
+            完了
+          </Badge>
+        );
       case 'cancelled':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">中止</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+          >
+            中止
+          </Badge>
+        );
       default:
         return null;
     }
@@ -140,13 +169,13 @@ export default function ReadingCircleDetailPage() {
         <ArrowLeft className="mr-2 h-4 w-4" />
         戻る
       </Button>
-      
+
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold">{circle.title}</h1>
           {getStatusBadge(circle.status)}
         </div>
-        
+
         <div className="text-muted-foreground mb-4">
           <p>書籍: {circle.book?.title || '書籍情報なし'}</p>
           <div className="flex gap-4 mt-2">
@@ -162,20 +191,16 @@ export default function ReadingCircleDetailPage() {
             )}
           </div>
         </div>
-        
+
         <p className="mb-6">{circle.description || '説明はありません'}</p>
-        
+
         {user && !isHost && !isParticipant && (
-          <Button 
-            onClick={handleJoin} 
-            disabled={isJoining}
-            className="mb-6"
-          >
+          <Button onClick={handleJoin} disabled={isJoining} className="mb-6">
             {isJoining ? '処理中...' : '参加リクエストを送信'}
           </Button>
         )}
       </div>
-      
+
       <Tabs defaultValue="schedule" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="schedule">スケジュール</TabsTrigger>
@@ -183,19 +208,19 @@ export default function ReadingCircleDetailPage() {
           <TabsTrigger value="progress">進捗</TabsTrigger>
           <TabsTrigger value="chat">チャット</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="schedule">
           <CircleSchedules circleId={circle.id} isHost={isHost} />
         </TabsContent>
-        
+
         <TabsContent value="participants">
           <CircleParticipants circleId={circle.id} isHost={isHost} />
         </TabsContent>
-        
+
         <TabsContent value="progress">
           <CircleProgress circleId={circle.id} isHost={isHost} />
         </TabsContent>
-        
+
         <TabsContent value="chat">
           <CircleChat circleId={circle.id} />
         </TabsContent>

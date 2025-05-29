@@ -1,18 +1,21 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Calendar, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getCircleSchedules, createCircleSchedule } from '@/lib/supabase/reading-circles';
-import { CircleSchedule } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Plus } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -23,8 +26,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { getCircleSchedules, createCircleSchedule } from '@/lib/supabase/reading-circles';
+import { CircleSchedule } from '@/types';
 
 interface CircleSchedulesProps {
   circleId: string;
@@ -32,23 +39,35 @@ interface CircleSchedulesProps {
 }
 
 const scheduleFormSchema = z.object({
-  title: z.string().min(3, {
-    message: 'タイトルは3文字以上で入力してください',
-  }).max(100, {
-    message: 'タイトルは100文字以内で入力してください',
-  }),
-  description: z.string().max(500, {
-    message: '説明は500文字以内で入力してください',
-  }).optional(),
+  title: z
+    .string()
+    .min(3, {
+      message: 'タイトルは3文字以上で入力してください',
+    })
+    .max(100, {
+      message: 'タイトルは100文字以内で入力してください',
+    }),
+  description: z
+    .string()
+    .max(500, {
+      message: '説明は500文字以内で入力してください',
+    })
+    .optional(),
   scheduled_date: z.string({
     required_error: '日付を選択してください',
   }),
-  start_page: z.number().min(1, {
-    message: '開始ページは1以上で入力してください',
-  }).optional(),
-  end_page: z.number().min(1, {
-    message: '終了ページは1以上で入力してください',
-  }).optional(),
+  start_page: z
+    .number()
+    .min(1, {
+      message: '開始ページは1以上で入力してください',
+    })
+    .optional(),
+  end_page: z
+    .number()
+    .min(1, {
+      message: '終了ページは1以上で入力してください',
+    })
+    .optional(),
   is_ai_generated: z.boolean().default(false),
 });
 
@@ -76,15 +95,15 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
     const fetchSchedules = async () => {
       setIsLoading(true);
       const scheduleData = await getCircleSchedules(circleId);
-      
-      scheduleData.sort((a, b) => 
-        new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
+
+      scheduleData.sort(
+        (a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
       );
-      
+
       setSchedules(scheduleData);
       setIsLoading(false);
     };
-    
+
     fetchSchedules();
   }, [circleId]);
 
@@ -97,26 +116,28 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const scheduleData = {
         ...values,
         circle_id: circleId,
       };
-      
+
       const result = await createCircleSchedule(scheduleData);
-      
+
       if (result) {
         toast({
           title: 'スケジュールを作成しました',
         });
-        
-        setSchedules(prev => [...prev, result].sort((a, b) => 
-          new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
-        ));
-        
+
+        setSchedules(prev =>
+          [...prev, result].sort(
+            (a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
+          )
+        );
+
         form.reset();
         setIsDialogOpen(false);
       } else {
@@ -205,7 +226,7 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="scheduled_date"
@@ -219,7 +240,7 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="flex gap-4">
                       <FormField
                         control={form.control}
@@ -228,18 +249,20 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                           <FormItem className="flex-1">
                             <FormLabel>開始ページ</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
+                              <Input
+                                type="number"
                                 min={1}
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                                onChange={e =>
+                                  field.onChange(parseInt(e.target.value) || undefined)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="end_page"
@@ -247,11 +270,13 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                           <FormItem className="flex-1">
                             <FormLabel>終了ページ</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
+                              <Input
+                                type="number"
                                 min={1}
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                                onChange={e =>
+                                  field.onChange(parseInt(e.target.value) || undefined)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -259,7 +284,7 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                         )}
                       />
                     </div>
-                    
+
                     <FormField
                       control={form.control}
                       name="description"
@@ -277,11 +302,11 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="flex justify-end gap-2 pt-4">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
+                      <Button
+                        type="button"
+                        variant="outline"
                         onClick={() => setIsDialogOpen(false)}
                       >
                         キャンセル
@@ -294,10 +319,10 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
                 </Form>
               </DialogContent>
             </Dialog>
-            
-            <Button 
-              size="sm" 
-              variant="outline" 
+
+            <Button
+              size="sm"
+              variant="outline"
               className="flex items-center gap-1"
               onClick={generateAISchedule}
             >
@@ -306,7 +331,7 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
           </div>
         )}
       </div>
-      
+
       {schedules.length === 0 ? (
         <div className="text-center py-12 border rounded-lg">
           <p className="text-muted-foreground">スケジュールはまだありません</p>
@@ -318,7 +343,7 @@ export default function CircleSchedules({ circleId, isHost = false }: CircleSche
         </div>
       ) : (
         <div className="space-y-4">
-          {schedules.map((schedule) => (
+          {schedules.map(schedule => (
             <Card key={schedule.id}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">

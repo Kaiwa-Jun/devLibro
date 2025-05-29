@@ -1,18 +1,19 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { getCircleMessages, postCircleMessage } from '@/lib/supabase/reading-circles';
-import { CircleMessage } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, Pin } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { Send, Pin } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+
+import { useAuth } from '@/components/auth/AuthProvider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { getCircleMessages, postCircleMessage } from '@/lib/supabase/reading-circles';
+import { CircleMessage } from '@/types';
 
 interface CircleChatProps {
   circleId: string;
@@ -32,21 +33,21 @@ export default function CircleChat({ circleId }: CircleChatProps) {
     const fetchMessages = async () => {
       setIsLoading(true);
       const messagesData = await getCircleMessages(circleId);
-      
+
       const pinned = messagesData.filter(m => m.is_pinned);
       const regular = messagesData.filter(m => !m.is_pinned);
-      
+
       setPinnedMessages(pinned);
       setMessages(regular);
       setIsLoading(false);
-      
+
       scrollToBottom();
     };
-    
+
     fetchMessages();
-    
+
     const interval = setInterval(fetchMessages, 30000); // 30秒ごとに更新（デモ用）
-    
+
     return () => clearInterval(interval);
   }, [circleId]);
 
@@ -63,11 +64,11 @@ export default function CircleChat({ circleId }: CircleChatProps) {
       });
       return;
     }
-    
+
     if (!newMessage.trim()) return;
-    
+
     setIsSending(true);
-    
+
     try {
       const messageData = {
         circle_id: circleId,
@@ -75,13 +76,13 @@ export default function CircleChat({ circleId }: CircleChatProps) {
         message: newMessage.trim(),
         is_pinned: false,
       };
-      
+
       const result = await postCircleMessage(messageData);
-      
+
       if (result) {
         setMessages(prev => [...prev, result]);
         setNewMessage('');
-        
+
         setTimeout(scrollToBottom, 100);
       } else {
         toast({
@@ -111,10 +112,10 @@ export default function CircleChat({ circleId }: CircleChatProps) {
 
   const renderMessage = (message: CircleMessage) => {
     const isCurrentUser = user && message.user_id === user.id;
-    
+
     return (
-      <div 
-        key={message.id} 
+      <div
+        key={message.id}
         className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}
       >
         {!isCurrentUser && (
@@ -123,12 +124,10 @@ export default function CircleChat({ circleId }: CircleChatProps) {
             <AvatarFallback>{message.user?.display_name?.substring(0, 2) || 'ユ'}</AvatarFallback>
           </Avatar>
         )}
-        
-        <div 
+
+        <div
           className={`max-w-[70%] rounded-lg p-3 ${
-            isCurrentUser 
-              ? 'bg-primary text-primary-foreground' 
-              : 'bg-muted'
+            isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
           }`}
         >
           {!isCurrentUser && (
@@ -139,7 +138,7 @@ export default function CircleChat({ circleId }: CircleChatProps) {
             {formatMessageTime(message.created_at)}
           </p>
         </div>
-        
+
         {isCurrentUser && (
           <Avatar className="h-8 w-8 ml-2">
             <AvatarImage src={user.avatar_url} />
@@ -192,9 +191,13 @@ export default function CircleChat({ circleId }: CircleChatProps) {
                   <div className="flex items-center gap-2 mb-1">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={message.user?.avatar_url} />
-                      <AvatarFallback>{message.user?.display_name?.substring(0, 2) || 'ユ'}</AvatarFallback>
+                      <AvatarFallback>
+                        {message.user?.display_name?.substring(0, 2) || 'ユ'}
+                      </AvatarFallback>
                     </Avatar>
-                    <p className="text-xs font-medium">{message.user?.display_name || '名前なし'}</p>
+                    <p className="text-xs font-medium">
+                      {message.user?.display_name || '名前なし'}
+                    </p>
                   </div>
                   <p className="text-sm">{message.message}</p>
                 </div>
@@ -203,7 +206,7 @@ export default function CircleChat({ circleId }: CircleChatProps) {
           </CardContent>
         </Card>
       )}
-      
+
       <Card className="flex flex-col h-[500px]">
         <CardHeader className="py-3 border-b">
           <CardTitle>チャット</CardTitle>
@@ -225,17 +228,17 @@ export default function CircleChat({ circleId }: CircleChatProps) {
             <div className="flex gap-2">
               <Textarea
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={e => setNewMessage(e.target.value)}
                 placeholder="メッセージを入力..."
                 className="resize-none min-h-[60px]"
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
               />
-              <Button 
+              <Button
                 className="self-end"
                 onClick={handleSendMessage}
                 disabled={isSending || !newMessage.trim()}
