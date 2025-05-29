@@ -5,8 +5,6 @@ import {
   CircleProgress,
   CircleMessage,
   CircleMeeting,
-  Book,
-  User,
 } from '@/types';
 
 import { getSupabaseClient } from './client';
