@@ -146,6 +146,16 @@ export const addBookToUserShelf = async (
 
     console.log('ユーザー書籍を正常に追加しました:', insertedUserBook);
 
+    // レコメンド更新のカスタムイベントを発火
+    if (typeof window !== 'undefined') {
+      console.log('📢 本棚更新イベント発火:', { action: 'add', bookId: bookId });
+      window.dispatchEvent(
+        new CustomEvent('bookshelfUpdated', {
+          detail: { action: 'add', bookId: bookId },
+        })
+      );
+    }
+
     // 追加されたユーザー書籍データを返す
     return {
       id: insertedUserBook.id as string,
@@ -304,6 +314,17 @@ export const deleteUserBook = async (userBookId: string): Promise<boolean> => {
     }
 
     console.log('書籍を本棚から正常に削除しました');
+
+    // レコメンド更新のカスタムイベントを発火
+    if (typeof window !== 'undefined') {
+      console.log('📢 本棚更新イベント発火:', { action: 'remove', userBookId: userBookId });
+      window.dispatchEvent(
+        new CustomEvent('bookshelfUpdated', {
+          detail: { action: 'remove', userBookId: userBookId },
+        })
+      );
+    }
+
     return true;
   } catch (error) {
     console.error('deleteUserBook内でエラー発生:', error);

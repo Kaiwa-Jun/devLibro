@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import RecommendationCard from '@/components/recommendations/RecommendationCard';
@@ -16,6 +16,13 @@ export default function RecommendationsPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const userRef = useRef(user);
+  const fetchRecommendationsRef = useRef<(pageNum?: number, append?: boolean) => void>(() => {});
+
+  // userRefを最新の値で更新
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const fetchRecommendations = useCallback(
     async (pageNum: number = 1, append: boolean = false) => {
@@ -57,9 +64,30 @@ export default function RecommendationsPage() {
     [user?.id]
   );
 
+  // fetchRecommendationsRefを最新の関数で更新
+  useEffect(() => {
+    fetchRecommendationsRef.current = fetchRecommendations;
+  }, [fetchRecommendations]);
+
   useEffect(() => {
     fetchRecommendations(1, false);
   }, [fetchRecommendations]);
+
+  // 本棚の変更を監視してレコメンドを更新
+  useEffect(() => {
+    const handleBookshelfUpdate = () => {
+      if (userRef.current?.id) {
+        setPage(1);
+        fetchRecommendationsRef.current(1, false);
+      }
+    };
+
+    window.addEventListener('bookshelfUpdated', handleBookshelfUpdate);
+
+    return () => {
+      window.removeEventListener('bookshelfUpdated', handleBookshelfUpdate);
+    };
+  }, []);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
