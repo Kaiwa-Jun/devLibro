@@ -163,6 +163,12 @@ export async function GET(request: NextRequest) {
       excludedCount,
       reviewedBooksCount: reviewedBookIds.size,
       bookshelfBooksCount: bookshelfBookIds.size,
+      excludedByReview: Array.from(excludedBooks.values()).filter(
+        item => item.reason === 'レビュー済み'
+      ).length,
+      excludedByBookshelf: Array.from(excludedBooks.values()).filter(
+        item => item.reason === '本棚に追加済み'
+      ).length,
     });
 
     // 各書籍のレコメンドスコアを計算
@@ -190,40 +196,16 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 最低限のレコメンド保証：レコメンドが少ない場合は除外書籍からも追加
-    const minRecommendations = Math.min(3, limit);
-    if (recommendations.length < minRecommendations && excludedBooks.size > 0) {
-      console.log('🔄 最低限レコメンド保証: 除外書籍からも追加');
-
-      const excludedRecommendations: RecommendationWithBook[] = [];
-      Array.from(excludedBooks.entries()).forEach(([bookId, { book, reviews, reason }]) => {
-        const score = calculateRecommendationScore(bookId, reviews, userExperienceLevel);
-
-        if (score && score.score > 0) {
-          excludedRecommendations.push({
-            book,
-            score: score.score * 0.7, // 除外書籍は少し低いスコアに
-            reasons: [...score.reasons, `※${reason}の書籍ですが、参考として表示`],
-            avgDifficulty: score.avgDifficulty,
-            reviewCount: score.reviewCount,
-            experienceLevelMatch: score.experienceLevelMatch,
-          });
-        }
-      });
-
-      // 除外書籍からもスコア順で追加
-      const additionalCount = minRecommendations - recommendations.length;
-      const additionalRecommendations = excludedRecommendations
-        .sort((a, b) => b.score - a.score)
-        .slice(0, additionalCount);
-
-      recommendations.push(...additionalRecommendations);
-
-      console.log('📈 除外書籍から追加:', {
-        additionalCount: additionalRecommendations.length,
-        totalAfterAddition: recommendations.length,
-      });
-    }
+    console.log('📊 レコメンド計算完了:', {
+      totalCandidates: bookReviewsMap.size,
+      validRecommendations: recommendations.length,
+      excludedByReview: Array.from(excludedBooks.values()).filter(
+        item => item.reason === 'レビュー済み'
+      ).length,
+      excludedByBookshelf: Array.from(excludedBooks.values()).filter(
+        item => item.reason === '本棚に追加済み'
+      ).length,
+    });
 
     // スコア順にソートしてページネーション適用
     const sortedRecommendations = recommendations
@@ -242,7 +224,7 @@ export async function GET(request: NextRequest) {
       recommendations: sortedRecommendations,
       userExperienceLevel,
       totalBooks: bookReviewsMap.size,
-      hasEligibleBooks: bookReviewsMap.size > 0 || excludedBooks.size > 0,
+      hasEligibleBooks: bookReviewsMap.size > 0,
       excludedBooks: {
         reviewedCount: reviewedBookIds.size,
         bookshelfCount: bookshelfBookIds.size,
