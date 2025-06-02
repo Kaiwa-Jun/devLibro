@@ -2,14 +2,13 @@ import { ReadingCircle, CircleParticipant } from '@/types';
 
 import { createClient } from './server';
 
-const supabase = createClient();
-
 export async function getReadingCircles(filters?: {
   status?: string;
   isPrivate?: boolean;
   limit?: number;
   offset?: number;
 }) {
+  const supabase = createClient();
   let query = supabase
     .from('reading_circles')
     .select(
@@ -55,6 +54,7 @@ export async function getReadingCircles(filters?: {
 }
 
 export async function getReadingCircleById(id: string) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('reading_circles')
     .select(
@@ -107,6 +107,7 @@ export async function getReadingCircleById(id: string) {
 export async function createReadingCircle(
   circle: Omit<ReadingCircle, 'id' | 'created_at' | 'updated_at' | 'participant_count'>
 ) {
+  const supabase = createClient();
   const { data, error } = await supabase.from('reading_circles').insert([circle]).select().single();
 
   if (error) {
@@ -120,6 +121,7 @@ export async function createReadingCircle(
 }
 
 export async function updateReadingCircle(id: string, updates: Partial<ReadingCircle>) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('reading_circles')
     .update({
@@ -138,6 +140,7 @@ export async function updateReadingCircle(id: string, updates: Partial<ReadingCi
 }
 
 export async function deleteReadingCircle(id: string) {
+  const supabase = createClient();
   const { error } = await supabase.from('reading_circles').delete().eq('id', id);
 
   if (error) {
@@ -153,6 +156,7 @@ export async function addCircleParticipant(
   role: 'organizer' | 'participant' = 'participant',
   status: 'pending' | 'approved' | 'rejected' | 'left' = 'pending'
 ) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('circle_participants')
     .insert([
@@ -180,6 +184,7 @@ export async function updateCircleParticipant(
   participantId: string,
   updates: Partial<CircleParticipant>
 ) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('circle_participants')
     .update({
@@ -196,7 +201,7 @@ export async function updateCircleParticipant(
 
   // Update participant count
   if (updates.status) {
-    const participant = await supabase
+    const participant = await createClient()
       .from('circle_participants')
       .select('circle_id')
       .eq('id', participantId)
@@ -211,6 +216,7 @@ export async function updateCircleParticipant(
 }
 
 export async function removeCircleParticipant(participantId: string) {
+  const supabase = createClient();
   // Get circle_id before deletion
   const { data: participant } = await supabase
     .from('circle_participants')
@@ -233,19 +239,21 @@ export async function removeCircleParticipant(participantId: string) {
 }
 
 async function updateParticipantCount(circleId: string) {
+  const supabase = createClient();
   const { count } = await supabase
     .from('circle_participants')
     .select('*', { count: 'exact' })
     .eq('circle_id', circleId)
     .eq('status', 'approved');
 
-  await supabase
+  await createClient()
     .from('reading_circles')
     .update({ participant_count: count || 0 })
     .eq('id', circleId);
 }
 
 export async function getCircleParticipants(circleId: string) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from('circle_participants')
     .select(
