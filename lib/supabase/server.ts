@@ -60,3 +60,6 @@ export const getSupabaseServerClient = () => {
     },
   });
 };
+
+// Alias for compatibility with existing code
+export { getSupabaseServerClient as createClient };

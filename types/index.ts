@@ -77,3 +77,65 @@ export type RecommendationCache = {
   positiveRate: number;
   updatedAt: string;
 };
+
+// 輪読会機能関連の型定義
+export type ReadingCircle = {
+  id: string;
+  title: string;
+  description?: string;
+  book_id: number;
+  created_by: string;
+  status: 'draft' | 'recruiting' | 'active' | 'completed' | 'cancelled';
+  max_participants: number;
+  is_private: boolean;
+  start_date?: string;
+  end_date?: string;
+  participant_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CircleParticipant = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  role: 'organizer' | 'participant';
+  status: 'pending' | 'approved' | 'rejected' | 'left';
+  joined_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CircleSchedule = {
+  id: string;
+  circle_id: string;
+  title: string;
+  description?: string;
+  scheduled_date: string;
+  start_page?: number;
+  end_page?: number;
+  is_ai_generated: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CircleProgress = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  current_page?: number;
+  notes?: string;
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CircleMessage = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  message: string;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+};
