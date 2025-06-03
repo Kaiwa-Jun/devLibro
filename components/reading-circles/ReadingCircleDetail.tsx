@@ -2,7 +2,20 @@
 
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Calendar, Edit, Globe, Lock, Settings, Trash2, UserPlus, Users } from 'lucide-react';
+import {
+  BookOpen,
+  Calendar,
+  Clock,
+  Edit,
+  Globe,
+  Lock,
+  MessageCircle,
+  Settings,
+  Star,
+  Trash2,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -22,7 +35,6 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleParticipant, ReadingCircle } from '@/types';
 
 interface ReadingCircleDetailProps {
@@ -50,11 +62,15 @@ interface ReadingCircleDetailProps {
 }
 
 const statusLabels = {
-  draft: { label: '下書き', variant: 'secondary' as const },
-  recruiting: { label: '募集中', variant: 'default' as const },
-  active: { label: '開催中', variant: 'default' as const },
-  completed: { label: '終了', variant: 'outline' as const },
-  cancelled: { label: 'キャンセル', variant: 'destructive' as const },
+  draft: { label: '下書き', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' },
+  recruiting: { label: '募集中', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' },
+  active: { label: '開催中', variant: 'default' as const, color: 'bg-green-100 text-green-800' },
+  completed: { label: '終了', variant: 'outline' as const, color: 'bg-gray-100 text-gray-600' },
+  cancelled: {
+    label: 'キャンセル',
+    variant: 'destructive' as const,
+    color: 'bg-red-100 text-red-800',
+  },
 };
 
 export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps) {
@@ -78,7 +94,6 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // Supabaseセッションからアクセストークンを取得
       const { getSupabaseClient } = await import('@/lib/supabase/client');
       const supabase = getSupabaseClient();
       const {
@@ -115,7 +130,6 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
 
     setIsJoining(true);
     try {
-      // Supabaseセッションからアクセストークンを取得
       const { getSupabaseClient } = await import('@/lib/supabase/client');
       const supabase = getSupabaseClient();
       const {
@@ -151,7 +165,6 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
     if (!isOrganizer) return;
 
     try {
-      // Supabaseセッションからアクセストークンを取得
       const { getSupabaseClient } = await import('@/lib/supabase/client');
       const supabase = getSupabaseClient();
       const {
@@ -185,7 +198,6 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
 
   const handleEditSuccess = async (circleId: string) => {
     try {
-      // 最新の輪読会データを取得
       const { getSupabaseClient } = await import('@/lib/supabase/client');
       const supabase = getSupabaseClient();
       const {
@@ -206,7 +218,6 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
 
       if (response.ok) {
         const result = await response.json();
-        // 状態を最新データで更新
         setCurrentCircle(result.data);
         console.log('✅ [編集成功] 最新データで状態更新完了');
       } else {
@@ -220,208 +231,254 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold">{currentCircle.title}</h1>
-            <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              {currentCircle.is_private ? (
-                <Lock className="w-4 h-4" />
-              ) : (
-                <Globe className="w-4 h-4" />
-              )}
-              <span>{currentCircle.is_private ? 'プライベート' : '公開'}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              <span>
-                {currentCircle.participant_count}/{currentCircle.max_participants}名
-              </span>
-            </div>
-            {currentCircle.start_date && (
-              <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                <span>
-                  {format(new Date(currentCircle.start_date), 'yyyy/M/d', { locale: ja })}
-                  {currentCircle.end_date &&
-                    ` 〜 ${format(new Date(currentCircle.end_date), 'yyyy/M/d', { locale: ja })}`}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          {canJoin && (
-            <Button onClick={handleJoin} disabled={isJoining}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              {isJoining ? '申請中...' : '参加申請'}
-            </Button>
-          )}
-
-          {isOrganizer && (
-            <>
-              <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                編集
-              </Button>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>輪読会を削除しますか？</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      この操作は取り消せません。輪読会に関するすべてのデータが削除されます。
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {isDeleting ? '削除中...' : '削除'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Description */}
-          {currentCircle.description && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">概要</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap text-muted-foreground">
-                  {currentCircle.description}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Book Information */}
-          {currentCircle.books && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">対象書籍</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Hero Section */}
+      <div className="relative bg-white border-b border-gray-200">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-indigo-600/5" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-8">
+            {/* Book Cover */}
+            {currentCircle.books && (
+              <div className="flex-shrink-0 self-start">
+                <div className="relative group">
                   <img
                     src={currentCircle.books.img_url}
                     alt={currentCircle.books.title}
-                    className="w-24 h-32 object-cover rounded flex-shrink-0"
+                    className="w-24 h-32 sm:w-32 sm:h-44 lg:w-40 lg:h-56 object-cover rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300"
                   />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-2">{currentCircle.books.title}</h3>
-                    <p className="text-muted-foreground mb-3">{currentCircle.books.author}</p>
-                    {currentCircle.books.page_count && (
-                      <p className="text-sm text-muted-foreground mb-3">
-                        ページ数: {currentCircle.books.page_count}ページ
-                      </p>
-                    )}
-                    {currentCircle.books.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {currentCircle.books.description}
-                      </p>
-                    )}
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* Organizer Actions */}
-          {isOrganizer && currentCircle.status === 'draft' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
+            {/* Main Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-start gap-3 mb-4">
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}
+                >
+                  {statusInfo.label}
+                </span>
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  {currentCircle.is_private ? (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>プライベート</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-4 h-4" />
+                      <span>公開</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                {currentCircle.title}
+              </h1>
+
+              {currentCircle.books && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-800 mb-2">
+                    <BookOpen className="w-5 h-5 text-blue-600" />
+                    {currentCircle.books.title}
+                  </div>
+                  <p className="text-gray-600 mb-2">著者: {currentCircle.books.author}</p>
+                  {currentCircle.books.page_count && (
+                    <p className="text-sm text-gray-500">{currentCircle.books.page_count}ページ</p>
+                  )}
+                </div>
+              )}
+
+              {/* Stats */}
+              <div className="flex flex-wrap gap-4 sm:gap-6 mb-6">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium text-sm sm:text-base">
+                    {currentCircle.participant_count}/{currentCircle.max_participants}名
+                  </span>
+                </div>
+                {currentCircle.start_date && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Calendar className="w-5 h-5 text-green-600" />
+                    <span className="text-sm sm:text-base">
+                      {format(new Date(currentCircle.start_date), 'yyyy/M/d', { locale: ja })}
+                      {currentCircle.end_date &&
+                        ` 〜 ${format(new Date(currentCircle.end_date), 'yyyy/M/d', { locale: ja })}`}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Clock className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm sm:text-base">
+                    {format(new Date(currentCircle.created_at), 'yyyy/M/d に作成', { locale: ja })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                {canJoin && (
+                  <Button
+                    onClick={handleJoin}
+                    disabled={isJoining}
+                    size="lg"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    {isJoining ? '申請中...' : '参加申請'}
+                  </Button>
+                )}
+
+                {isOrganizer && (
+                  <>
+                    <Button variant="outline" onClick={() => setIsEditModalOpen(true)} size="lg">
+                      <Edit className="w-5 h-5 mr-2" />
+                      編集
+                    </Button>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="lg">
+                          <Trash2 className="w-5 h-5 mr-2" />
+                          削除
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>輪読会を削除しますか？</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            この操作は取り消せません。輪読会に関するすべてのデータが削除されます。
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {isDeleting ? '削除中...' : '削除'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Description */}
+            {currentCircle.description && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-blue-600" />
+                  概要
+                </h2>
+                <div className="prose prose-gray max-w-none">
+                  <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                    {currentCircle.description}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Book Details */}
+            {currentCircle.books?.description && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-green-600" />
+                  書籍について
+                </h2>
+                <p className="text-gray-700 leading-relaxed line-clamp-6">
+                  {currentCircle.books.description}
+                </p>
+              </div>
+            )}
+
+            {/* Organizer Actions */}
+            {isOrganizer && currentCircle.status === 'draft' && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-blue-600" />
                   主催者メニュー
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Button onClick={() => handleStatusChange('recruiting')} variant="default">
+                </h2>
+                <p className="text-gray-600 mb-4">輪読会のステータスを変更できます</p>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={() => handleStatusChange('recruiting')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
                     募集開始
                   </Button>
                   <Button onClick={() => handleStatusChange('active')} variant="outline">
                     開催開始
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Organizer Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">主催者</CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Organizer */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">主催者</h3>
               <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback>{currentCircle.users?.display_name?.[0] || 'U'}</AvatarFallback>
+                <Avatar className="w-12 h-12">
+                  <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                    {currentCircle.users?.display_name?.[0] || 'U'}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{currentCircle.users?.display_name || '不明'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(currentCircle.created_at), 'yyyy/M/d に作成', { locale: ja })}
+                  <p className="font-medium text-gray-900">
+                    {currentCircle.users?.display_name || '不明'}
                   </p>
+                  <p className="text-sm text-gray-500">主催者</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Participants */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center justify-between">
-                参加者
-                <span className="text-sm font-normal text-muted-foreground">
+            {/* Participants */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">参加者</h3>
+                <span className="text-sm text-gray-500">
                   {currentCircle.participant_count}/{currentCircle.max_participants}
                 </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </div>
+
               <div className="space-y-3">
                 {currentCircle.circle_participants?.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">まだ参加者がいません</p>
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">まだ参加者がいません</p>
+                  </div>
                 ) : (
                   currentCircle.circle_participants?.map(participant => (
-                    <div key={participant.id} className="flex items-center gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="text-xs">
+                    <div
+                      key={participant.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback className="bg-gray-100 text-gray-700">
                           {participant.users?.display_name?.[0] || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
+                        <p className="font-medium text-gray-900 truncate">
                           {participant.users?.display_name || '不明'}
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mt-1">
                           <Badge
                             variant={participant.role === 'organizer' ? 'default' : 'secondary'}
                             className="text-xs"
@@ -440,18 +497,22 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
                   ))
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Schedule placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">スケジュール</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">スケジュール機能は準備中です</p>
-            </CardContent>
-          </Card>
+            {/* Progress Placeholder */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                進捗
+              </h3>
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <BookOpen className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm">進捗機能は準備中です</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
