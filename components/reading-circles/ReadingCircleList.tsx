@@ -165,11 +165,7 @@ export function ReadingCircleList({ userId }: ReadingCircleListProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCircles.map(circle => (
-                <ReadingCircleCard
-                  key={circle.id}
-                  circle={circle}
-                  isOrganizer={circle.created_by === userId}
-                />
+                <ReadingCircleCard key={circle.id} circle={circle} />
               ))}
             </div>
           )}
@@ -191,8 +187,8 @@ export function ReadingCircleList({ userId }: ReadingCircleListProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCircles.map(circle => (
-                <ReadingCircleCard key={circle.id} circle={circle} isOrganizer={true} />
+              {organizingCircles.map(circle => (
+                <ReadingCircleCard key={circle.id} circle={circle} />
               ))}
             </div>
           )}
@@ -214,8 +210,8 @@ export function ReadingCircleList({ userId }: ReadingCircleListProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCircles.map(circle => (
-                <ReadingCircleCard key={circle.id} circle={circle} isOrganizer={false} />
+              {participatingCircles.map(circle => (
+                <ReadingCircleCard key={circle.id} circle={circle} />
               ))}
             </div>
           )}

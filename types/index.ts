@@ -139,3 +139,55 @@ export type CircleMessage = {
   created_at: string;
   updated_at: string;
 };
+
+// ステータス判定関数
+export function getCircleStatus(circle: ReadingCircle): ReadingCircle['status'] {
+  // 手動でキャンセルされている場合はそのまま返す
+  if (circle.status === 'cancelled') {
+    return 'cancelled';
+  }
+
+  const now = new Date();
+
+  // 開始日が設定されている場合の自動判定
+  if (circle.start_date) {
+    const circleStart = new Date(circle.start_date);
+
+    // 開始日前は募集中
+    if (now < circleStart) {
+      return 'recruiting';
+    }
+
+    // 開始日以降で終了日が設定されている場合
+    if (circle.end_date) {
+      const circleEnd = new Date(circle.end_date);
+
+      if (now >= circleStart && now <= circleEnd) {
+        return 'active';
+      }
+
+      if (now > circleEnd) {
+        return 'completed';
+      }
+    } else {
+      // 終了日が設定されていない場合は開始日以降は開催中
+      return 'active';
+    }
+  }
+
+  // デフォルトは現在のステータスを維持
+  return circle.status;
+}
+
+// ステータス表示用の情報
+export const statusLabels = {
+  draft: { label: '募集前', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' },
+  recruiting: { label: '募集中', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' },
+  active: { label: '開催中', variant: 'default' as const, color: 'bg-green-100 text-green-800' },
+  completed: { label: '終了', variant: 'outline' as const, color: 'bg-gray-100 text-gray-600' },
+  cancelled: {
+    label: 'キャンセル',
+    variant: 'destructive' as const,
+    color: 'bg-red-100 text-red-800',
+  },
+} as const;

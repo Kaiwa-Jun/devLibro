@@ -48,27 +48,29 @@ const editCircleSchema = z
     is_private: z.boolean(),
     start_date: z.string().optional(),
     end_date: z.string().optional(),
+    status: z.enum(['draft', 'recruiting', 'active', 'completed', 'cancelled']).optional(),
   })
   .refine(
     data => {
-      // 開始日と終了日の両方が設定されている場合のみチェック
+      // 開催期間のバリデーション
       if (data.start_date && data.end_date) {
         const startDate = new Date(data.start_date);
         const endDate = new Date(data.end_date);
 
-        // 日付が有効かチェック
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           return false;
         }
 
-        // 開始日が終了日より前であることをチェック
-        return startDate <= endDate;
+        if (startDate > endDate) {
+          return false;
+        }
       }
+
       return true;
     },
     {
       message: '開始日は終了日より前の日付を設定してください',
-      path: ['start_date'], // エラーをstart_dateフィールドに関連付け
+      path: ['start_date'],
     }
   );
 
@@ -125,6 +127,7 @@ export function EditCircleForm({ circle, onSuccess, onCancel, isModal }: EditCir
       is_private: circle.is_private,
       start_date: circle.start_date ? new Date(circle.start_date).toISOString().split('T')[0] : '',
       end_date: circle.end_date ? new Date(circle.end_date).toISOString().split('T')[0] : '',
+      status: circle.status,
     },
   });
 

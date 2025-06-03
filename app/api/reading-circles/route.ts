@@ -31,24 +31,25 @@ const createCircleSchema = z
   })
   .refine(
     data => {
-      // 開始日と終了日の両方が設定されている場合のみチェック
+      // 開催期間のバリデーション
       if (data.start_date && data.end_date) {
         const startDate = new Date(data.start_date);
         const endDate = new Date(data.end_date);
 
-        // 日付が有効かチェック
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           return false;
         }
 
-        // 開始日が終了日より前であることをチェック
-        return startDate <= endDate;
+        if (startDate > endDate) {
+          return false;
+        }
       }
+
       return true;
     },
     {
       message: '開始日は終了日より前の日付を設定してください',
-      path: ['start_date'], // エラーをstart_dateフィールドに関連付け
+      path: ['start_date'],
     }
   );
 
@@ -240,14 +241,76 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     console.log('🎫 [輪読会作成API] トークン取得:', token ? 'あり' : 'なし');
+    console.log('🎫 [輪読会作成API] トークン長:', token?.length);
+    console.log('🎫 [輪読会作成API] トークン先頭:', token?.substring(0, 20) + '...');
 
-    // トークンからユーザー情報を取得（簡易的な実装）
-    // 実際のプロジェクトでは、Supabaseのトークン検証を使用
-    const user = {
-      id: '4965d285-a22a-48fe-92ff-b72f602093e2', // フロントエンドから取得したユーザーID
+    // トークンの詳細情報をデコード
+    if (token) {
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('🔓 [輪読会作成API] トークンペイロード:', {
+            sub: payload.sub,
+            email: payload.email,
+            aud: payload.aud,
+            exp: payload.exp,
+            iat: payload.iat,
+            iss: payload.iss,
+            role: payload.role,
+            session_id: payload.session_id,
+            現在時刻: Math.floor(Date.now() / 1000),
+            有効期限: payload.exp,
+            期限切れ: payload.exp < Math.floor(Date.now() / 1000),
+          });
+        }
+      } catch (tokenError) {
+        console.error('❌ [輪読会作成API] トークンデコードエラー:', tokenError);
+      }
+    }
+
+    // Supabaseでトークンを検証してユーザー情報を取得
+    console.log('🔍 [輪読会作成API] Supabaseトークン検証開始');
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+    const supabase = getSupabaseServerClient();
+
+    const {
+      data: { user: verifiedUser },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
+    console.log('🔍 [輪読会作成API] Supabase認証結果:', {
+      hasUser: !!verifiedUser,
+      authError: authError?.message,
+      userId: verifiedUser?.id,
+      userEmail: verifiedUser?.email,
+      userMetadata: verifiedUser?.user_metadata,
+      createdAt: verifiedUser?.created_at,
+      lastSignInAt: verifiedUser?.last_sign_in_at,
+    });
+
+    if (authError || !verifiedUser) {
+      console.log('❌ [輪読会作成API] Supabase認証失敗:', authError?.message);
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // 従来のハードコードされたユーザー情報と比較
+    const hardcodedUser = {
+      id: '4965d285-a22a-48fe-92ff-b72f602093e2',
       email: 'kj.112358132134555@gmail.com',
     };
 
+    console.log('⚠️ [輪読会作成API] ユーザー情報比較:', {
+      verifiedUserId: verifiedUser.id,
+      hardcodedUserId: hardcodedUser.id,
+      isUsingHardcoded: verifiedUser.id !== hardcodedUser.id,
+      verifiedUserEmail: verifiedUser.email,
+      hardcodedUserEmail: hardcodedUser.email,
+      emailMatch: verifiedUser.email === hardcodedUser.email,
+    });
+
+    // 実際の認証されたユーザーを使用
+    const user = verifiedUser;
     console.log('✅ [輪読会作成API] 認証成功:', { userId: user.id, email: user.email });
 
     console.log('📝 [輪読会作成API] リクエストボディの解析開始');
@@ -345,7 +408,7 @@ export async function POST(request: NextRequest) {
     const finalCircleData = {
       ...circleData,
       book_id: parseInt(circleData.book_id),
-      created_by: user.id,
+      created_by: user.id, // 実際の認証されたユーザーIDを使用
       status: 'draft' as const,
     };
 
@@ -353,10 +416,22 @@ export async function POST(request: NextRequest) {
       '🎯 [輪読会作成API] 最終的な輪読会データ:',
       JSON.stringify(finalCircleData, null, 2)
     );
+    console.log('👤 [輪読会作成API] 作成者ユーザーID確認:', {
+      userId: user.id,
+      email: user.email,
+      createdBy: finalCircleData.created_by,
+      isMatch: user.id === finalCircleData.created_by,
+    });
 
     console.log('🔄 [輪読会作成API] 輪読会作成開始');
     const circle = await createReadingCircle(finalCircleData);
     console.log('✅ [輪読会作成API] 輪読会作成成功:', circle.id);
+    console.log('✅ [輪読会作成API] 作成された輪読会の詳細:', {
+      id: circle.id,
+      title: circle.title,
+      created_by: circle.created_by,
+      status: circle.status,
+    });
 
     return NextResponse.json(
       {

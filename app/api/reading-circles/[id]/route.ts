@@ -35,24 +35,25 @@ const updateCircleSchema = z
   })
   .refine(
     data => {
-      // 開始日と終了日の両方が設定されている場合のみチェック
+      // 開催期間のバリデーション
       if (data.start_date && data.end_date) {
         const startDate = new Date(data.start_date);
         const endDate = new Date(data.end_date);
 
-        // 日付が有効かチェック
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           return false;
         }
 
-        // 開始日が終了日より前であることをチェック
-        return startDate <= endDate;
+        if (startDate > endDate) {
+          return false;
+        }
       }
+
       return true;
     },
     {
       message: '開始日は終了日より前の日付を設定してください',
-      path: ['start_date'], // エラーをstart_dateフィールドに関連付け
+      path: ['start_date'],
     }
   );
 

@@ -51,24 +51,25 @@ const createCircleSchema = z
   })
   .refine(
     data => {
-      // 開始日と終了日の両方が設定されている場合のみチェック
+      // 開催期間のバリデーション
       if (data.start_date && data.end_date) {
         const startDate = new Date(data.start_date);
         const endDate = new Date(data.end_date);
 
-        // 日付が有効かチェック
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           return false;
         }
 
-        // 開始日が終了日より前であることをチェック
-        return startDate <= endDate;
+        if (startDate > endDate) {
+          return false;
+        }
       }
+
       return true;
     },
     {
       message: '開始日は終了日より前の日付を設定してください',
-      path: ['start_date'], // エラーをstart_dateフィールドに関連付け
+      path: ['start_date'],
     }
   );
 
@@ -104,6 +105,8 @@ export function CreateCircleForm({ onSuccess }: CreateCircleFormProps) {
       description: '',
       max_participants: 10,
       is_private: false,
+      start_date: '',
+      end_date: '',
     },
   });
 
@@ -122,6 +125,21 @@ export function CreateCircleForm({ onSuccess }: CreateCircleFormProps) {
       sessionError: sessionError?.message,
       userId: sessionData.session?.user?.id,
       userEmail: sessionData.session?.user?.email,
+      userMetadata: sessionData.session?.user?.user_metadata,
+      accessToken: sessionData.session?.access_token ? 'あり' : 'なし',
+      refreshToken: sessionData.session?.refresh_token ? 'あり' : 'なし',
+      expiresAt: sessionData.session?.expires_at,
+      tokenType: sessionData.session?.token_type,
+    });
+
+    // AuthProviderから取得したユーザー情報と比較
+    console.log('🔍 [CreateCircleForm] ユーザー情報比較:', {
+      authProviderUserId: user?.id,
+      sessionUserId: sessionData.session?.user?.id,
+      isMatch: user?.id === sessionData.session?.user?.id,
+      authProviderEmail: user?.email,
+      sessionEmail: sessionData.session?.user?.email,
+      emailMatch: user?.email === sessionData.session?.user?.email,
     });
 
     setIsLoading(true);
@@ -153,6 +171,28 @@ export function CreateCircleForm({ onSuccess }: CreateCircleFormProps) {
       // 認証トークンを取得
       const accessToken = sessionData.session?.access_token;
       console.log('🎫 [CreateCircleForm] アクセストークン:', accessToken ? 'あり' : 'なし');
+
+      // トークンの詳細情報をデコード（JWTの場合）
+      if (accessToken) {
+        try {
+          const tokenParts = accessToken.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            console.log('🔓 [CreateCircleForm] トークンペイロード:', {
+              sub: payload.sub,
+              email: payload.email,
+              aud: payload.aud,
+              exp: payload.exp,
+              iat: payload.iat,
+              iss: payload.iss,
+              role: payload.role,
+              session_id: payload.session_id,
+            });
+          }
+        } catch (tokenError) {
+          console.error('❌ [CreateCircleForm] トークンデコードエラー:', tokenError);
+        }
+      }
 
       const response = await fetch('/api/reading-circles', {
         method: 'POST',

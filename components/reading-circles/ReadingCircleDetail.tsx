@@ -35,7 +35,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CircleParticipant, ReadingCircle } from '@/types';
+import { CircleParticipant, ReadingCircle, getCircleStatus, statusLabels } from '@/types';
 
 interface ReadingCircleDetailProps {
   circle: ReadingCircle & {
@@ -61,18 +61,6 @@ interface ReadingCircleDetailProps {
   userId?: string;
 }
 
-const statusLabels = {
-  draft: { label: '下書き', variant: 'secondary' as const, color: 'bg-gray-100 text-gray-800' },
-  recruiting: { label: '募集中', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' },
-  active: { label: '開催中', variant: 'default' as const, color: 'bg-green-100 text-green-800' },
-  completed: { label: '終了', variant: 'outline' as const, color: 'bg-gray-100 text-gray-600' },
-  cancelled: {
-    label: 'キャンセル',
-    variant: 'destructive' as const,
-    color: 'bg-red-100 text-red-800',
-  },
-};
-
 export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps) {
   const router = useRouter();
   const [isJoining, setIsJoining] = useState(false);
@@ -81,14 +69,17 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
   const [currentCircle, setCurrentCircle] = useState(circle);
 
   const isOrganizer = currentCircle.created_by === userId;
-  const statusInfo = statusLabels[currentCircle.status] || statusLabels.draft;
+
+  // リアルタイムステータス判定を使用
+  const currentStatus = getCircleStatus(currentCircle);
+  const statusInfo = statusLabels[currentStatus as keyof typeof statusLabels] || statusLabels.draft;
 
   const userParticipation = currentCircle.circle_participants?.find(p => p.user_id === userId);
   const isParticipant = !!userParticipation;
   const canJoin =
     !isParticipant &&
     !isOrganizer &&
-    currentCircle.status === 'recruiting' &&
+    currentStatus === 'recruiting' &&
     currentCircle.participant_count < currentCircle.max_participants;
 
   const handleDelete = async () => {
@@ -143,12 +134,15 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
       const response = await fetch(`/api/reading-circles/${currentCircle.id}/participants`, {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
+        body: JSON.stringify({}),
       });
 
       if (!response.ok) {
-        throw new Error('参加申請に失敗しました');
+        const errorData = await response.json().catch(() => ({ error: '参加申請に失敗しました' }));
+        throw new Error(errorData.error || '参加申請に失敗しました');
       }
 
       toast.success('参加申請を送信しました');
@@ -303,9 +297,9 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
                   <div className="flex items-center gap-2 text-gray-600">
                     <Calendar className="w-5 h-5 text-green-600" />
                     <span className="text-sm sm:text-base">
-                      {format(new Date(currentCircle.start_date), 'yyyy/M/d', { locale: ja })}
+                      開始予定: {format(new Date(currentCircle.start_date), 'M/d', { locale: ja })}
                       {currentCircle.end_date &&
-                        ` 〜 ${format(new Date(currentCircle.end_date), 'yyyy/M/d', { locale: ja })}`}
+                        ` 〜 ${format(new Date(currentCircle.end_date), 'M/d', { locale: ja })}`}
                     </span>
                   </div>
                 )}
@@ -406,13 +400,15 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
             )}
 
             {/* Organizer Actions */}
-            {isOrganizer && currentCircle.status === 'draft' && (
+            {isOrganizer && currentStatus === 'draft' && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Settings className="w-5 h-5 text-blue-600" />
                   主催者メニュー
                 </h2>
-                <p className="text-gray-600 mb-4">輪読会のステータスを変更できます</p>
+                <p className="text-gray-600 mb-4">
+                  開始予定日が設定されている場合、自動的にステータスが変更されます。手動でステータスを変更することも可能です。
+                </p>
                 <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={() => handleStatusChange('recruiting')}

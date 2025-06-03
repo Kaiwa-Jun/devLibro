@@ -2,12 +2,13 @@
 
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Users, Calendar, Lock, Globe } from 'lucide-react';
+import { Calendar, Clock, Globe, Lock, Users } from 'lucide-react';
 import Link from 'next/link';
 
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ReadingCircle } from '@/types';
+import { ReadingCircle, getCircleStatus, statusLabels } from '@/types';
 
 interface ReadingCircleCardProps {
   circle: ReadingCircle & {
@@ -22,78 +23,91 @@ interface ReadingCircleCardProps {
       display_name: string;
     };
   };
-  isOrganizer?: boolean;
 }
 
-const statusLabels = {
-  draft: { label: '下書き', variant: 'secondary' as const },
-  recruiting: { label: '募集中', variant: 'default' as const },
-  active: { label: '開催中', variant: 'default' as const },
-  completed: { label: '終了', variant: 'outline' as const },
-  cancelled: { label: 'キャンセル', variant: 'destructive' as const },
-};
-
-export function ReadingCircleCard({ circle, isOrganizer }: ReadingCircleCardProps) {
-  const statusInfo = statusLabels[circle.status] || statusLabels.draft;
+export function ReadingCircleCard({ circle }: ReadingCircleCardProps) {
+  // リアルタイムステータス判定を使用
+  const currentStatus = getCircleStatus(circle);
+  const statusInfo = statusLabels[currentStatus as keyof typeof statusLabels] || statusLabels.draft;
 
   return (
     <Link href={`/reading-circles/${circle.id}`}>
-      <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between gap-4">
+      <Card className="h-full hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg line-clamp-2 mb-2">{circle.title}</h3>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                {isOrganizer && <Badge variant="outline">主催者</Badge>}
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  {circle.is_private ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                  <span>{circle.is_private ? 'プライベート' : '公開'}</span>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  {circle.is_private ? (
+                    <>
+                      <Lock className="w-3 h-3" />
+                      <span>プライベート</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-3 h-3" />
+                      <span>公開</span>
+                    </>
+                  )}
                 </div>
               </div>
+              <h3 className="font-semibold text-lg leading-tight line-clamp-2 mb-2">
+                {circle.title}
+              </h3>
+              {circle.books && (
+                <p className="text-sm text-gray-600 line-clamp-1">📖 {circle.books.title}</p>
+              )}
             </div>
             {circle.books && (
               <img
                 src={circle.books.img_url}
                 alt={circle.books.title}
-                className="w-16 h-20 object-cover rounded flex-shrink-0"
+                className="w-12 h-16 object-cover rounded flex-shrink-0"
               />
             )}
           </div>
         </CardHeader>
 
         <CardContent className="pt-0">
-          {circle.books && (
-            <div className="mb-4">
-              <h4 className="font-medium text-sm mb-1">{circle.books.title}</h4>
-              <p className="text-sm text-muted-foreground">{circle.books.author}</p>
-            </div>
-          )}
-
-          {circle.description && (
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{circle.description}</p>
-          )}
-
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+          <div className="space-y-3">
+            {/* 参加者情報 */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2 text-gray-600">
                 <Users className="w-4 h-4" />
                 <span>
-                  {circle.participant_count}/{circle.max_participants}
+                  {circle.participant_count}/{circle.max_participants}名
                 </span>
               </div>
+              <div className="flex items-center gap-2">
+                <Avatar className="w-6 h-6">
+                  <AvatarFallback className="text-xs bg-gray-100">
+                    {circle.users?.display_name?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-gray-500">
+                  {circle.users?.display_name || '不明'}
+                </span>
+              </div>
+            </div>
+
+            {/* 日程情報 */}
+            <div className="space-y-1 text-xs text-gray-500">
               {circle.start_date && (
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>{format(new Date(circle.start_date), 'M/d', { locale: ja })}〜</span>
+                  <Calendar className="w-3 h-3 text-green-500" />
+                  <span>
+                    開始予定: {format(new Date(circle.start_date), 'M/d', { locale: ja })}
+                    {circle.end_date &&
+                      `〜${format(new Date(circle.end_date), 'M/d', { locale: ja })}`}
+                  </span>
                 </div>
               )}
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>{format(new Date(circle.created_at), 'M/d 作成', { locale: ja })}</span>
+              </div>
             </div>
-            {circle.users && <span className="text-xs">主催: {circle.users.display_name}</span>}
-          </div>
-
-          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-            作成: {format(new Date(circle.created_at), 'yyyy/M/d', { locale: ja })}
           </div>
         </CardContent>
       </Card>

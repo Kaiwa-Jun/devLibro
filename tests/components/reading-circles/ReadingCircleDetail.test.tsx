@@ -28,7 +28,7 @@ const mockRouter = {
 
 const mockCircle: ReadingCircle & {
   books?: {
-    id: number;
+    id: string;
     title: string;
     author: string;
     img_url: string;
@@ -57,11 +57,13 @@ const mockCircle: ReadingCircle & {
   id: '1',
   title: 'Test Reading Circle',
   description: 'Test description',
-  book_id: '1',
+  book_id: 1,
   created_by: 'user1',
   status: 'recruiting',
   max_participants: 10,
   is_private: false,
+  start_date: '2024-01-08T00:00:00Z',
+  end_date: '2024-01-15T00:00:00Z',
   participant_count: 3,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
