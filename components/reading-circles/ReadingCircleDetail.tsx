@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Edit, Trash2, Users, Calendar, Lock, Globe, UserPlus, Settings } from 'lucide-react';
+import { Calendar, Edit, Globe, Lock, Settings, Trash2, UserPlus, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -18,12 +18,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ReadingCircle, CircleParticipant } from '@/types';
+import { CircleParticipant, ReadingCircle } from '@/types';
 
 interface ReadingCircleDetailProps {
   circle: ReadingCircle & {
@@ -74,12 +73,24 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
     circle.participant_count < circle.max_participants;
 
   const handleDelete = async () => {
-    if (!isOrganizer) return;
-
     setIsDeleting(true);
     try {
+      // Supabaseセッションからアクセストークンを取得
+      const { getSupabaseClient } = await import('@/lib/supabase/client');
+      const supabase = getSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('認証が必要です');
+      }
+
       const response = await fetch(`/api/reading-circles/${circle.id}`, {
         method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (!response.ok) {
@@ -101,8 +112,22 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
 
     setIsJoining(true);
     try {
+      // Supabaseセッションからアクセストークンを取得
+      const { getSupabaseClient } = await import('@/lib/supabase/client');
+      const supabase = getSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('認証が必要です');
+      }
+
       const response = await fetch(`/api/reading-circles/${circle.id}/participants`, {
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (!response.ok) {
@@ -123,10 +148,22 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
     if (!isOrganizer) return;
 
     try {
+      // Supabaseセッションからアクセストークンを取得
+      const { getSupabaseClient } = await import('@/lib/supabase/client');
+      const supabase = getSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('認証が必要です');
+      }
+
       const response = await fetch(`/api/reading-circles/${circle.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
