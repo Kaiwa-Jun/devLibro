@@ -7,31 +7,54 @@ import {
   updateReadingCircle,
 } from '@/lib/supabase/reading-circles';
 
-const updateCircleSchema = z.object({
-  title: z.string().min(1).max(255).optional(),
-  description: z.string().optional(),
-  book_id: z.string().optional(),
-  book_data: z
-    .object({
-      id: z.string(),
-      title: z.string(),
-      author: z.string(),
-      img_url: z.string(),
-      isbn: z.string().optional(),
-      language: z.string().optional(),
-      categories: z.array(z.string()).optional(),
-      description: z.string().optional(),
-      avg_difficulty: z.number().optional(),
-      programmingLanguages: z.array(z.string()).optional(),
-      frameworks: z.array(z.string()).optional(),
-    })
-    .optional(),
-  max_participants: z.number().int().min(2).max(50).optional(),
-  is_private: z.boolean().optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  status: z.enum(['draft', 'recruiting', 'active', 'completed', 'cancelled']).optional(),
-});
+const updateCircleSchema = z
+  .object({
+    title: z.string().min(1).max(255).optional(),
+    description: z.string().optional(),
+    book_id: z.string().optional(),
+    book_data: z
+      .object({
+        id: z.string(),
+        title: z.string(),
+        author: z.string(),
+        img_url: z.string(),
+        isbn: z.string().optional(),
+        language: z.string().optional(),
+        categories: z.array(z.string()).optional(),
+        description: z.string().optional(),
+        avg_difficulty: z.number().optional(),
+        programmingLanguages: z.array(z.string()).optional(),
+        frameworks: z.array(z.string()).optional(),
+      })
+      .optional(),
+    max_participants: z.number().int().min(2).max(50).optional(),
+    is_private: z.boolean().optional(),
+    start_date: z.string().optional(),
+    end_date: z.string().optional(),
+    status: z.enum(['draft', 'recruiting', 'active', 'completed', 'cancelled']).optional(),
+  })
+  .refine(
+    data => {
+      // 開始日と終了日の両方が設定されている場合のみチェック
+      if (data.start_date && data.end_date) {
+        const startDate = new Date(data.start_date);
+        const endDate = new Date(data.end_date);
+
+        // 日付が有効かチェック
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          return false;
+        }
+
+        // 開始日が終了日より前であることをチェック
+        return startDate <= endDate;
+      }
+      return true;
+    },
+    {
+      message: '開始日は終了日より前の日付を設定してください',
+      path: ['start_date'], // エラーをstart_dateフィールドに関連付け
+    }
+  );
 
 // 認証ヘルパー関数
 async function authenticateUser(request: NextRequest) {
@@ -173,9 +196,26 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         });
       });
 
+      // 日付関連のエラーかチェック
+      const dateError = validationResult.error.issues.find(
+        issue => issue.path.includes('start_date') && issue.message.includes('開始日は終了日より前')
+      );
+
+      if (dateError) {
+        return NextResponse.json(
+          {
+            error: 'バリデーションエラー',
+            message: '開始日は終了日より前の日付を設定してください',
+            details: validationResult.error.flatten().fieldErrors,
+            issues: validationResult.error.issues,
+          },
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
         {
-          error: 'Validation error',
+          error: 'バリデーションエラー',
           details: validationResult.error.flatten().fieldErrors,
           issues: validationResult.error.issues,
         },

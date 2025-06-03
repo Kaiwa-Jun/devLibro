@@ -32,22 +32,45 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Book, ReadingCircle } from '@/types';
 
-const editCircleSchema = z.object({
-  title: z
-    .string()
-    .min(1, '輪読会名は必須です')
-    .max(255, '輪読会名は255文字以内で入力してください'),
-  description: z.string().optional(),
-  book_id: z.string().min(1, '書籍を選択してください'),
-  max_participants: z
-    .number()
-    .int()
-    .min(2, '最小2名以上設定してください')
-    .max(50, '最大50名まで設定できます'),
-  is_private: z.boolean(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-});
+const editCircleSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, '輪読会名は必須です')
+      .max(255, '輪読会名は255文字以内で入力してください'),
+    description: z.string().optional(),
+    book_id: z.string().min(1, '書籍を選択してください'),
+    max_participants: z
+      .number()
+      .int()
+      .min(2, '最小2名以上設定してください')
+      .max(50, '最大50名まで設定できます'),
+    is_private: z.boolean(),
+    start_date: z.string().optional(),
+    end_date: z.string().optional(),
+  })
+  .refine(
+    data => {
+      // 開始日と終了日の両方が設定されている場合のみチェック
+      if (data.start_date && data.end_date) {
+        const startDate = new Date(data.start_date);
+        const endDate = new Date(data.end_date);
+
+        // 日付が有効かチェック
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          return false;
+        }
+
+        // 開始日が終了日より前であることをチェック
+        return startDate <= endDate;
+      }
+      return true;
+    },
+    {
+      message: '開始日は終了日より前の日付を設定してください',
+      path: ['start_date'], // エラーをstart_dateフィールドに関連付け
+    }
+  );
 
 type EditCircleForm = z.infer<typeof editCircleSchema>;
 
