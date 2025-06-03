@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { EditCircleModal } from '@/components/modals/EditCircleModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,19 +59,21 @@ const statusLabels = {
 
 export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentCircle, setCurrentCircle] = useState(circle);
 
-  const isOrganizer = circle.created_by === userId;
-  const statusInfo = statusLabels[circle.status] || statusLabels.draft;
+  const isOrganizer = currentCircle.created_by === userId;
+  const statusInfo = statusLabels[currentCircle.status] || statusLabels.draft;
 
-  const userParticipation = circle.circle_participants?.find(p => p.user_id === userId);
+  const userParticipation = currentCircle.circle_participants?.find(p => p.user_id === userId);
   const isParticipant = !!userParticipation;
   const canJoin =
     !isParticipant &&
     !isOrganizer &&
-    circle.status === 'recruiting' &&
-    circle.participant_count < circle.max_participants;
+    currentCircle.status === 'recruiting' &&
+    currentCircle.participant_count < currentCircle.max_participants;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -86,7 +89,7 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
         throw new Error('認証が必要です');
       }
 
-      const response = await fetch(`/api/reading-circles/${circle.id}`, {
+      const response = await fetch(`/api/reading-circles/${currentCircle.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -123,7 +126,7 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
         throw new Error('認証が必要です');
       }
 
-      const response = await fetch(`/api/reading-circles/${circle.id}/participants`, {
+      const response = await fetch(`/api/reading-circles/${currentCircle.id}/participants`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -159,7 +162,7 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
         throw new Error('認証が必要です');
       }
 
-      const response = await fetch(`/api/reading-circles/${circle.id}`, {
+      const response = await fetch(`/api/reading-circles/${currentCircle.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -180,33 +183,73 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
     }
   };
 
+  const handleEditSuccess = async (circleId: string) => {
+    try {
+      // 最新の輪読会データを取得
+      const { getSupabaseClient } = await import('@/lib/supabase/client');
+      const supabase = getSupabaseClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('認証トークンが見つかりません');
+        router.refresh();
+        return;
+      }
+
+      const response = await fetch(`/api/reading-circles/${circleId}`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // 状態を最新データで更新
+        setCurrentCircle(result.data);
+        console.log('✅ [編集成功] 最新データで状態更新完了');
+      } else {
+        console.error('最新データの取得に失敗しました');
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('最新データ取得エラー:', error);
+      router.refresh();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold">{circle.title}</h1>
+            <h1 className="text-2xl font-bold">{currentCircle.title}</h1>
             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              {circle.is_private ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-              <span>{circle.is_private ? 'プライベート' : '公開'}</span>
+              {currentCircle.is_private ? (
+                <Lock className="w-4 h-4" />
+              ) : (
+                <Globe className="w-4 h-4" />
+              )}
+              <span>{currentCircle.is_private ? 'プライベート' : '公開'}</span>
             </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Users className="w-4 h-4" />
               <span>
-                {circle.participant_count}/{circle.max_participants}名
+                {currentCircle.participant_count}/{currentCircle.max_participants}名
               </span>
             </div>
-            {circle.start_date && (
+            {currentCircle.start_date && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 <span>
-                  {format(new Date(circle.start_date), 'yyyy/M/d', { locale: ja })}
-                  {circle.end_date &&
-                    ` 〜 ${format(new Date(circle.end_date), 'yyyy/M/d', { locale: ja })}`}
+                  {format(new Date(currentCircle.start_date), 'yyyy/M/d', { locale: ja })}
+                  {currentCircle.end_date &&
+                    ` 〜 ${format(new Date(currentCircle.end_date), 'yyyy/M/d', { locale: ja })}`}
                 </span>
               </div>
             )}
@@ -223,11 +266,9 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
 
           {isOrganizer && (
             <>
-              <Button variant="outline" asChild>
-                <a href={`/reading-circles/${circle.id}/edit`}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  編集
-                </a>
+              <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
+                <Edit className="w-4 h-4 mr-2" />
+                編集
               </Button>
 
               <AlertDialog>
@@ -264,19 +305,21 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Description */}
-          {circle.description && (
+          {currentCircle.description && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">概要</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap text-muted-foreground">{circle.description}</p>
+                <p className="whitespace-pre-wrap text-muted-foreground">
+                  {currentCircle.description}
+                </p>
               </CardContent>
             </Card>
           )}
 
           {/* Book Information */}
-          {circle.books && (
+          {currentCircle.books && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">対象書籍</CardTitle>
@@ -284,21 +327,21 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
               <CardContent>
                 <div className="flex gap-4">
                   <img
-                    src={circle.books.img_url}
-                    alt={circle.books.title}
+                    src={currentCircle.books.img_url}
+                    alt={currentCircle.books.title}
                     className="w-24 h-32 object-cover rounded flex-shrink-0"
                   />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-2">{circle.books.title}</h3>
-                    <p className="text-muted-foreground mb-3">{circle.books.author}</p>
-                    {circle.books.page_count && (
+                    <h3 className="font-semibold text-lg mb-2">{currentCircle.books.title}</h3>
+                    <p className="text-muted-foreground mb-3">{currentCircle.books.author}</p>
+                    {currentCircle.books.page_count && (
                       <p className="text-sm text-muted-foreground mb-3">
-                        ページ数: {circle.books.page_count}ページ
+                        ページ数: {currentCircle.books.page_count}ページ
                       </p>
                     )}
-                    {circle.books.description && (
+                    {currentCircle.books.description && (
                       <p className="text-sm text-muted-foreground line-clamp-3">
-                        {circle.books.description}
+                        {currentCircle.books.description}
                       </p>
                     )}
                   </div>
@@ -308,7 +351,7 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
           )}
 
           {/* Organizer Actions */}
-          {isOrganizer && circle.status === 'draft' && (
+          {isOrganizer && currentCircle.status === 'draft' && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -340,12 +383,12 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
             <CardContent>
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarFallback>{circle.users?.display_name?.[0] || 'U'}</AvatarFallback>
+                  <AvatarFallback>{currentCircle.users?.display_name?.[0] || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{circle.users?.display_name || '不明'}</p>
+                  <p className="font-medium">{currentCircle.users?.display_name || '不明'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(circle.created_at), 'yyyy/M/d に作成', { locale: ja })}
+                    {format(new Date(currentCircle.created_at), 'yyyy/M/d に作成', { locale: ja })}
                   </p>
                 </div>
               </div>
@@ -358,16 +401,16 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
               <CardTitle className="text-lg flex items-center justify-between">
                 参加者
                 <span className="text-sm font-normal text-muted-foreground">
-                  {circle.participant_count}/{circle.max_participants}
+                  {currentCircle.participant_count}/{currentCircle.max_participants}
                 </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {circle.circle_participants?.length === 0 ? (
+                {currentCircle.circle_participants?.length === 0 ? (
                   <p className="text-sm text-muted-foreground">まだ参加者がいません</p>
                 ) : (
-                  circle.circle_participants?.map(participant => (
+                  currentCircle.circle_participants?.map(participant => (
                     <div key={participant.id} className="flex items-center gap-3">
                       <Avatar className="w-8 h-8">
                         <AvatarFallback className="text-xs">
@@ -411,6 +454,14 @@ export function ReadingCircleDetail({ circle, userId }: ReadingCircleDetailProps
           </Card>
         </div>
       </div>
+
+      {/* 編集モーダル */}
+      <EditCircleModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        circle={currentCircle}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 }

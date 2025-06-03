@@ -68,9 +68,11 @@ interface EditCircleFormProps {
     };
   };
   onSuccess?: (circleId: string) => void;
+  onCancel?: () => void;
+  isModal?: boolean;
 }
 
-export function EditCircleForm({ circle, onSuccess }: EditCircleFormProps) {
+export function EditCircleForm({ circle, onSuccess, onCancel, isModal }: EditCircleFormProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -166,7 +168,7 @@ export function EditCircleForm({ circle, onSuccess }: EditCircleFormProps) {
       const accessToken = sessionData.session?.access_token;
 
       const response = await fetch(`/api/reading-circles/${circle.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
@@ -186,8 +188,6 @@ export function EditCircleForm({ circle, onSuccess }: EditCircleFormProps) {
 
       const result = await response.json();
       console.log('✅ [EditCircleForm] 成功レスポンス:', result);
-
-      toast.success('輪読会を更新しました');
 
       if (onSuccess) {
         onSuccess(circle.id);
@@ -221,11 +221,8 @@ export function EditCircleForm({ circle, onSuccess }: EditCircleFormProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>輪読会を編集</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <>
+      {isModal ? (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -380,7 +377,13 @@ export function EditCircleForm({ circle, onSuccess }: EditCircleFormProps) {
                 type="button"
                 variant="outline"
                 className="flex-1"
-                onClick={() => router.back()}
+                onClick={() => {
+                  if (onCancel) {
+                    onCancel();
+                  } else {
+                    router.back();
+                  }
+                }}
                 disabled={isLoading}
               >
                 キャンセル
@@ -396,13 +399,199 @@ export function EditCircleForm({ circle, onSuccess }: EditCircleFormProps) {
             </div>
           </form>
         </Form>
+      ) : (
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>輪読会を編集</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>輪読会名 *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="例: React実践入門を読む会" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-        <BookSearchModal
-          isOpen={isBookModalOpen}
-          onClose={() => setIsBookModalOpen(false)}
-          onSelect={handleBookSelect}
-        />
-      </CardContent>
-    </Card>
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>説明</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="輪読会の詳細、進め方、目標などを記入してください"
+                          rows={4}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div>
+                  <Label className="text-sm font-medium">対象書籍 *</Label>
+                  {selectedBook ? (
+                    <Card className="mt-2">
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <img
+                          src={selectedBook.img_url}
+                          alt={selectedBook.title}
+                          className="w-16 h-20 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium">{selectedBook.title}</h4>
+                          <p className="text-sm text-muted-foreground">{selectedBook.author}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsBookModalOpen(true)}
+                        >
+                          変更
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-2 w-full"
+                      onClick={() => setIsBookModalOpen(true)}
+                    >
+                      書籍を選択
+                    </Button>
+                  )}
+                  {form.formState.errors.book_id && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {form.formState.errors.book_id.message}
+                    </p>
+                  )}
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="max_participants"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>最大参加者数</FormLabel>
+                      <Select
+                        onValueChange={value => field.onChange(parseInt(value))}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="参加者数を選択" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Array.from({ length: 49 }, (_, i) => i + 2).map(num => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num}名
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>開始予定日</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>終了予定日</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="is_private"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">プライベート輪読会</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          プライベートに設定すると、招待された人のみが参加できます
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      if (onCancel) {
+                        onCancel();
+                      } else {
+                        router.back();
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    variant={hasChanges ? 'default' : 'secondary'}
+                    disabled={isLoading || !selectedBook || !hasChanges}
+                  >
+                    {isLoading ? '更新中...' : hasChanges ? '輪読会を更新' : '変更なし'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      <BookSearchModal
+        isOpen={isBookModalOpen}
+        onClose={() => setIsBookModalOpen(false)}
+        onSelect={handleBookSelect}
+      />
+    </>
   );
 }
