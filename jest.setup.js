@@ -5,6 +5,13 @@ import '@testing-library/jest-dom';
 // 例: fetch APIのモック
 global.fetch = jest.fn();
 
+// ResizeObserverのモック
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
 // window.matchMediaのモック
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -19,6 +26,71 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 });
+
+// Supabaseクライアントのモック
+jest.mock('@/lib/supabase/client', () => ({
+  getSupabaseClient: jest.fn(() => ({
+    auth: {
+      getSession: jest.fn(() =>
+        Promise.resolve({
+          data: { session: null },
+          error: null,
+        })
+      ),
+      getUser: jest.fn(() =>
+        Promise.resolve({
+          data: { user: null },
+          error: null,
+        })
+      ),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
+      signInWithOAuth: jest.fn(() =>
+        Promise.resolve({
+          data: { user: null, session: null },
+          error: null,
+        })
+      ),
+      signOut: jest.fn(() =>
+        Promise.resolve({
+          error: null,
+        })
+      ),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() =>
+            Promise.resolve({
+              data: null,
+              error: null,
+            })
+          ),
+        })),
+      })),
+    })),
+  })),
+  supabase: {
+    auth: {
+      getSession: jest.fn(() =>
+        Promise.resolve({
+          data: { session: null },
+          error: null,
+        })
+      ),
+      getUser: jest.fn(() =>
+        Promise.resolve({
+          data: { user: null },
+          error: null,
+        })
+      ),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
+    },
+  },
+}));
 
 // 警告を無視する設定
 // コンソール出力をクリーンに保つために役立つ

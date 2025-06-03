@@ -33,6 +33,8 @@ const customJestConfig = {
   ],
   // テスト環境をjsdomに設定
   testEnvironment: 'jest-environment-jsdom',
+  // SWCとの競合を避けるため、transformIgnorePatternsを設定
+  transformIgnorePatterns: ['node_modules/(?!(.*\\.mjs$))'],
 };
 
 // createJestConfigを使用することによって、next/jestが提供する設定がデフォルトで設定される
