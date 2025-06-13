@@ -2,7 +2,7 @@
 
 import AuthButton from '@/components/auth/AuthButton';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { ReadingCircleList } from '@/components/reading-circles/ReadingCircleList';
+import { ReadingCircleHome } from '@/components/reading-circles/ReadingCircleHome';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ReadingCirclesPage() {
@@ -59,7 +59,7 @@ export default function ReadingCirclesPage() {
           </p>
         </div>
 
-        <ReadingCircleList userId={user.id} />
+        <ReadingCircleHome userId={user.id} />
       </div>
     </div>
   );

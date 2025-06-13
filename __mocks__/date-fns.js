@@ -5,6 +5,12 @@ const format = jest.fn((date, formatStr) => {
   if (formatStr === 'M/d') {
     return `${d.getMonth() + 1}/${d.getDate()}`;
   }
+  if (formatStr === 'M月d日') {
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+  if (formatStr === 'M/d 作成') {
+    return `${d.getMonth() + 1}/${d.getDate()} 作成`;
+  }
   if (formatStr === 'yyyy-MM-dd') {
     return d.toISOString().split('T')[0];
   }
