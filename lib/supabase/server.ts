@@ -1,11 +1,45 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 // サーバーコンポーネント用のSupabaseクライアント
 export const createServerSupabaseClient = () => {
   const cookieStore = cookies();
-  return createServerComponentClient({ cookies: () => cookieStore });
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: Record<string, unknown>) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+        remove(name: string, options: Record<string, unknown>) {
+          try {
+            cookieStore.set({ name, value: '', ...options });
+          } catch {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  );
+};
+
+// API Route用のSupabaseクライアント（サーバーコンポーネントと同じものを使用）
+export const createApiRouteSupabaseClient = () => {
+  return createServerSupabaseClient();
 };
 
 // サーバーサイドでセッションを取得する関数
