@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, Home, Moon, Sun, User } from 'lucide-react';
+import { BookOpen, Home, Moon, Sun, User, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -19,6 +19,12 @@ export default function Header() {
       href: '/books',
       icon: Home,
       active: pathname === '/books' || pathname === '/',
+    },
+    {
+      name: '輪読会',
+      href: '/reading-circles',
+      icon: Users,
+      active: pathname.startsWith('/reading-circles'),
     },
     {
       name: '本棚',
