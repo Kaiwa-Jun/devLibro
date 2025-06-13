@@ -6,13 +6,23 @@ import MyReadingCircleCard from '@/components/reading-circles/MyReadingCircleCar
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+      <div {...props}>{children}</div>
+    ),
   },
 }));
 
 // Mock Next.js Image component
 jest.mock('next/image', () => {
-  return function MockImage({ alt, src, ...props }: any) {
+  return function MockImage({
+    alt,
+    src,
+    ...props
+  }: {
+    alt: string;
+    src: string;
+    [key: string]: unknown;
+  }) {
     return <img alt={alt} src={src} {...props} />;
   };
 });
@@ -37,7 +47,7 @@ describe('MyReadingCircleCard', () => {
     expect(screen.getByText('React実践輪読会')).toBeInTheDocument();
     expect(screen.getByText('Learning React')).toBeInTheDocument();
     expect(screen.getByText('Reactの基礎から応用まで学ぶ輪読会です')).toBeInTheDocument();
-    expect(screen.getByText('6/10名')).toBeInTheDocument();
+    expect(screen.getByText('6人のメンバー')).toBeInTheDocument();
     expect(screen.getByText('2024/01/20')).toBeInTheDocument();
   });
 
@@ -82,7 +92,7 @@ describe('MyReadingCircleCard', () => {
 
     render(<MyReadingCircleCard circle={circleWithoutDate} index={0} />);
 
-    expect(screen.getByText('6/10名')).toBeInTheDocument();
+    expect(screen.getByText('6人のメンバー')).toBeInTheDocument();
     expect(screen.queryByText('2024/01/20')).not.toBeInTheDocument();
   });
 

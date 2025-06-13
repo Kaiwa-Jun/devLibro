@@ -6,13 +6,23 @@ import NextEventCard from '@/components/reading-circles/NextEventCard';
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+      <div {...props}>{children}</div>
+    ),
   },
 }));
 
 // Mock Next.js Image component
 jest.mock('next/image', () => {
-  return function MockImage({ alt, src, ...props }: any) {
+  return function MockImage({
+    alt,
+    src,
+    ...props
+  }: {
+    alt: string;
+    src: string;
+    [key: string]: unknown;
+  }) {
     return <img alt={alt} src={src} {...props} />;
   };
 });

@@ -6,8 +6,12 @@ import ReadingCirclesHome from '@/components/reading-circles/ReadingCirclesHome'
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    section: ({ children, ...props }: any) => <section {...props}>{children}</section>,
+    div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+      <div {...props}>{children}</div>
+    ),
+    section: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+      <section {...props}>{children}</section>
+    ),
   },
 }));
 

@@ -53,7 +53,6 @@ export async function getReadingCircles(): Promise<ReadingCircle[]> {
     // データを整形
     const formattedCircles: ReadingCircle[] =
       circles?.map(circle => {
-
         // より現実的な進捗データを設定
         let progress = 0;
 
@@ -185,7 +184,7 @@ export async function getUserReadingCircles(userId: string): Promise<ReadingCirc
     // データを整形
     const formattedCircles: ReadingCircle[] =
       membershipData?.map(membership => {
-        const circle = membership.bookclubs as {
+        const circle = membership.bookclubs as unknown as {
           id: string;
           title: string;
           purpose?: string;
