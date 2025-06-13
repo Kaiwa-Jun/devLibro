@@ -195,7 +195,7 @@ export async function getUserReadingCircles(userId: string): Promise<ReadingCirc
           invite_url?: string;
           created_by?: string;
           created_at: string;
-          bookclub_members?: any[];
+          bookclub_members?: { id: string }[];
           bookclub_progress?: { progress_rate?: number }[];
         };
         return {
