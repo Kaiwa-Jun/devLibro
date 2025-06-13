@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -38,6 +38,12 @@ export interface ReadingCircleProgress {
 
 // 輪読会一覧を取得
 export async function getReadingCircles(): Promise<ReadingCircle[]> {
+  // 環境変数が設定されていない場合は空配列を返す
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase environment variables not configured');
+    return [];
+  }
+
   try {
     const { data: circles, error } = await supabase.from('bookclubs').select(`
         *,
@@ -114,6 +120,12 @@ export async function getReadingCircles(): Promise<ReadingCircle[]> {
 
 // 特定の輪読会の詳細を取得
 export async function getReadingCircleById(id: string): Promise<ReadingCircle | null> {
+  // 環境変数が設定されていない場合はnullを返す
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase environment variables not configured');
+    return null;
+  }
+
   try {
     const { data: circle, error } = await supabase
       .from('bookclubs')
@@ -161,6 +173,12 @@ export async function getReadingCircleById(id: string): Promise<ReadingCircle | 
 
 // ユーザーが参加している輪読会を取得
 export async function getUserReadingCircles(userId: string): Promise<ReadingCircle[]> {
+  // 環境変数が設定されていない場合は空配列を返す
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase environment variables not configured');
+    return [];
+  }
+
   try {
     const { data: membershipData, error } = await supabase
       .from('bookclub_members')
@@ -231,6 +249,11 @@ export async function createReadingCircle(data: {
   book_id?: number;
   created_by: string;
 }): Promise<ReadingCircle> {
+  // 環境変数が設定されていない場合はエラーを投げる
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Supabase environment variables not configured');
+  }
+
   try {
     const { data: circle, error } = await supabase
       .from('bookclubs')

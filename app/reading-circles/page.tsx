@@ -3,6 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
+// Dynamic renderingを強制（ビルド時のstatic generationを回避）
+export const dynamic = 'force-dynamic';
+
 import ReadingCirclesHome from '@/components/reading-circles/ReadingCirclesHome';
 import { getReadingCircles, type ReadingCircle } from '@/lib/supabase/reading-circles';
 
