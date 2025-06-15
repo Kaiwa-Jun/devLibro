@@ -35,16 +35,23 @@ export default function CreateReadingCirclePage() {
   return (
     <div className="min-h-screen bg-background pt-16 pb-16 md:pb-0">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/reading-circles">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold">新しい読書会を作成</h1>
-        </div>
+        <div className="flex items-start gap-8">
+          <div className="flex-shrink-0 pt-2">
+            <Link href="/reading-circles">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
 
-        <CreateCircleForm />
+          <div className="flex-1">
+            <CreateCircleForm />
+          </div>
+        </div>
       </div>
     </div>
   );

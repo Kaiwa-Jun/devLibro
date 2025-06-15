@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Users, BookOpen } from 'lucide-react';
+import { BookOpen, Calendar, Clock, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -31,63 +31,80 @@ export default function NextEventCard({ event }: NextEventCardProps) {
       className="w-full"
     >
       <Link href={`/reading-circles/${event.id}`}>
-        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-primary bg-gradient-to-r from-primary/5 to-transparent">
-          <CardHeader className="pb-3">
+        <Card className="hover:shadow-xl hover:shadow-green-500/10 transition-all duration-300 cursor-pointer border-0 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl overflow-hidden">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+              <Badge
+                variant="secondary"
+                className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+              >
                 <Calendar className="h-3 w-3 mr-1" />
                 次回予定
               </Badge>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1 text-sm font-medium text-green-600 dark:text-green-400">
                 <Clock className="h-4 w-4" />
                 {event.time}
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              {/* 書籍画像 */}
-              <div className="relative h-20 w-14 flex-shrink-0">
-                <Image
-                  src={event.bookCover}
-                  alt={event.bookTitle}
-                  fill
-                  className="object-cover rounded-md shadow-sm"
-                  sizes="56px"
-                />
-              </div>
-
-              {/* イベント情報 */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg line-clamp-2 mb-1">{event.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{event.bookTitle}</p>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {event.date}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {event.participants}/{event.maxParticipants}名
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 左カラム: 書籍情報 */}
+              <div className="flex gap-4">
+                <div className="relative h-20 w-14 flex-shrink-0">
+                  <Image
+                    src={event.bookCover}
+                    alt={event.bookTitle}
+                    fill
+                    className="object-cover rounded-xl shadow-lg"
+                    sizes="56px"
+                  />
+                </div>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <h3 className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-white">
+                    {event.title}
+                  </h3>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300 line-clamp-1">
+                    {event.bookTitle}
+                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <div className="bg-green-100 dark:bg-green-900/30 p-1 rounded-lg">
+                        <Calendar className="h-3 w-3" />
+                      </div>
+                      <span className="font-medium">{event.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-1 rounded-lg">
+                        <Users className="h-3 w-3" />
+                      </div>
+                      <span className="font-medium">
+                        {event.participants}/{event.maxParticipants}名
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* プログレスバー */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <BookOpen className="h-4 w-4" />
-                  読書進捗
+              {/* 右カラム: プログレスバー */}
+              <div className="flex flex-col justify-center space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="bg-orange-100 dark:bg-orange-900/30 p-1 rounded-lg">
+                      <BookOpen className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <span className="font-medium">読書進捗</span>
+                  </div>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    {event.progress}%
+                  </span>
                 </div>
-                <span className="font-medium">{event.progress}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${event.progress}%` }}
-                />
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-500 shadow-sm"
+                    style={{ width: `${event.progress}%` }}
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
