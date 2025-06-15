@@ -64,6 +64,12 @@ export function CreateCircleForm() {
   const [currentPage, setCurrentPage] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // ドラッグ選択用の状態
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ day: number; hour: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ day: number; hour: number } | null>(null);
+  const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
+
   const debouncedSearchTerm = useDebounce(bookSearchQuery, 500);
 
   // 書籍検索の実行
@@ -76,6 +82,34 @@ export function CreateCircleForm() {
       setCurrentPage(0);
     }
   }, [debouncedSearchTerm]);
+
+  // グローバルマウスイベントリスナーの設定（ドラッグ機能用）
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleMouseUp();
+      }
+    };
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        // マウスがグリッド外に出た場合の処理
+        e.preventDefault();
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.body.style.userSelect = 'none'; // テキスト選択を無効化
+    }
+
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.body.style.userSelect = ''; // テキスト選択を復元
+    };
+  }, [isDragging]);
 
   const handleBookSearch = async (isNewSearch = false) => {
     if (!debouncedSearchTerm.trim()) return;
@@ -200,6 +234,96 @@ export function CreateCircleForm() {
     return formData.schedule_slots.some(slot => slot.day === day && slot.hour === hour);
   };
 
+  // ドラッグ範囲内のスロットを取得
+  const getSlotsInDragRange = (
+    start: { day: number; hour: number },
+    end: { day: number; hour: number }
+  ) => {
+    const slots: { day: number; hour: number }[] = [];
+
+    const minDay = Math.min(start.day, end.day);
+    const maxDay = Math.max(start.day, end.day);
+    const minHour = Math.min(start.hour, end.hour);
+    const maxHour = Math.max(start.hour, end.hour);
+
+    for (let day = minDay; day <= maxDay; day++) {
+      for (let hour = minHour; hour <= maxHour; hour++) {
+        slots.push({ day, hour });
+      }
+    }
+
+    return slots;
+  };
+
+  // ドラッグ中かどうかをチェック
+  const isInDragRange = (day: number, hour: number): boolean => {
+    if (!isDragging || !dragStart || !dragEnd) return false;
+
+    const minDay = Math.min(dragStart.day, dragEnd.day);
+    const maxDay = Math.max(dragStart.day, dragEnd.day);
+    const minHour = Math.min(dragStart.hour, dragEnd.hour);
+    const maxHour = Math.max(dragStart.hour, dragEnd.hour);
+
+    return day >= minDay && day <= maxDay && hour >= minHour && hour <= maxHour;
+  };
+
+  // ドラッグ開始
+  const handleMouseDown = (day: number, hour: number) => {
+    setIsDragging(true);
+    setDragStart({ day, hour });
+    setDragEnd({ day, hour });
+
+    // 現在のスロットの状態に基づいてドラッグモードを決定
+    const isCurrentlySelected = isTimeSlotSelected(day, hour);
+    setDragMode(isCurrentlySelected ? 'deselect' : 'select');
+  };
+
+  // ドラッグ中
+  const handleMouseEnter = (day: number, hour: number) => {
+    if (isDragging && dragStart) {
+      setDragEnd({ day, hour });
+    }
+  };
+
+  // ドラッグ終了
+  const handleMouseUp = () => {
+    if (isDragging && dragStart && dragEnd) {
+      const slotsInRange = getSlotsInDragRange(dragStart, dragEnd);
+
+      setFormData(prev => {
+        const newScheduleSlots = [...prev.schedule_slots];
+
+        slotsInRange.forEach(({ day, hour }) => {
+          const existingIndex = newScheduleSlots.findIndex(
+            slot => slot.day === day && slot.hour === hour
+          );
+
+          if (dragMode === 'select') {
+            // 選択モード：まだ選択されていないスロットを追加
+            if (existingIndex === -1) {
+              newScheduleSlots.push({ day, hour, selected: true });
+            }
+          } else {
+            // 選択解除モード：選択されているスロットを削除
+            if (existingIndex >= 0) {
+              newScheduleSlots.splice(existingIndex, 1);
+            }
+          }
+        });
+
+        return {
+          ...prev,
+          schedule_slots: newScheduleSlots,
+        };
+      });
+    }
+
+    // ドラッグ状態をリセット
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
   // ステップナビゲーション
   const handleNext = () => {
     if (validateStep(currentStep)) {
@@ -241,13 +365,13 @@ export function CreateCircleForm() {
         requires_approval: formData.requires_approval,
       };
 
-      console.log('リクエストデータ:', {
-        requestBody,
-        authToken: await getSupabaseSession(),
-        hasAuthToken: !!(await getSupabaseSession()),
-        bookIds: requestBody.book_candidates,
-        bookIdsTypes: requestBody.book_candidates.map((id: string | number) => typeof id),
-      });
+      // console.log('リクエストデータ:', {
+      //   requestBody,
+      //   authToken: await getSupabaseSession(),
+      //   hasAuthToken: !!(await getSupabaseSession()),
+      //   bookIds: requestBody.book_candidates,
+      //   bookIdsTypes: requestBody.book_candidates.map((id: string | number) => typeof id),
+      // });
 
       const response = await fetch('/api/reading-circles', {
         method: 'POST',
@@ -259,25 +383,25 @@ export function CreateCircleForm() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('APIレスポンス:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
+      // console.log('APIレスポンス:', {
+      //   status: response.status,
+      //   statusText: response.statusText,
+      //   headers: Object.fromEntries(response.headers.entries()),
+      // });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('APIエラー:', errorData);
+        // console.error('APIエラー:', errorData);
         throw new Error(errorData.error || '読書会の作成に失敗しました');
       }
 
       const responseData = await response.json();
-      console.log('APIレスポンスデータ:', responseData);
+      // console.log('APIレスポンスデータ:', responseData);
 
       // 成功後はすぐに詳細ページに遷移
       router.push(`/reading-circles/${responseData.id}`);
     } catch (err) {
-      console.error('Error in form submission:', err);
+      // console.error('Error in form submission:', err);
       setError(
         err instanceof Error
           ? err.message
@@ -574,64 +698,137 @@ export function CreateCircleForm() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">開催可能な日時を選択してください</h3>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  📅 開催可能な日時を選択してください
+                </h3>
                 {errors.schedule && <p className="text-red-500 text-sm mb-4">{errors.schedule}</p>}
 
                 {/* 時間グリッド */}
-                <div className="overflow-x-auto">
-                  <div className="min-w-[600px]">
-                    {/* ヘッダー行 */}
-                    <div className="grid grid-cols-8 gap-1 mb-2">
-                      <div className="h-8"></div>
-                      {DAYS_OF_WEEK.map((day, dayIndex) => (
-                        <div
-                          key={dayIndex}
-                          className={`
-                            h-8 flex items-center justify-center text-sm font-medium rounded
-                            ${
-                              dayIndex === 0
-                                ? 'bg-red-100 text-red-700' // 日曜日
-                                : dayIndex === 6
-                                  ? 'bg-blue-100 text-blue-700' // 土曜日
-                                  : 'bg-gray-100 text-gray-700' // 平日
-                            }
-                          `}
-                        >
-                          {day}
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[700px]">
+                      {/* グリッドコンテナ */}
+                      <div className="border border-gray-300 rounded-lg overflow-hidden">
+                        {/* ヘッダー行（固定） */}
+                        <div className="grid grid-cols-8 border-b border-gray-300 sticky top-0 z-10 bg-white">
+                          <div className="h-12 bg-gray-50 border-r border-gray-300 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-600">時間</span>
+                          </div>
+                          {DAYS_OF_WEEK.map((day, dayIndex) => (
+                            <div
+                              key={dayIndex}
+                              className={`
+                                h-12 border-r border-gray-300 last:border-r-0 flex items-center justify-center text-sm font-bold
+                                ${
+                                  dayIndex === 0
+                                    ? 'bg-red-50 text-red-700' // 日曜日
+                                    : dayIndex === 6
+                                      ? 'bg-blue-50 text-blue-700' // 土曜日
+                                      : 'bg-gray-50 text-gray-700' // 平日
+                                }
+                              `}
+                            >
+                              {day}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
 
-                    {/* 時間スロット */}
-                    {HOURS.map(hour => (
-                      <div key={hour} className="grid grid-cols-8 gap-1 mb-1">
-                        <div className="h-8 flex items-center justify-center text-xs text-gray-600">
-                          {hour}:00
+                        {/* 時間スロット（スクロール可能エリア） */}
+                        <div className="max-h-96 overflow-y-auto">
+                          {HOURS.map((hour, hourIndex) => (
+                            <div
+                              key={hour}
+                              className={`grid grid-cols-8 ${hourIndex < HOURS.length - 1 ? 'border-b border-gray-300' : ''}`}
+                            >
+                              <div className="h-12 bg-gray-50 border-r border-gray-300 flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-600">{hour}:00</span>
+                              </div>
+                              {DAYS_OF_WEEK.map((day, dayIndex) => {
+                                const isSelected = isTimeSlotSelected(dayIndex, hour);
+                                const isInDrag = isInDragRange(dayIndex, hour);
+                                const willBeSelected =
+                                  isDragging && isInDrag ? dragMode === 'select' : isSelected;
+                                const willBeDeselected =
+                                  isDragging && isInDrag ? dragMode === 'deselect' : false;
+
+                                return (
+                                  <button
+                                    key={`${dayIndex}-${hour}`}
+                                    type="button"
+                                    onClick={() => toggleTimeSlot(dayIndex, hour)}
+                                    onMouseDown={() => handleMouseDown(dayIndex, hour)}
+                                    onMouseEnter={() => handleMouseEnter(dayIndex, hour)}
+                                    onMouseUp={handleMouseUp}
+                                    aria-label={`${day}曜日 ${hour}:00-${hour + 1}:00`}
+                                    className={`
+                                      h-12 border-r border-gray-300 last:border-r-0 transition-all duration-200 relative select-none
+                                      ${
+                                        willBeSelected && !willBeDeselected
+                                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-inner'
+                                          : willBeDeselected
+                                            ? 'bg-gradient-to-br from-red-400 to-red-500 text-white shadow-inner'
+                                            : isInDrag && dragMode === 'select'
+                                              ? 'bg-gradient-to-br from-blue-300 to-blue-400 text-white shadow-inner'
+                                              : isInDrag && dragMode === 'deselect'
+                                                ? 'bg-gradient-to-br from-red-300 to-red-400 text-white shadow-inner'
+                                                : 'bg-white hover:bg-blue-50 hover:shadow-sm'
+                                      }
+                                      ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}
+                                    `}
+                                    style={{ userSelect: 'none' }}
+                                  >
+                                    {willBeSelected && !willBeDeselected && (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                          <Check className="w-4 h-4 text-white" />
+                                        </div>
+                                      </div>
+                                    )}
+                                    {willBeDeselected && (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                          <span className="text-white text-lg">×</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {isInDrag && !isSelected && dragMode === 'select' && (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                          <span className="text-white text-lg">+</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
                         </div>
-                        {DAYS_OF_WEEK.map((day, dayIndex) => (
-                          <button
-                            key={`${dayIndex}-${hour}`}
-                            type="button"
-                            onClick={() => toggleTimeSlot(dayIndex, hour)}
-                            aria-label={`${day}曜日 ${hour}:00-${hour + 1}:00`}
-                            className={`
-                              h-8 rounded border text-xs transition-colors
-                              ${
-                                isTimeSlotSelected(dayIndex, hour)
-                                  ? 'bg-blue-600 text-white border-blue-600'
-                                  : 'bg-white border-gray-200 hover:bg-gray-50'
-                              }
-                            `}
-                          />
-                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 mt-4">
-                  クリックしてタイムスロットを選択・解除できます。複数の候補日時を選択することで、参加者が都合の良い時間を選べます。
-                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-blue-600 mt-0.5">💡</div>
+                    <div>
+                      <p className="text-sm text-blue-800 font-medium mb-1">
+                        スケジュール選択について
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        <strong>ドラッグ選択:</strong>{' '}
+                        クリックしたまま範囲をドラッグして複数の時間帯を一括選択できます。
+                        <br />
+                        複数の候補日時を選択することで、参加者が都合の良い時間を投票できます。
+                        <br />
+                        <strong>
+                          最終的な開催時間は、参加メンバーの投票結果を考慮して決定されます。
+                        </strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -691,18 +888,109 @@ export function CreateCircleForm() {
                   </div>
 
                   <div>
-                    <p className="font-medium">選択されたタイムスロット</p>
+                    <p className="font-medium mb-3 flex items-center gap-2">
+                      📅 選択されたタイムスロット
+                    </p>
                     <div className="text-gray-700">
                       {formData.schedule_slots.length > 0 ? (
-                        <ul>
-                          {formData.schedule_slots.map((slot, index) => (
-                            <li key={index}>
-                              • {DAYS_OF_WEEK[slot.day]}曜日 {slot.hour}:00-{slot.hour + 1}:00
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="bg-white rounded-xl border border-gray-300 shadow-sm overflow-hidden">
+                          {(() => {
+                            // 選択されている曜日と時間帯を取得
+                            const selectedDays = Array.from(
+                              new Set(formData.schedule_slots.map(slot => slot.day))
+                            ).sort((a, b) => a - b);
+                            const selectedHours = Array.from(
+                              new Set(formData.schedule_slots.map(slot => slot.hour))
+                            ).sort((a, b) => a - b);
+
+                            if (selectedDays.length === 0 || selectedHours.length === 0) {
+                              return null;
+                            }
+
+                            return (
+                              <div className="overflow-x-auto">
+                                <div className="min-w-fit">
+                                  {/* ヘッダー行 */}
+                                  <div
+                                    className={`grid gap-0`}
+                                    style={{
+                                      gridTemplateColumns: `80px repeat(${selectedDays.length}, 1fr)`,
+                                    }}
+                                  >
+                                    <div className="h-12 bg-gray-100 border-r border-b border-gray-300 flex items-center justify-center">
+                                      <span className="text-sm font-medium text-gray-600">
+                                        時間
+                                      </span>
+                                    </div>
+                                    {selectedDays.map(dayIndex => (
+                                      <div
+                                        key={dayIndex}
+                                        className={`
+                                          h-12 flex items-center justify-center text-sm font-bold border-r border-b border-gray-300 last:border-r-0
+                                          ${
+                                            dayIndex === 0
+                                              ? 'bg-red-50 text-red-700' // 日曜日
+                                              : dayIndex === 6
+                                                ? 'bg-blue-50 text-blue-700' // 土曜日
+                                                : 'bg-gray-50 text-gray-700' // 平日
+                                          }
+                                        `}
+                                      >
+                                        {DAYS_OF_WEEK[dayIndex]}
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* 時間スロット */}
+                                  {selectedHours.map((hour, hourIndex) => (
+                                    <div
+                                      key={hour}
+                                      className={`grid gap-0 ${hourIndex < selectedHours.length - 1 ? 'border-b border-gray-300' : ''}`}
+                                      style={{
+                                        gridTemplateColumns: `80px repeat(${selectedDays.length}, 1fr)`,
+                                      }}
+                                    >
+                                      <div className="h-12 bg-gray-50 border-r border-gray-300 flex items-center justify-center">
+                                        <span className="text-sm font-medium text-gray-600">
+                                          {hour}:00
+                                        </span>
+                                      </div>
+                                      {selectedDays.map(dayIndex => {
+                                        const isSelected = isTimeSlotSelected(dayIndex, hour);
+                                        return (
+                                          <div
+                                            key={`${dayIndex}-${hour}`}
+                                            className={`
+                                              h-12 border-r border-gray-300 last:border-r-0 flex items-center justify-center relative
+                                              ${
+                                                isSelected
+                                                  ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-inner'
+                                                  : 'bg-gray-100'
+                                              }
+                                            `}
+                                          >
+                                            {isSelected && (
+                                              <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                                  <Check className="w-4 h-4 text-white" />
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       ) : (
-                        <p className="text-gray-500">未選択</p>
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                          <div className="text-4xl mb-2">📅</div>
+                          <p>タイムスロットが選択されていません</p>
+                        </div>
                       )}
                     </div>
                   </div>
