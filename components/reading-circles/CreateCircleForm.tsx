@@ -520,9 +520,25 @@ export function CreateCircleForm() {
 
           {/* ステップ 1: 基本情報 */}
           {currentStep === 1 && (
-            <div className="space-y-6">
-              <div>
-                <Label htmlFor="title">読書会タイトル *</Label>
+            <div className="space-y-8">
+              {/* タイトル入力 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-pink-500 to-rose-500 p-2 rounded-xl">
+                    <span className="text-white text-lg">📝</span>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="title"
+                      className="text-lg font-bold text-gray-900 dark:text-white"
+                    >
+                      読書会タイトル
+                    </Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      魅力的なタイトルで参加者を惹きつけよう ✨
+                    </p>
+                  </div>
+                </div>
                 <Input
                   id="title"
                   value={formData.title}
@@ -540,24 +556,66 @@ export function CreateCircleForm() {
                       setErrors(prev => ({ ...prev, title: '' }));
                     }
                   }}
-                  placeholder="例: TypeScript実践入門 輪読会"
-                  className={errors.title ? 'border-red-500' : ''}
+                  placeholder="例: TypeScript実践入門 輪読会 🚀"
+                  className={`h-14 text-lg rounded-2xl border-2 px-6 transition-all duration-200 ${
+                    errors.title
+                      ? 'border-red-400 focus:border-red-500 bg-red-50'
+                      : 'border-gray-200 focus:border-pink-400 hover:border-gray-300 bg-white'
+                  }`}
                 />
-                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                {errors.title && (
+                  <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                    <span>⚠️</span>
+                    {errors.title}
+                  </p>
+                )}
               </div>
 
-              <div>
-                <Label htmlFor="purpose">目的</Label>
+              {/* 目的入力 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-xl">
+                    <span className="text-white text-lg">🎯</span>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="purpose"
+                      className="text-lg font-bold text-gray-900 dark:text-white"
+                    >
+                      目的
+                    </Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      この読書会で何を達成したい？
+                    </p>
+                  </div>
+                </div>
                 <Input
                   id="purpose"
                   value={formData.purpose}
                   onChange={e => setFormData(prev => ({ ...prev, purpose: e.target.value }))}
-                  placeholder="例: TypeScriptの理解を深めて実践的なスキルを身につける"
+                  placeholder="例: TypeScriptの理解を深めて実践的なスキルを身につける 💪"
+                  className="h-14 text-lg rounded-2xl border-2 border-gray-200 focus:border-blue-400 hover:border-gray-300 px-6 transition-all duration-200 bg-white"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="description">説明</Label>
+              {/* 説明入力 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-2 rounded-xl">
+                    <span className="text-white text-lg">📖</span>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="description"
+                      className="text-lg font-bold text-gray-900 dark:text-white"
+                    >
+                      説明
+                    </Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      読書会の詳細を教えて！
+                    </p>
+                  </div>
+                </div>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -575,87 +633,132 @@ export function CreateCircleForm() {
                       setErrors(prev => ({ ...prev, description: '' }));
                     }
                   }}
-                  placeholder="例: 週1回のペースで進め、章ごとに担当者を決めて発表形式で行います。質疑応答の時間も設けて理解を深めます。"
-                  rows={4}
-                  className={errors.description ? 'border-red-500' : ''}
+                  placeholder="例: 週1回のペースで進め、章ごとに担当者を決めて発表形式で行います。質疑応答の時間も設けて理解を深めます。みんなで楽しく学びましょう！ 🎉"
+                  rows={5}
+                  className={`text-lg rounded-2xl border-2 px-6 py-4 transition-all duration-200 resize-none ${
+                    errors.description
+                      ? 'border-red-400 focus:border-red-500 bg-red-50'
+                      : 'border-gray-200 focus:border-purple-400 hover:border-gray-300 bg-white'
+                  }`}
                 />
-                {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">{errors.description}</p>
-                )}
-                <p className="text-gray-500 text-sm mt-1">{formData.description.length}/1000文字</p>
+                <div className="flex justify-between items-center">
+                  {errors.description && (
+                    <p className="text-red-500 text-sm flex items-center gap-1">
+                      <span>⚠️</span>
+                      {errors.description}
+                    </p>
+                  )}
+                  <p
+                    className={`text-sm ml-auto ${
+                      formData.description.length > 900
+                        ? 'text-red-500'
+                        : formData.description.length > 800
+                          ? 'text-orange-500'
+                          : 'text-gray-500'
+                    }`}
+                  >
+                    {formData.description.length}/1000文字
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <Label>対象書籍（候補）</Label>
-                <div className="space-y-4 mt-2">
+              {/* 書籍選択 */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-2 rounded-xl">
+                    <span className="text-white text-lg">📚</span>
+                  </div>
+                  <div>
+                    <Label className="text-lg font-bold text-gray-900 dark:text-white">
+                      対象書籍（候補）
+                    </Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      読みたい本を選んでね 📖
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-6 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800">
                   {/* 選択された書籍の表示 */}
                   {formData.book_candidates.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-600">選択された書籍:</p>
-                      {formData.book_candidates.map((book, _index) => (
-                        <div
-                          key={book.id}
-                          className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50 cursor-pointer"
-                          onClick={() => removeSelectedBook(_index)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              removeSelectedBook(_index);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`${book.title}を削除`}
-                        >
-                          <img
-                            src={book.img_url}
-                            alt={book.title}
-                            className="w-12 h-16 object-cover rounded flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm line-clamp-2">{book.title}</h4>
-                            <p className="text-xs text-gray-600">{book.author}</p>
+                    <div className="space-y-3 mb-6">
+                      <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                        <span>✅</span>
+                        選択された書籍:
+                      </p>
+                      <div className="grid gap-3">
+                        {formData.book_candidates.map((book, _index) => (
+                          <div
+                            key={book.id}
+                            className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-200 dark:border-emerald-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                            onClick={() => removeSelectedBook(_index)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                removeSelectedBook(_index);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${book.title}を削除`}
+                          >
+                            <img
+                              src={book.img_url}
+                              alt={book.title}
+                              className="w-16 h-20 object-cover rounded-lg flex-shrink-0 shadow-md"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-white mb-1">
+                                {book.title}
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {book.author}
+                              </p>
+                            </div>
+                            <div className="text-red-500 hover:text-red-600 text-xl">❌</div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {/* 書籍検索フィールド */}
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500 w-5 h-5" />
                       <Input
-                        placeholder="書籍名、著者名、ISBNで検索..."
+                        placeholder="書籍名、著者名、ISBNで検索... 🔍"
                         value={bookSearchQuery}
                         onChange={e => setBookSearchQuery(e.target.value)}
-                        className="pl-10"
+                        className="pl-12 h-14 text-lg rounded-2xl border-2 border-emerald-300 focus:border-emerald-500 hover:border-emerald-400 bg-white transition-all duration-200"
                       />
                     </div>
 
                     {/* 検索結果 */}
                     {bookSearchQuery && (
-                      <div className="max-h-80 overflow-y-auto border rounded-lg">
+                      <div className="max-h-80 overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl border-2 border-emerald-200 dark:border-emerald-700">
                         {isSearching && (
-                          <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                            <span>検索中...</span>
+                          <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin mr-3 text-emerald-500" />
+                            <span className="text-lg text-emerald-600">検索中... 🔍</span>
                           </div>
                         )}
 
                         {!isSearching && searchResults.length === 0 && bookSearchQuery && (
-                          <div className="text-center py-8 text-muted-foreground">
-                            検索結果が見つかりませんでした
+                          <div className="text-center py-12 text-gray-500">
+                            <div className="text-4xl mb-2">😅</div>
+                            <p className="text-lg">検索結果が見つかりませんでした</p>
+                            <p className="text-sm">別のキーワードで試してみてください</p>
                           </div>
                         )}
 
                         {!isSearching && searchResults.length > 0 && (
-                          <div className="p-2">
-                            <div className="space-y-2">
+                          <div className="p-4">
+                            <div className="space-y-3">
                               {searchResults.map(book => (
                                 <div
                                   key={book.id}
-                                  className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg border"
+                                  className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 p-4 rounded-xl border-2 border-transparent hover:border-emerald-200 dark:hover:border-emerald-700 transition-all duration-200 hover:shadow-md"
                                   onClick={() => handleBookSelect(book)}
                                   onKeyDown={e => {
                                     if (e.key === 'Enter' || e.key === ' ') {
@@ -666,23 +769,25 @@ export function CreateCircleForm() {
                                   role="button"
                                   tabIndex={0}
                                 >
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-4">
                                     <img
                                       src={book.img_url}
                                       alt={book.title}
-                                      className="w-12 h-16 object-cover rounded flex-shrink-0"
+                                      className="w-16 h-20 object-cover rounded-lg flex-shrink-0 shadow-md"
                                     />
                                     <div className="flex-1 min-w-0">
-                                      <h4 className="font-medium text-sm line-clamp-2 mb-1">
+                                      <h4 className="font-bold text-lg line-clamp-2 mb-2 text-gray-900 dark:text-white">
                                         {book.title}
                                       </h4>
-                                      <p className="text-xs text-muted-foreground">{book.author}</p>
+                                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                        {book.author}
+                                      </p>
                                       {book.categories && book.categories.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-1">
+                                        <div className="flex flex-wrap gap-2">
                                           {book.categories.slice(0, 2).map((category, index) => (
                                             <span
                                               key={index}
-                                              className="text-xs bg-muted px-2 py-0.5 rounded"
+                                              className="text-xs bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full font-medium"
                                             >
                                               {category}
                                             </span>
@@ -690,8 +795,12 @@ export function CreateCircleForm() {
                                         </div>
                                       )}
                                     </div>
-                                    <Button variant="outline" size="sm">
-                                      選択
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 hover:border-emerald-600 rounded-xl px-4 py-2 font-medium"
+                                    >
+                                      選択 ✨
                                     </Button>
                                   </div>
                                 </div>
@@ -700,20 +809,19 @@ export function CreateCircleForm() {
 
                             {/* もっと見るボタン */}
                             {hasMoreResults && (
-                              <div className="flex justify-center mt-3 pt-3 border-t">
+                              <div className="flex justify-center mt-6 pt-4 border-t-2 border-emerald-100">
                                 <Button
-                                  variant="outline"
                                   onClick={handleLoadMoreResults}
                                   disabled={isLoadingMore}
-                                  size="sm"
+                                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl px-8 py-3 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                                 >
                                   {isLoadingMore ? (
                                     <>
-                                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                      読み込み中...
+                                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                      読み込み中... ⏳
                                     </>
                                   ) : (
-                                    'もっと見る'
+                                    <>もっと見る 👀</>
                                   )}
                                 </Button>
                               </div>
