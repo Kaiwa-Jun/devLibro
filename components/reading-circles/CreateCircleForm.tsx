@@ -1,6 +1,15 @@
 'use client';
 
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Search,
+} from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -413,109 +422,89 @@ export function CreateCircleForm() {
   };
 
   // ステップのタイトルと説明
-  const getStepInfo = (step: number) => {
-    switch (step) {
-      case 1:
-        return {
-          title: 'ステップ 1: 基本情報',
-          description: '読書会の基本的な情報を入力してください',
-        };
-      case 2:
-        return {
-          title: 'ステップ 2: スケジュール設定',
-          description: '開催可能な日時を選択してください',
-        };
-      case 3:
-        return {
-          title: 'ステップ 3: 確認・招待',
-          description: '入力内容を確認して読書会を作成します',
-        };
-      default:
-        return { title: '', description: '' };
-    }
-  };
-
-  const stepInfo = getStepInfo(currentStep);
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* プログレスバー */}
-      <div className="mb-10">
-        <div className="flex items-start justify-between mb-8">
-          {[
-            { number: 1, label: '基本情報', icon: '📝' },
-            { number: 2, label: 'スケジュール', icon: '📅' },
-            { number: 3, label: '確認', icon: '✓' },
-          ].map((step, index) => (
-            <div key={step.number} className="flex items-center flex-1">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`
-                    flex items-center justify-center w-16 h-16 rounded-full border-2 text-lg font-bold shadow-lg transition-all duration-300 mb-3
-                    ${
-                      step.number === currentStep
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent scale-110'
-                        : step.number < currentStep
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent'
-                          : 'border-gray-300 text-gray-400 bg-white'
-                    }
-                  `}
-                >
-                  {step.number < currentStep ? (
-                    <Check className="h-6 w-6" />
-                  ) : (
-                    <span className="text-2xl">
-                      {step.number === currentStep ? step.icon : step.number}
-                    </span>
-                  )}
-                </div>
+      {/* ヘッダー：戻るボタンとプログレスバー */}
+      <div className="flex items-center gap-6 mb-8">
+        {/* 戻るボタン */}
+        <Link href="/reading-circles">
+          <Button variant="ghost" size="icon" className="flex-shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
 
-                <div className="text-center">
-                  <p
-                    className={`text-sm font-bold transition-colors duration-300 ${
-                      step.number === currentStep
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : step.number < currentStep
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-400'
-                    }`}
-                  >
-                    {step.label}
-                  </p>
-                  <p
-                    className={`text-xs mt-1 transition-colors duration-300 ${
-                      step.number === currentStep
-                        ? 'text-blue-500 dark:text-blue-300'
-                        : step.number < currentStep
-                          ? 'text-green-500 dark:text-green-300'
-                          : 'text-gray-400'
-                    }`}
-                  >
-                    STEP {step.number}
-                  </p>
-                </div>
-              </div>
-
-              {index < 2 && (
-                <div className="flex-1 mx-6 mt-8">
+        {/* プログレスバー */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-start justify-center max-w-2xl w-full">
+            {[
+              { number: 1, label: '基本情報', icon: '📝' },
+              { number: 2, label: 'スケジュール', icon: '📅' },
+              { number: 3, label: '確認', icon: '✓' },
+            ].map((step, index) => (
+              <div key={step.number} className="flex items-center">
+                <div className="flex flex-col items-center">
                   <div
-                    className={`h-2 rounded-full transition-all duration-500 ${
-                      step.number < currentStep
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                        : 'bg-gray-200'
-                    }`}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                    className={`
+                      flex items-center justify-center w-16 h-16 rounded-full border-2 text-lg font-bold shadow-lg transition-all duration-300 mb-3
+                      ${
+                        step.number === currentStep
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent scale-110'
+                          : step.number < currentStep
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent'
+                            : 'border-gray-300 text-gray-400 bg-white'
+                      }
+                    `}
+                  >
+                    {step.number < currentStep ? (
+                      <Check className="h-6 w-6" />
+                    ) : (
+                      <span className="text-2xl">
+                        {step.number === currentStep ? step.icon : step.number}
+                      </span>
+                    )}
+                  </div>
 
-        <div className="text-center bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {stepInfo.title}
-          </h2>
-          <p className="text-muted-foreground text-lg">{stepInfo.description}</p>
+                  <div className="text-center">
+                    <p
+                      className={`text-sm font-bold transition-colors duration-300 ${
+                        step.number === currentStep
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : step.number < currentStep
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-400'
+                      }`}
+                    >
+                      {step.label}
+                    </p>
+                    <p
+                      className={`text-xs mt-1 transition-colors duration-300 ${
+                        step.number === currentStep
+                          ? 'text-blue-500 dark:text-blue-300'
+                          : step.number < currentStep
+                            ? 'text-green-500 dark:text-green-300'
+                            : 'text-gray-400'
+                      }`}
+                    >
+                      STEP {step.number}
+                    </p>
+                  </div>
+                </div>
+
+                {index < 2 && (
+                  <div className="flex-1 mx-6 mt-8">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-500 ${
+                        step.number < currentStep
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                          : 'bg-gray-200'
+                      }`}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
