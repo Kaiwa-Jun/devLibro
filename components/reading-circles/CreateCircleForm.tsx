@@ -675,6 +675,13 @@ export function CreateCircleForm() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       読みたい本を選んでね 📖
                     </p>
+                    <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                        💡 <strong>複数選択時:</strong> 参加メンバーの投票で最終的な書籍を決定します
+                        <br />
+                        📖 <strong>1冊選択時:</strong> 自動的にその書籍に決定されます
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -727,7 +734,7 @@ export function CreateCircleForm() {
                     <div className="relative">
                       <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500 w-5 h-5" />
                       <Input
-                        placeholder="書籍名、著者名、ISBNで検索... 🔍"
+                        placeholder="書籍タイトルで検索... 🔍"
                         value={bookSearchQuery}
                         onChange={e => setBookSearchQuery(e.target.value)}
                         className="pl-12 h-14 text-lg rounded-2xl border-2 border-emerald-300 focus:border-emerald-500 hover:border-emerald-400 bg-white transition-all duration-200"
