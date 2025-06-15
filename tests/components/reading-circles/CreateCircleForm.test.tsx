@@ -59,10 +59,10 @@ describe('CreateCircleForm', () => {
   it('コンポーネントが正常にレンダリングされること', () => {
     render(<CreateCircleForm />);
 
-    expect(screen.getByText('ステップ 1: 基本情報')).toBeInTheDocument();
+    expect(screen.getByText('基本情報')).toBeInTheDocument();
     expect(screen.getByLabelText(/読書会タイトル/)).toBeInTheDocument();
-    expect(screen.getByLabelText('目的')).toBeInTheDocument();
-    expect(screen.getByLabelText('説明')).toBeInTheDocument();
+    expect(screen.getByLabelText('目的 🎯')).toBeInTheDocument();
+    expect(screen.getByLabelText('説明 📝')).toBeInTheDocument();
   });
 
   it('タイトルが100文字を超えるとエラーメッセージが表示されること', async () => {
@@ -83,7 +83,7 @@ describe('CreateCircleForm', () => {
     const user = userEvent.setup();
     render(<CreateCircleForm />);
 
-    const descriptionInput = screen.getByLabelText('説明');
+    const descriptionInput = screen.getByLabelText('説明 📝');
     const longDescription = 'a'.repeat(1001); // 1001文字
 
     await user.type(descriptionInput, longDescription);
@@ -98,7 +98,7 @@ describe('CreateCircleForm', () => {
     render(<CreateCircleForm />);
 
     // タイトルを空のままで次へボタンをクリック
-    const nextButton = screen.getByRole('button', { name: '次へ' });
+    const nextButton = screen.getByRole('button', { name: /次へ/ });
     await user.click(nextButton);
 
     // エラーメッセージが表示されることを確認
@@ -107,7 +107,7 @@ describe('CreateCircleForm', () => {
     });
 
     // ステップ1のままであることを確認
-    expect(screen.getByText('ステップ 1: 基本情報')).toBeInTheDocument();
+    expect(screen.getByText('基本情報')).toBeInTheDocument();
   });
 
   it('フォーム送信が正常に行われること', async () => {
@@ -131,20 +131,20 @@ describe('CreateCircleForm', () => {
 
     // ステップ1: 基本情報入力
     const titleInput = screen.getByLabelText(/読書会タイトル/);
-    const purposeInput = screen.getByLabelText('目的');
-    const descriptionInput = screen.getByLabelText('説明');
+    const purposeInput = screen.getByLabelText('目的 🎯');
+    const descriptionInput = screen.getByLabelText('説明 📝');
 
     await user.type(titleInput, 'テスト読書会');
     await user.type(purposeInput, 'TypeScript学習');
     await user.type(descriptionInput, 'TypeScriptの基礎を学びます');
 
     // ステップ2に進む
-    let nextButton = screen.getByRole('button', { name: '次へ' });
+    let nextButton = screen.getByRole('button', { name: /次へ/ });
     await user.click(nextButton);
 
     // ステップ2: スケジュール設定
     await waitFor(() => {
-      expect(screen.getByText('ステップ 2: スケジュール設定')).toBeInTheDocument();
+      expect(screen.getByText('スケジュール')).toBeInTheDocument();
     });
 
     // 時間帯を選択（月曜日の10時を選択）
@@ -152,12 +152,12 @@ describe('CreateCircleForm', () => {
     await user.click(mondaySlot);
 
     // ステップ3に進む
-    nextButton = screen.getByRole('button', { name: '次へ' });
+    nextButton = screen.getByRole('button', { name: /次へ/ });
     await user.click(nextButton);
 
     // ステップ3: 確認・作成
     await waitFor(() => {
-      expect(screen.getByText('ステップ 3: 確認・招待')).toBeInTheDocument();
+      expect(screen.getByText('確認')).toBeInTheDocument();
     });
 
     // 読書会を作成ボタンをクリック

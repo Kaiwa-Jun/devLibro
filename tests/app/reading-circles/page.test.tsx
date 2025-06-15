@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-import '@testing-library/jest-dom';
 import ReadingCirclesPage from '@/app/reading-circles/page';
+import '@testing-library/jest-dom';
 
 // Mock sample data for reading circles
 const mockReadingCircles = [
@@ -99,7 +99,7 @@ describe('ReadingCirclesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('輪読会')).toBeInTheDocument();
     });
-    expect(screen.getByText('みんなで本を読んで学びを深めよう')).toBeInTheDocument();
+    expect(screen.getByText('みんなで本を読んで学びを深めよう ✨')).toBeInTheDocument();
   });
 
   it('renders next event card', async () => {

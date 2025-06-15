@@ -1,7 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
-import '@testing-library/jest-dom';
 import ReadingCirclesHome from '@/components/reading-circles/ReadingCirclesHome';
+import '@testing-library/jest-dom';
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
@@ -75,7 +75,7 @@ describe('ReadingCirclesHome', () => {
     render(<ReadingCirclesHome myCircles={mockCircles} onCreateCircle={mockOnCreateCircle} />);
 
     expect(screen.getByText('輪読会')).toBeInTheDocument();
-    expect(screen.getByText('みんなで本を読んで学びを深めよう')).toBeInTheDocument();
+    expect(screen.getByText('みんなで本を読んで学びを深めよう ✨')).toBeInTheDocument();
   });
 
   it('renders create button and calls onCreateCircle when clicked', () => {
@@ -97,7 +97,7 @@ describe('ReadingCirclesHome', () => {
       />
     );
 
-    expect(screen.getAllByText('次回予定')).toHaveLength(2); // セクションタイトルとバッジ
+    expect(screen.getByText('次回予定 🎯')).toBeInTheDocument(); // セクションタイトル
     expect(screen.getByText('JavaScript入門輪読会')).toBeInTheDocument();
     expect(screen.getByText('JavaScript: The Good Parts')).toBeInTheDocument();
   });
@@ -105,13 +105,13 @@ describe('ReadingCirclesHome', () => {
   it('does not render next event section when nextEvent is not provided', () => {
     render(<ReadingCirclesHome myCircles={mockCircles} onCreateCircle={mockOnCreateCircle} />);
 
-    expect(screen.queryByText('次回予定')).not.toBeInTheDocument();
+    expect(screen.queryByText('次回予定 🎯')).not.toBeInTheDocument();
   });
 
   it('renders my reading circles section with tabs', () => {
     render(<ReadingCirclesHome myCircles={mockCircles} onCreateCircle={mockOnCreateCircle} />);
 
-    expect(screen.getByText('マイ輪読会')).toBeInTheDocument();
+    expect(screen.getByText('マイ輪読会 📚')).toBeInTheDocument();
     expect(screen.getByText('すべて (3)')).toBeInTheDocument();
     expect(screen.getByText('進行中 (1)')).toBeInTheDocument();
     expect(screen.getByText('募集中 (1)')).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('ReadingCirclesHome', () => {
 
     expect(screen.getByText('まだ参加している輪読会がありません')).toBeInTheDocument();
     expect(
-      screen.getByText('新しい輪読会を作成するか、既存の輪読会に参加してみましょう')
+      screen.getByText('新しい輪読会を作成するか、既存の輪読会に参加してみましょう 🚀')
     ).toBeInTheDocument();
 
     const createButton = screen.getByRole('button', { name: /最初の輪読会を作成/ });

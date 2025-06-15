@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 
-import '@testing-library/jest-dom';
 import MyReadingCircleCard from '@/components/reading-circles/MyReadingCircleCard';
+import '@testing-library/jest-dom';
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
@@ -81,7 +81,7 @@ describe('MyReadingCircleCard', () => {
     render(<MyReadingCircleCard circle={recruitingCircle} index={0} />);
 
     expect(screen.queryByText('読書進捗')).not.toBeInTheDocument();
-    expect(screen.getByText('参加者募集中です')).toBeInTheDocument();
+    expect(screen.getByText('参加者募集中です 🚀')).toBeInTheDocument();
   });
 
   it('does not render next meeting date when not provided', () => {
@@ -118,7 +118,7 @@ describe('MyReadingCircleCard', () => {
 
     render(<MyReadingCircleCard circle={recruitingCircle} index={0} />);
 
-    expect(screen.getByText('参加者募集中です')).toBeInTheDocument();
+    expect(screen.getByText('参加者募集中です 🚀')).toBeInTheDocument();
   });
 
   it('handles completed status correctly', () => {
