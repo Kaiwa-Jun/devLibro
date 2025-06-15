@@ -1,8 +1,8 @@
 'use client';
 
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { AlertCircle, Check, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,6 +11,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useDebounce } from '@/hooks/useDebounce';
+import { searchBooksWithSuggestions } from '@/lib/api/books';
+import { getSupabaseSession } from '@/lib/supabase';
+import { Book } from '@/types';
 
 interface TimeSlot {
   day: number;
@@ -22,7 +26,8 @@ interface FormData {
   title: string;
   purpose: string;
   description: string;
-  book_candidates: string[];
+  book_candidates: Book[];
+  selected_books: Book[];
   schedule_slots: TimeSlot[];
   max_participants: number;
   is_public: boolean;
@@ -38,15 +43,13 @@ export function CreateCircleForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
-  const [inviteUrl, setInviteUrl] = useState<string>('');
-  const [copied, setCopied] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
     purpose: '',
     description: '',
-    book_candidates: [''],
+    book_candidates: [],
+    selected_books: [],
     schedule_slots: [],
     max_participants: 10,
     is_public: true,
@@ -54,6 +57,72 @@ export function CreateCircleForm() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [bookSearchQuery, setBookSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Book[]>([]);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const debouncedSearchTerm = useDebounce(bookSearchQuery, 500);
+
+  // 書籍検索の実行
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      handleBookSearch(true);
+    } else {
+      setSearchResults([]);
+      setHasMoreResults(false);
+      setCurrentPage(0);
+    }
+  }, [debouncedSearchTerm]);
+
+  const handleBookSearch = async (isNewSearch = false) => {
+    if (!debouncedSearchTerm.trim()) return;
+
+    const pageToLoad = isNewSearch ? 0 : currentPage + 1;
+    const startIndex = pageToLoad * 20;
+
+    if (isNewSearch) {
+      setIsSearching(true);
+      setSearchResults([]);
+      setCurrentPage(0);
+    } else {
+      setIsLoadingMore(true);
+    }
+
+    try {
+      const { books, hasMore: moreAvailable } = await searchBooksWithSuggestions(
+        debouncedSearchTerm,
+        startIndex,
+        20
+      );
+
+      if (isNewSearch) {
+        setSearchResults(books);
+      } else {
+        setSearchResults(prev => [...prev, ...books]);
+      }
+
+      setHasMoreResults(moreAvailable);
+      setCurrentPage(pageToLoad);
+    } catch (error) {
+      console.error('検索エラー:', error);
+      if (isNewSearch) {
+        setSearchResults([]);
+      }
+      setHasMoreResults(false);
+    } finally {
+      setIsSearching(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleLoadMoreResults = () => {
+    if (!isLoadingMore && hasMoreResults) {
+      handleBookSearch(false);
+    }
+  };
 
   // バリデーション
   const validateStep = (step: number): boolean => {
@@ -65,15 +134,14 @@ export function CreateCircleForm() {
       } else if (formData.title.length > 100) {
         newErrors.title = 'タイトルは100文字以内で入力してください';
       }
-
       if (formData.description.length > 1000) {
         newErrors.description = '説明は1000文字以内で入力してください';
       }
     }
 
     if (step === 2) {
-      if (formData.schedule_slots.filter(slot => slot.selected).length === 0) {
-        newErrors.schedule = '少なくとも1つのタイムスロットを選択してください';
+      if (formData.schedule_slots.length === 0) {
+        newErrors.schedule = '少なくとも1つの時間帯を選択してください';
       }
     }
 
@@ -81,27 +149,26 @@ export function CreateCircleForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 書籍候補の追加
-  const addBookCandidate = () => {
+  // 検索結果から書籍を選択
+  const handleBookSelect = (book: Book) => {
+    // 既に選択されているかチェック
+    if (formData.book_candidates.some(b => b.id === book.id)) {
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
-      book_candidates: [...prev.book_candidates, ''],
+      book_candidates: [...prev.book_candidates, book],
     }));
+    setBookSearchQuery('');
+    setSearchResults([]);
   };
 
-  // 書籍候補の削除
-  const removeBookCandidate = (index: number) => {
+  // 選択された書籍を削除
+  const removeSelectedBook = (index: number) => {
     setFormData(prev => ({
       ...prev,
       book_candidates: prev.book_candidates.filter((_, i) => i !== index),
-    }));
-  };
-
-  // 書籍候補の更新
-  const updateBookCandidate = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      book_candidates: prev.book_candidates.map((book, i) => (i === index ? value : book)),
     }));
   };
 
@@ -133,17 +200,6 @@ export function CreateCircleForm() {
     return formData.schedule_slots.some(slot => slot.day === day && slot.hour === hour);
   };
 
-  // URLコピー機能
-  const copyInviteUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('URLのコピーに失敗しました:', err);
-    }
-  };
-
   // ステップナビゲーション
   const handleNext = () => {
     if (validateStep(currentStep)) {
@@ -167,41 +223,66 @@ export function CreateCircleForm() {
     setError('');
 
     try {
-      // スケジュールスロットを従来の形式に変換
-      const schedule_candidates = formData.schedule_slots.map(slot => ({
-        day_of_week: slot.day,
-        start_time: `${slot.hour.toString().padStart(2, '0')}:00`,
-        end_time: `${(slot.hour + 1).toString().padStart(2, '0')}:00`,
-      }));
+      const requestBody = {
+        title: formData.title,
+        purpose: formData.purpose,
+        description: formData.description,
+        book_candidates: formData.book_candidates.map(book => book.isbn || book.id), // ISBNを優先、なければIDを使用
+        selected_books: formData.book_candidates, // 書籍の詳細情報を追加
+        schedule_candidates: formData.schedule_slots
+          .filter(slot => slot.selected)
+          .map(slot => ({
+            day_of_week: slot.day,
+            start_time: `${String(slot.hour).padStart(2, '0')}:00`,
+            end_time: `${String(slot.hour + 1).padStart(2, '0')}:00`,
+          })),
+        max_participants: formData.max_participants,
+        is_public: formData.is_public,
+        requires_approval: formData.requires_approval,
+      };
+
+      console.log('リクエストデータ:', {
+        requestBody,
+        authToken: await getSupabaseSession(),
+        hasAuthToken: !!(await getSupabaseSession()),
+        bookIds: requestBody.book_candidates,
+        bookIdsTypes: requestBody.book_candidates.map((id: string | number) => typeof id),
+      });
 
       const response = await fetch('/api/reading-circles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${await getSupabaseSession()}`,
         },
-        credentials: 'include', // Cookieを含めて送信
-        body: JSON.stringify({
-          ...formData,
-          schedule_candidates,
-          book_candidates: formData.book_candidates.filter(book => book.trim() !== ''),
-        }),
+        credentials: 'include',
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('APIレスポンス:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('APIエラー:', errorData);
         throw new Error(errorData.error || '読書会の作成に失敗しました');
       }
 
-      const result = await response.json();
-      setInviteUrl(result.invite_url);
-      setSuccess('読書会が作成されました！');
+      const responseData = await response.json();
+      console.log('APIレスポンスデータ:', responseData);
 
-      // 成功後は詳細ページに遷移
-      setTimeout(() => {
-        router.push(`/reading-circles/${result.id}`);
-      }, 3000);
+      // 成功後はすぐに詳細ページに遷移
+      router.push(`/reading-circles/${responseData.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '読書会の作成に失敗しました');
+      console.error('Error in form submission:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : '読書会の作成に失敗しました。しばらく待ってから再度お試しください。'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -279,13 +360,6 @@ export function CreateCircleForm() {
             </Alert>
           )}
 
-          {success && (
-            <Alert className="mb-6">
-              <Check className="h-4 w-4" />
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
           {/* ステップ 1: 基本情報 */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -294,7 +368,20 @@ export function CreateCircleForm() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={e => {
+                    const newTitle = e.target.value;
+                    setFormData(prev => ({ ...prev, title: newTitle }));
+
+                    // リアルタイムバリデーション
+                    if (newTitle.length > 100) {
+                      setErrors(prev => ({
+                        ...prev,
+                        title: 'タイトルは100文字以内で入力してください',
+                      }));
+                    } else {
+                      setErrors(prev => ({ ...prev, title: '' }));
+                    }
+                  }}
                   placeholder="例: TypeScript実践入門 輪読会"
                   className={errors.title ? 'border-red-500' : ''}
                 />
@@ -316,7 +403,20 @@ export function CreateCircleForm() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={e => {
+                    const newDescription = e.target.value;
+                    setFormData(prev => ({ ...prev, description: newDescription }));
+
+                    // リアルタイムバリデーション
+                    if (newDescription.length > 1000) {
+                      setErrors(prev => ({
+                        ...prev,
+                        description: '説明は1000文字以内で入力してください',
+                      }));
+                    } else {
+                      setErrors(prev => ({ ...prev, description: '' }));
+                    }
+                  }}
                   placeholder="例: 週1回のペースで進め、章ごとに担当者を決めて発表形式で行います。質疑応答の時間も設けて理解を深めます。"
                   rows={4}
                   className={errors.description ? 'border-red-500' : ''}
@@ -329,36 +429,142 @@ export function CreateCircleForm() {
 
               <div>
                 <Label>対象書籍（候補）</Label>
-                <div className="space-y-2 mt-2">
-                  {formData.book_candidates.map((book, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={book}
-                        onChange={e => updateBookCandidate(index, e.target.value)}
-                        placeholder={`書籍候補 ${index + 1}: 例: TypeScript実践入門`}
-                        className="flex-1"
-                      />
-                      {formData.book_candidates.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeBookCandidate(index)}
+                <div className="space-y-4 mt-2">
+                  {/* 選択された書籍の表示 */}
+                  {formData.book_candidates.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">選択された書籍:</p>
+                      {formData.book_candidates.map((book, _index) => (
+                        <div
+                          key={book.id}
+                          className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50 cursor-pointer"
+                          onClick={() => removeSelectedBook(_index)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              removeSelectedBook(_index);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${book.title}を削除`}
                         >
-                          ×
-                        </Button>
-                      )}
+                          <img
+                            src={book.img_url}
+                            alt={book.title}
+                            className="w-12 h-16 object-cover rounded flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm line-clamp-2">{book.title}</h4>
+                            <p className="text-xs text-gray-600">{book.author}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addBookCandidate}
-                    className="mt-2"
-                  >
-                    書籍候補を追加
-                  </Button>
+                  )}
+
+                  {/* 書籍検索フィールド */}
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        placeholder="書籍名、著者名、ISBNで検索..."
+                        value={bookSearchQuery}
+                        onChange={e => setBookSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+
+                    {/* 検索結果 */}
+                    {bookSearchQuery && (
+                      <div className="max-h-80 overflow-y-auto border rounded-lg">
+                        {isSearching && (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                            <span>検索中...</span>
+                          </div>
+                        )}
+
+                        {!isSearching && searchResults.length === 0 && bookSearchQuery && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            検索結果が見つかりませんでした
+                          </div>
+                        )}
+
+                        {!isSearching && searchResults.length > 0 && (
+                          <div className="p-2">
+                            <div className="space-y-2">
+                              {searchResults.map(book => (
+                                <div
+                                  key={book.id}
+                                  className="cursor-pointer hover:bg-gray-50 p-2 rounded-lg border"
+                                  onClick={() => handleBookSelect(book)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      handleBookSelect(book);
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={book.img_url}
+                                      alt={book.title}
+                                      className="w-12 h-16 object-cover rounded flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-sm line-clamp-2 mb-1">
+                                        {book.title}
+                                      </h4>
+                                      <p className="text-xs text-muted-foreground">{book.author}</p>
+                                      {book.categories && book.categories.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {book.categories.slice(0, 2).map((category, index) => (
+                                            <span
+                                              key={index}
+                                              className="text-xs bg-muted px-2 py-0.5 rounded"
+                                            >
+                                              {category}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <Button variant="outline" size="sm">
+                                      選択
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* もっと見るボタン */}
+                            {hasMoreResults && (
+                              <div className="flex justify-center mt-3 pt-3 border-t">
+                                <Button
+                                  variant="outline"
+                                  onClick={handleLoadMoreResults}
+                                  disabled={isLoadingMore}
+                                  size="sm"
+                                >
+                                  {isLoadingMore ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                      読み込み中...
+                                    </>
+                                  ) : (
+                                    'もっと見る'
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -402,11 +608,12 @@ export function CreateCircleForm() {
                         <div className="h-8 flex items-center justify-center text-xs text-gray-600">
                           {hour}:00
                         </div>
-                        {DAYS_OF_WEEK.map((_, dayIndex) => (
+                        {DAYS_OF_WEEK.map((day, dayIndex) => (
                           <button
                             key={`${dayIndex}-${hour}`}
                             type="button"
                             onClick={() => toggleTimeSlot(dayIndex, hour)}
+                            aria-label={`${day}曜日 ${hour}:00-${hour + 1}:00`}
                             className={`
                               h-8 rounded border text-xs transition-colors
                               ${
@@ -432,124 +639,108 @@ export function CreateCircleForm() {
           {/* ステップ 3: 確認・招待 */}
           {currentStep === 3 && (
             <div className="space-y-6">
-              {!success && (
-                <>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">入力内容の確認</h3>
+
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">入力内容の確認</h3>
+                    <p className="font-medium">読書会タイトル</p>
+                    <p className="text-gray-700">{formData.title}</p>
+                  </div>
 
-                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">読書会タイトル</p>
-                        <p className="text-gray-700">{formData.title}</p>
-                      </div>
+                  {formData.purpose && (
+                    <div>
+                      <p className="font-medium">目的</p>
+                      <p className="text-gray-700">{formData.purpose}</p>
+                    </div>
+                  )}
 
-                      {formData.purpose && (
-                        <div>
-                          <p className="font-medium">目的</p>
-                          <p className="text-gray-700">{formData.purpose}</p>
+                  {formData.description && (
+                    <div>
+                      <p className="font-medium">説明</p>
+                      <p className="text-gray-700">{formData.description}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="font-medium">対象書籍</p>
+                    <div className="text-gray-700">
+                      {/* 選択された書籍を優先表示 */}
+                      {formData.book_candidates.length > 0 && (
+                        <div className="space-y-2 mb-3">
+                          {formData.book_candidates.map((book, _index) => (
+                            <div key={book.id} className="flex items-center gap-2 text-sm">
+                              <img
+                                src={book.img_url}
+                                alt={book.title}
+                                className="w-8 h-10 object-cover rounded flex-shrink-0"
+                              />
+                              <div>
+                                <div className="font-medium">{book.title}</div>
+                                <div className="text-xs text-gray-600">{book.author}</div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
 
-                      {formData.description && (
-                        <div>
-                          <p className="font-medium">説明</p>
-                          <p className="text-gray-700">{formData.description}</p>
-                        </div>
+                      {formData.book_candidates.length === 0 && (
+                        <p className="text-gray-500">未選択</p>
                       )}
-
-                      <div>
-                        <p className="font-medium">対象書籍</p>
-                        <ul className="text-gray-700">
-                          {formData.book_candidates
-                            .filter(book => book.trim() !== '')
-                            .map((book, index) => (
-                              <li key={index}>• {book}</li>
-                            ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="font-medium">選択されたタイムスロット</p>
-                        <div className="text-gray-700">
-                          {formData.schedule_slots.length > 0 ? (
-                            <ul>
-                              {formData.schedule_slots.map((slot, index) => (
-                                <li key={index}>
-                                  • {DAYS_OF_WEEK[slot.day]}曜日 {slot.hour}:00-{slot.hour + 1}:00
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-gray-500">未選択</p>
-                          )}
-                        </div>
-                      </div>
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isSubmitting ? '作成中...' : '読書会を作成'}
-                  </Button>
-                </>
-              )}
-
-              {success && inviteUrl && (
-                <div className="text-center space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-green-600">
-                      読書会が作成されました！
-                    </h3>
-
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <p className="font-medium mb-2">招待URL</p>
-                      <div className="flex items-center gap-2">
-                        <Input value={inviteUrl} readOnly className="flex-1" />
-                        <Button onClick={copyInviteUrl} variant="outline" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {copied && (
-                        <p className="text-green-600 text-sm mt-2">URLをコピーしました！</p>
+                  <div>
+                    <p className="font-medium">選択されたタイムスロット</p>
+                    <div className="text-gray-700">
+                      {formData.schedule_slots.length > 0 ? (
+                        <ul>
+                          {formData.schedule_slots.map((slot, index) => (
+                            <li key={index}>
+                              • {DAYS_OF_WEEK[slot.day]}曜日 {slot.hour}:00-{slot.hour + 1}:00
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-500">未選択</p>
                       )}
                     </div>
-
-                    <p className="text-gray-600 text-sm">
-                      この招待URLを共有して、参加者を募集しましょう。
-                      <br />
-                      3秒後に読書会詳細ページに移動します。
-                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full" size="lg">
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    作成中...
+                  </>
+                ) : (
+                  '読書会を作成'
+                )}
+              </Button>
             </div>
           )}
 
           {/* ナビゲーションボタン */}
-          {!success && (
-            <div className="flex justify-between mt-8 pt-6 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentStep === 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                前へ
-              </Button>
+          <div className="flex justify-between mt-8 pt-6 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              前へ
+            </Button>
 
-              {currentStep < 3 && (
-                <Button type="button" onClick={handleNext}>
-                  次へ
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              )}
-            </div>
-          )}
+            {currentStep < 3 ? (
+              <Button type="button" onClick={handleNext}>
+                次へ
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     </div>

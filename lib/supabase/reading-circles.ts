@@ -18,6 +18,12 @@ export interface ReadingCircle {
   member_count?: number;
   max_participants?: number;
   progress?: number;
+  schedule_candidates?: Array<{
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+  }>;
 }
 
 export interface ReadingCircleMember {
@@ -48,7 +54,8 @@ export async function getReadingCircles(): Promise<ReadingCircle[]> {
     const { data: circles, error } = await supabase.from('bookclubs').select(`
         *,
         bookclub_members(*),
-        bookclub_progress(*)
+        bookclub_progress(*),
+        bookclub_schedule_candidates(*)
       `);
 
     if (error) {
@@ -108,6 +115,7 @@ export async function getReadingCircles(): Promise<ReadingCircle[]> {
           member_count: Array.isArray(circle.bookclub_members) ? circle.bookclub_members.length : 1,
           max_participants: 10, // デフォルト値
           progress,
+          schedule_candidates: circle.bookclub_schedule_candidates || [],
         };
       }) || [];
 

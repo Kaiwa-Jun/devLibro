@@ -19,7 +19,11 @@ export default function ScanPage() {
   const [scannedBook, setScannedBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { setSearchTerm, resetPagination, setUseRakuten } = useSearchStore();
+  const {
+    setSearchTerm: _setSearchTerm,
+    resetPagination: _resetPagination,
+    setUseRakuten,
+  } = useSearchStore();
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
 
   const { user, loading } = useAuth();
@@ -91,7 +95,7 @@ export default function ScanPage() {
         }
         // NotFoundException の場合は何もしない（読み取り継続）
       });
-    } catch (err) {
+    } catch (_err) {
       setError('カメラの初期化に失敗しました。ページを再読み込みして再度お試しください。');
       setIsScanning(false);
     }
@@ -129,7 +133,7 @@ export default function ScanPage() {
         // スキャンを停止
         stopScanning();
       }
-    } catch (err) {
+    } catch (_err) {
       setError('書籍情報の取得に失敗しました。再度お試しください。');
       setIsScanning(false);
     }

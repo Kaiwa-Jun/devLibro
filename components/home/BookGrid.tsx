@@ -19,7 +19,7 @@ export default function BookGrid() {
   const [loading, setLoading] = useState(true);
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [hasMoreAllBooks, setHasMoreAllBooks] = useState(false);
-  const [allBooksPage, setAllBooksPage] = useState(0);
+  const [_allBooksPage, _setAllBooksPage] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // 検索ストアから状態を取得

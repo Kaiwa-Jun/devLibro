@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Users, Calendar, BookOpen } from 'lucide-react';
+import { BookOpen, Calendar, Clock, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -22,11 +22,25 @@ interface MyReadingCircleCardProps {
     status: ReadingCircleStatus;
     nextMeetingDate?: string;
     description: string;
+    scheduleCandidates?: Array<{
+      id: string;
+      day_of_week: number;
+      start_time: string;
+      end_time: string;
+    }>;
+    book_candidates?: Array<{
+      id: string;
+      title: string;
+      cover: string;
+    }>;
   };
   index: number;
 }
 
 export default function MyReadingCircleCard({ circle, index }: MyReadingCircleCardProps) {
+  // 曜日の表示用配列
+  const DAYS_OF_WEEK = ['日', '月', '火', '水', '木', '金', '土'];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -87,10 +101,32 @@ export default function MyReadingCircleCard({ circle, index }: MyReadingCircleCa
             {/* 募集中の場合の追加情報 */}
             {circle.status === 'recruiting' && (
               <div className="pt-2 border-t border-muted">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <BookOpen className="h-4 w-4" />
                   <span>参加者募集中です</span>
                 </div>
+
+                {/* スケジュール候補の表示 */}
+                {circle.scheduleCandidates && circle.scheduleCandidates.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>開催候補日時:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {circle.scheduleCandidates.slice(0, 3).map((schedule, _idx) => (
+                        <span key={schedule.id} className="text-xs bg-muted px-2 py-0.5 rounded">
+                          {DAYS_OF_WEEK[schedule.day_of_week]} {schedule.start_time}
+                        </span>
+                      ))}
+                      {circle.scheduleCandidates.length > 3 && (
+                        <span className="text-xs text-muted-foreground">
+                          他{circle.scheduleCandidates.length - 3}件
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

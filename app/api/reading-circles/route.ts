@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createApiRouteSupabaseClient } from '@/lib/supabase/server';
@@ -8,7 +9,19 @@ export interface CreateReadingCircleRequest {
   title: string;
   purpose?: string;
   description?: string;
-  book_candidates?: number[];
+  book_candidates?: (number | string)[];
+  selected_books?: Array<{
+    id: string;
+    isbn: string;
+    title: string;
+    author: string;
+    language: string;
+    categories: string[];
+    img_url: string;
+    description?: string;
+    programmingLanguages?: string[];
+    frameworks?: string[];
+  }>;
   schedule_candidates?: ScheduleCandidate[];
   max_participants?: number;
   is_public?: boolean;
@@ -32,26 +45,87 @@ export interface ReadingCircleResponse {
   created_at: string;
   member_count: number;
   max_participants: number;
-  book_candidates?: number[];
+  book_candidates?: (number | string)[];
   schedule_candidates?: ScheduleCandidate[];
 }
 
 // 読書会作成API
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createApiRouteSupabaseClient();
+    // 環境変数の確認
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // 認証チェック
+    console.log('環境変数チェック:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
+      urlStart: supabaseUrl?.substring(0, 30) + '...',
+    });
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Supabase環境変数が設定されていません');
+    }
+
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('Authorization');
+    console.log('認証情報:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderStart: authHeader?.substring(0, 20) + '...',
+    });
+
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.log('認証ヘッダーが不正です');
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // トークンを使用してSupabaseクライアントを作成
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
+
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(token);
+
+    console.log('認証チェック結果:', {
+      hasUser: !!user,
+      userId: user?.id,
+      authError: authError?.message,
+    });
 
     if (authError || !user) {
+      console.log('認証エラー:', { authError });
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
 
     const body: CreateReadingCircleRequest = await request.json();
+    console.log('リクエストボディ:', {
+      title: body.title,
+      hasBookCandidates: !!body.book_candidates,
+      bookCandidatesLength: body.book_candidates?.length,
+      firstBookId: body.book_candidates?.[0],
+      allBookIds: body.book_candidates,
+      bodyFull: JSON.stringify(body, null, 2),
+    });
+
+    // booksテーブルのスキーマ確認（デバッグ用）
+    const { data: sampleBooks, error: sampleError } = await supabase
+      .from('books')
+      .select('id')
+      .limit(3);
+
+    console.log('booksテーブルのサンプルデータ:', {
+      sampleBooks,
+      sampleError: sampleError?.message,
+      idTypes: sampleBooks?.map(book => ({ id: book.id, type: typeof book.id })),
+    });
 
     // バリデーション
     if (!body.title || body.title.trim().length === 0) {
@@ -107,6 +181,7 @@ export async function POST(request: NextRequest) {
           title: body.title.trim(),
           purpose: body.purpose?.trim(),
           description: body.description?.trim(),
+          book_id: null, // 後で書籍候補から設定
           status: 'recruiting',
           invite_url: inviteUrl,
           created_by: user.id,
@@ -115,9 +190,21 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
+    console.log('bookclub作成結果:', {
+      success: !createError,
+      error: createError?.message,
+      code: createError?.code,
+      details: createError?.details,
+      userId: user.id,
+      bookclubData: bookclub,
+    });
+
     if (createError) {
       console.error('Error creating bookclub:', createError);
-      return NextResponse.json({ error: '読書会の作成に失敗しました' }, { status: 500 });
+      return NextResponse.json(
+        { error: `読書会の作成に失敗しました: ${createError.message}` },
+        { status: 500 }
+      );
     }
 
     // 作成者をメンバーとして追加
@@ -133,25 +220,178 @@ export async function POST(request: NextRequest) {
       console.error('Error adding organizer as member:', memberError);
       // 読書会を削除してロールバック
       await supabase.from('bookclubs').delete().eq('id', bookclub.id);
-      return NextResponse.json({ error: 'メンバー追加に失敗しました' }, { status: 500 });
+      return NextResponse.json(
+        { error: `メンバー追加に失敗しました: ${memberError.message}` },
+        { status: 500 }
+      );
     }
 
     // 読書会設定を追加
+    console.log('bookclub_settings挿入前のチェック:', {
+      bookclub_id: bookclub.id,
+      user_id: user.id,
+      settingsData: {
+        bookclub_id: bookclub.id,
+        max_participants: body.max_participants || 10,
+        is_public: body.is_public !== false,
+        requires_approval: body.requires_approval || false,
+      },
+    });
+
     const { error: settingsError } = await supabase.from('bookclub_settings').insert([
       {
         bookclub_id: bookclub.id,
         max_participants: body.max_participants || 10,
         is_public: body.is_public !== false,
         requires_approval: body.requires_approval || false,
-        settings_json: {
-          book_candidates: body.book_candidates || [],
-        },
+        settings_json: {},
       },
     ]);
 
     if (settingsError) {
-      console.error('Error creating bookclub settings:', settingsError);
-      // ロールバック処理は省略（実際の本番環境では適切な処理を追加）
+      console.error('Error creating bookclub settings:', {
+        error: settingsError,
+        message: settingsError?.message,
+        code: settingsError?.code,
+        details: settingsError?.details,
+        hint: settingsError?.hint,
+      });
+
+      // ロールバック処理
+      await supabase.from('bookclub_members').delete().eq('bookclub_id', bookclub.id);
+      await supabase.from('bookclubs').delete().eq('id', bookclub.id);
+      return NextResponse.json(
+        { error: `読書会設定の作成に失敗しました: ${settingsError?.message || 'Unknown error'}` },
+        { status: 500 }
+      );
+    }
+
+    // 書籍候補の処理
+    if (body.book_candidates && body.book_candidates.length > 0) {
+      console.log('書籍候補の追加:', {
+        bookclub_id: bookclub.id,
+        book_candidates: body.book_candidates,
+        book_candidates_types: body.book_candidates.map((id: string | number) => typeof id),
+      });
+
+      // 選択された書籍の詳細情報を取得
+      const selectedBooks = body.selected_books || [];
+
+      // 書籍をデータベースに保存して数値IDを取得
+      const bookIdMapping = new Map<string, number>();
+
+      for (const selectedBook of selectedBooks) {
+        try {
+          console.log(
+            `Processing book: ${selectedBook.title} (ID: ${selectedBook.id}, ISBN: ${selectedBook.isbn})`
+          );
+
+          // まずISBNで既存の書籍を検索
+          let existingBook = null;
+          if (selectedBook.isbn) {
+            const { data: isbnBook, error: isbnError } = await supabase
+              .from('books')
+              .select('id')
+              .eq('isbn', selectedBook.isbn)
+              .single();
+
+            if (!isbnError && isbnBook) {
+              existingBook = isbnBook;
+              console.log(
+                `Found existing book by ISBN: ${selectedBook.isbn}, DB ID: ${isbnBook.id}`
+              );
+            }
+          }
+
+          // ISBNで見つからない場合はタイトルと著者で検索
+          if (!existingBook && selectedBook.title && selectedBook.author) {
+            const { data: titleBook, error: titleError } = await supabase
+              .from('books')
+              .select('id')
+              .eq('title', selectedBook.title)
+              .eq('author', selectedBook.author)
+              .single();
+
+            if (!titleError && titleBook) {
+              existingBook = titleBook;
+              console.log(
+                `Found existing book by title/author: ${selectedBook.title}, DB ID: ${titleBook.id}`
+              );
+            }
+          }
+
+          // 既存の書籍が見つからない場合は新規保存
+          if (!existingBook) {
+            console.log(`Saving new book: ${selectedBook.title}`);
+
+            const bookToSave = {
+              isbn:
+                selectedBook.isbn ||
+                `N-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+              title: selectedBook.title,
+              author: selectedBook.author || '不明',
+              language: selectedBook.language || '日本語',
+              categories: selectedBook.categories || [],
+              img_url: selectedBook.img_url || '',
+              description: selectedBook.description || '',
+              programming_languages: selectedBook.programmingLanguages || [],
+              frameworks: selectedBook.frameworks || [],
+            };
+
+            const { data: newBook, error: saveError } = await supabase
+              .from('books')
+              .insert([bookToSave])
+              .select('id')
+              .single();
+
+            if (saveError) {
+              console.error(`Failed to save book ${selectedBook.title}:`, saveError);
+              continue;
+            }
+
+            existingBook = newBook;
+            console.log(`Saved new book: ${selectedBook.title}, DB ID: ${newBook.id}`);
+          }
+
+          // マッピングに追加
+          bookIdMapping.set(selectedBook.id, existingBook.id);
+        } catch (error) {
+          console.error(`Error processing book ${selectedBook.id}:`, error);
+        }
+      }
+
+      // 数値IDを使用して書籍候補を保存
+      const validBookIds: number[] = [];
+      for (const candidateId of body.book_candidates) {
+        const candidateIdStr = String(candidateId);
+        const dbId = bookIdMapping.get(candidateIdStr);
+        if (dbId) {
+          validBookIds.push(dbId);
+        }
+      }
+
+      console.log('Valid book IDs for candidates:', validBookIds);
+
+      if (validBookIds.length > 0) {
+        const bookCandidatesData = validBookIds.map((bookId, index) => ({
+          bookclub_id: bookclub.id,
+          book_id: bookId,
+          is_selected: index === 0, // 最初の書籍を選択状態にする
+        }));
+
+        const { error: candidatesError } = await supabase
+          .from('bookclub_book_candidates')
+          .insert(bookCandidatesData);
+
+        if (candidatesError) {
+          console.error('書籍候補の追加エラー:', candidatesError);
+          throw candidatesError;
+        }
+
+        console.log('書籍候補を正常に追加しました');
+      } else {
+        console.log('No valid book IDs found, skipping book candidates');
+      }
     }
 
     // スケジュール候補を追加
@@ -169,7 +409,14 @@ export async function POST(request: NextRequest) {
 
       if (scheduleError) {
         console.error('Error adding schedule candidates:', scheduleError);
-        // ロールバック処理は省略
+        // ロールバック処理
+        await supabase.from('bookclub_settings').delete().eq('bookclub_id', bookclub.id);
+        await supabase.from('bookclub_members').delete().eq('bookclub_id', bookclub.id);
+        await supabase.from('bookclubs').delete().eq('id', bookclub.id);
+        return NextResponse.json(
+          { error: `スケジュール候補の追加に失敗しました: ${scheduleError.message}` },
+          { status: 500 }
+        );
       }
     }
 
@@ -192,7 +439,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error('Reading circle creation error:', error);
-    return NextResponse.json({ error: '読書会の作成に失敗しました' }, { status: 500 });
+    // エラーオブジェクトの詳細な情報を出力
+    const errorDetails = {
+      message: error instanceof Error ? error.message : '不明なエラー',
+      stack: error instanceof Error ? error.stack : undefined,
+      details: error,
+    };
+    console.error('Error details:', errorDetails);
+
+    // エラーメッセージを適切に返す
+    const errorMessage = error instanceof Error ? error.message : '読書会の作成に失敗しました';
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -210,7 +474,17 @@ export async function GET(request: NextRequest) {
       *,
       bookclub_members(count),
       bookclub_settings(max_participants, is_public),
-      bookclub_schedule_candidates(*)
+      bookclub_schedule_candidates(*),
+      bookclub_book_candidates(
+        book_id,
+        is_selected,
+        books(
+          id,
+          title,
+          author,
+          img_url
+        )
+      )
     `);
 
     // ステータスフィルター
@@ -249,6 +523,8 @@ export async function GET(request: NextRequest) {
         max_participants: bookclub.bookclub_settings?.[0]?.max_participants || 10,
         is_public: bookclub.bookclub_settings?.[0]?.is_public || true,
         schedule_candidates: bookclub.bookclub_schedule_candidates || [],
+        book_candidates:
+          bookclub.bookclub_book_candidates?.map((bc: { book_id: number }) => bc.book_id) || [],
       })) || [];
 
     return NextResponse.json({ bookclubs: formattedBookclubs });

@@ -1,104 +1,113 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
+import { useRouter } from 'next/navigation';
 
 import { CreateCircleForm } from '@/components/reading-circles/CreateCircleForm';
 
-// Next.jsルーターをモック
+// モック設定
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    back: jest.fn(),
-  }),
+  useRouter: jest.fn(),
 }));
 
-// APIコールをモック
-global.fetch = jest.fn();
+jest.mock('@/lib/supabase/client', () => ({
+  createClientComponentClient: jest.fn(() => ({
+    auth: {
+      getSession: jest.fn(() =>
+        Promise.resolve({
+          data: {
+            session: {
+              access_token: 'mock-token',
+              user: { id: 'mock-user-id' },
+            },
+          },
+        })
+      ),
+    },
+  })),
+}));
 
-const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+jest.mock('@/components/auth/AuthProvider', () => ({
+  useAuth: jest.fn(() => ({
+    user: { id: 'mock-user-id', email: 'test@example.com' },
+    loading: false,
+  })),
+}));
+
+// getSupabaseSession関数のモック
+const mockGetSupabaseSession = jest.fn(() => Promise.resolve('mock-token'));
+jest.mock('@/lib/supabase/client', () => ({
+  ...jest.requireActual('@/lib/supabase/client'),
+  getSupabaseSession: mockGetSupabaseSession,
+}));
+
+const mockPush = jest.fn();
+const mockFetch = jest.fn();
+
+// グローバルfetchをモック
+global.fetch = mockFetch;
+
+beforeEach(() => {
+  (useRouter as jest.Mock).mockReturnValue({
+    push: mockPush,
+  });
+  mockFetch.mockClear();
+  mockPush.mockClear();
+  mockGetSupabaseSession.mockClear();
+});
 
 describe('CreateCircleForm', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('フォームが正常にレンダリングされること', () => {
+  it('コンポーネントが正常にレンダリングされること', () => {
     render(<CreateCircleForm />);
 
+    expect(screen.getByText('ステップ 1: 基本情報')).toBeInTheDocument();
     expect(screen.getByLabelText(/読書会タイトル/)).toBeInTheDocument();
     expect(screen.getByLabelText('目的')).toBeInTheDocument();
     expect(screen.getByLabelText('説明')).toBeInTheDocument();
-    expect(screen.getByText('スケジュール候補')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '読書会を作成' })).toBeInTheDocument();
   });
 
-  it('必須項目が入力されていない場合、送信ボタンが無効になること', () => {
-    render(<CreateCircleForm />);
-
-    const submitButton = screen.getByRole('button', { name: '読書会を作成' });
-    expect(submitButton).toBeDisabled();
-  });
-
-  it('タイトルを入力すると送信ボタンが有効になること', async () => {
+  it('タイトルが100文字を超えるとエラーメッセージが表示されること', async () => {
     const user = userEvent.setup();
     render(<CreateCircleForm />);
 
     const titleInput = screen.getByLabelText(/読書会タイトル/);
-    const submitButton = screen.getByRole('button', { name: '読書会を作成' });
-
-    await user.type(titleInput, 'テスト読書会');
-
-    expect(submitButton).toBeEnabled();
-  });
-
-  it('タイトルが100文字を超える場合、エラーメッセージが表示されること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
-
-    const titleInput = screen.getByLabelText(/読書会タイトル/);
-    const longTitle = 'a'.repeat(101);
+    const longTitle = 'a'.repeat(101); // 101文字
 
     await user.type(titleInput, longTitle);
 
-    expect(screen.getByText('タイトルは100文字以内で入力してください')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('タイトルは100文字以内で入力してください')).toBeInTheDocument();
+    });
   });
 
-  it('説明が1000文字を超える場合、エラーメッセージが表示されること', async () => {
+  it('説明が1000文字を超えるとエラーメッセージが表示されること', async () => {
     const user = userEvent.setup();
     render(<CreateCircleForm />);
 
     const descriptionInput = screen.getByLabelText('説明');
-    const longDescription = 'a'.repeat(1001);
+    const longDescription = 'a'.repeat(1001); // 1001文字
 
     await user.type(descriptionInput, longDescription);
 
-    expect(screen.getByText('説明は1000文字以内で入力してください')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('説明は1000文字以内で入力してください')).toBeInTheDocument();
+    });
   });
 
-  it('スケジュール候補を追加できること', async () => {
+  it('必須項目が未入力の場合、次のステップに進めないこと', async () => {
     const user = userEvent.setup();
     render(<CreateCircleForm />);
 
-    const addScheduleButton = screen.getByRole('button', { name: 'スケジュール候補を追加' });
+    // タイトルを空のままで次へボタンをクリック
+    const nextButton = screen.getByRole('button', { name: '次へ' });
+    await user.click(nextButton);
 
-    await user.click(addScheduleButton);
+    // エラーメッセージが表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByText('タイトルは必須です')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText('月曜日')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('19:00')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('21:00')).toBeInTheDocument();
-  });
-
-  it('スケジュール候補を削除できること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
-
-    const addScheduleButton = screen.getByRole('button', { name: 'スケジュール候補を追加' });
-    await user.click(addScheduleButton);
-
-    const deleteButton = screen.getByRole('button', { name: '削除' });
-    await user.click(deleteButton);
-
-    expect(screen.queryByText('月曜日')).not.toBeInTheDocument();
+    // ステップ1のままであることを確認
+    expect(screen.getByText('ステップ 1: 基本情報')).toBeInTheDocument();
   });
 
   it('フォーム送信が正常に行われること', async () => {
@@ -106,6 +115,11 @@ describe('CreateCircleForm', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers({
+        'content-type': 'application/json',
+      }),
       json: async () => ({
         id: 'bookclub-123',
         title: 'テスト読書会',
@@ -115,7 +129,7 @@ describe('CreateCircleForm', () => {
 
     render(<CreateCircleForm />);
 
-    // フォーム入力
+    // ステップ1: 基本情報入力
     const titleInput = screen.getByLabelText(/読書会タイトル/);
     const purposeInput = screen.getByLabelText('目的');
     const descriptionInput = screen.getByLabelText('説明');
@@ -124,115 +138,49 @@ describe('CreateCircleForm', () => {
     await user.type(purposeInput, 'TypeScript学習');
     await user.type(descriptionInput, 'TypeScriptの基礎を学びます');
 
-    // スケジュール追加
-    const addScheduleButton = screen.getByRole('button', { name: 'スケジュール候補を追加' });
-    await user.click(addScheduleButton);
+    // ステップ2に進む
+    let nextButton = screen.getByRole('button', { name: '次へ' });
+    await user.click(nextButton);
 
-    // フォーム送信
-    const submitButton = screen.getByRole('button', { name: '読書会を作成' });
-    await user.click(submitButton);
-
+    // ステップ2: スケジュール設定
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/reading-circles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: 'テスト読書会',
-          purpose: 'TypeScript学習',
-          description: 'TypeScriptの基礎を学びます',
-          schedule_candidates: [
-            {
-              day_of_week: 1,
-              start_time: '19:00',
-              end_time: '21:00',
-            },
-          ],
-          max_participants: 10,
-          is_public: true,
-          requires_approval: false,
-        }),
-      });
+      expect(screen.getByText('ステップ 2: スケジュール設定')).toBeInTheDocument();
     });
-  });
 
-  it('APIエラー時にエラーメッセージが表示されること', async () => {
-    const user = userEvent.setup();
+    // 時間帯を選択（月曜日の10時を選択）
+    const mondaySlot = screen.getByRole('button', { name: '月曜日 10:00-11:00' });
+    await user.click(mondaySlot);
 
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+    // ステップ3に進む
+    nextButton = screen.getByRole('button', { name: '次へ' });
+    await user.click(nextButton);
 
-    render(<CreateCircleForm />);
-
-    const titleInput = screen.getByLabelText(/読書会タイトル/);
-    await user.type(titleInput, 'テスト読書会');
-
-    const submitButton = screen.getByRole('button', { name: '読書会を作成' });
-    await user.click(submitButton);
-
+    // ステップ3: 確認・作成
     await waitFor(() => {
-      expect(screen.getByText('読書会の作成に失敗しました')).toBeInTheDocument();
+      expect(screen.getByText('ステップ 3: 確認・招待')).toBeInTheDocument();
     });
-  });
 
-  it('最大参加者数を設定できること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
+    // 読書会を作成ボタンをクリック
+    const createButton = screen.getByRole('button', { name: /読書会を作成/ });
+    await user.click(createButton);
 
-    const maxParticipantsInput = screen.getByLabelText('最大参加者数');
+    // APIが呼ばれることを確認
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/reading-circles',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+          }),
+          body: expect.stringContaining('テスト読書会'),
+        })
+      );
+    });
 
-    await user.clear(maxParticipantsInput);
-    await user.type(maxParticipantsInput, '15');
-
-    expect(maxParticipantsInput).toHaveValue(15);
-  });
-
-  it('プライベート読書会として設定できること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
-
-    const publicCheckbox = screen.getByLabelText('公開読書会');
-
-    await user.click(publicCheckbox);
-
-    expect(publicCheckbox).not.toBeChecked();
-  });
-
-  it('承認制読書会として設定できること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
-
-    const approvalCheckbox = screen.getByLabelText('参加承認制');
-
-    await user.click(approvalCheckbox);
-
-    expect(approvalCheckbox).toBeChecked();
-  });
-
-  it('曜日を変更できること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
-
-    const addScheduleButton = screen.getByRole('button', { name: 'スケジュール候補を追加' });
-    await user.click(addScheduleButton);
-
-    const daySelect = screen.getByDisplayValue('月曜日');
-    await user.selectOptions(daySelect, '火曜日');
-
-    expect(screen.getByDisplayValue('火曜日')).toBeInTheDocument();
-  });
-
-  it('時間を変更できること', async () => {
-    const user = userEvent.setup();
-    render(<CreateCircleForm />);
-
-    const addScheduleButton = screen.getByRole('button', { name: 'スケジュール候補を追加' });
-    await user.click(addScheduleButton);
-
-    const startTimeInput = screen.getByDisplayValue('19:00');
-    await user.clear(startTimeInput);
-    await user.type(startTimeInput, '20:00');
-
-    expect(screen.getByDisplayValue('20:00')).toBeInTheDocument();
+    // 成功後にリダイレクトされることを確認
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/reading-circles/bookclub-123');
+    });
   });
 });

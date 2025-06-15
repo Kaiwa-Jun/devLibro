@@ -88,7 +88,7 @@ export default function ReviewList({ bookId }: ReviewListProps) {
                       userName = String(userObject.display_name);
                     }
                   }
-                } catch (e) {
+                } catch (_e) {
                   // 何もしない - デフォルトのユーザー名を使用
                 }
               }

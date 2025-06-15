@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Dynamic renderingを強制（ビルド時のstatic generationを回避）
 export const dynamic = 'force-dynamic';
@@ -54,6 +54,7 @@ export default function ReadingCirclesPage() {
       status: circle.status,
       nextMeetingDate,
       description: circle.description || '',
+      scheduleCandidates: circle.schedule_candidates || [],
     };
   });
 
