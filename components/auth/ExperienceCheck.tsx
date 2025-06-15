@@ -34,7 +34,7 @@ export default function ExperienceCheck() {
           if (shouldShowModal) {
             setShowWelcomeModal(true);
           }
-        } catch (error) {
+        } catch (_error) {
           // エラー処理
         } finally {
           setCheckingExperience(false);

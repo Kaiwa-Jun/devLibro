@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Plus, Calendar, BookOpen, Users } from 'lucide-react';
+import { BookOpen, Calendar, Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,12 @@ interface ReadingCircle {
   status: ReadingCircleStatus;
   nextMeetingDate?: string;
   description: string;
+  scheduleCandidates?: Array<{
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+  }>;
 }
 
 interface NextEvent {

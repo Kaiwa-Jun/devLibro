@@ -70,7 +70,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
 
       toast.success('経験年数を設定しました');
       onClose();
-    } catch (error) {
+    } catch (_error) {
       toast.error('プロフィールの更新に失敗しました');
     } finally {
       setIsSaving(false);
