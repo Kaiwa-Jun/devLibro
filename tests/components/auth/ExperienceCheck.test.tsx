@@ -16,7 +16,7 @@ jest.mock('@/lib/supabase/client', () => ({
 jest.mock('@/components/modals/WelcomeModal', () => {
   return {
     __esModule: true,
-    default: jest.fn(({ isOpen, onClose }) => {
+    default: jest.fn(({ isOpen, onClose: _onClose }) => {
       return isOpen ? <div data-testid="welcome-modal">WelcomeModal</div> : null;
     }),
   };

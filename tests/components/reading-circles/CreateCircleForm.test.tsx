@@ -33,6 +33,31 @@ jest.mock('@/components/auth/AuthProvider', () => ({
   })),
 }));
 
+// BookSearchComponentのモック
+jest.mock('@/components/book/BookSearchComponent', () => ({
+  BookSearchComponent: ({
+    onBookSelect,
+  }: {
+    onBookSelect: (book: { id: string; title: string; author: string; img_url: string }) => void;
+  }) => (
+    <div data-testid="book-search-component">
+      <input placeholder="書籍タイトルを検索" />
+      <button
+        onClick={() =>
+          onBookSelect({
+            id: 'test-book-1',
+            title: 'テスト書籍',
+            author: 'テスト著者',
+            img_url: 'https://example.com/book.jpg',
+          })
+        }
+      >
+        テスト書籍を選択
+      </button>
+    </div>
+  ),
+}));
+
 // getSupabaseSession関数のモック
 const mockGetSupabaseSession = jest.fn(() => Promise.resolve('mock-token'));
 jest.mock('@/lib/supabase/client', () => ({
@@ -59,11 +84,13 @@ describe('CreateCircleForm', () => {
   it('コンポーネントが正常にレンダリングされること', () => {
     render(<CreateCircleForm />);
 
-    expect(screen.getByText('ステップ 1: 基本情報')).toBeInTheDocument();
+    // 新しいプログレスバーのテキストを確認
+    expect(screen.getByText('基本情報')).toBeInTheDocument();
+    expect(screen.getByText('STEP 1')).toBeInTheDocument();
     expect(screen.getByLabelText(/読書会タイトル/)).toBeInTheDocument();
     expect(screen.getByLabelText('目的')).toBeInTheDocument();
     expect(screen.getByLabelText('説明')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('書籍名、著者名、ISBNで検索...')).toBeInTheDocument();
+    expect(screen.getByTestId('book-search-component')).toBeInTheDocument();
   });
 
   it('タイトルが100文字を超えるとエラーメッセージが表示されること', async () => {
@@ -106,8 +133,9 @@ describe('CreateCircleForm', () => {
     // エラーメッセージが表示されることを確認
     expect(screen.getByText('タイトルは必須です')).toBeInTheDocument();
 
-    // ステップ1のままであることを確認
-    expect(screen.getByText('ステップ 1: 基本情報')).toBeInTheDocument();
+    // ステップ1のままであることを確認（新しいUI）
+    expect(screen.getByText('基本情報')).toBeInTheDocument();
+    expect(screen.getByText('STEP 1')).toBeInTheDocument();
   });
 
   it('フォーム送信が正常に行われること', async () => {
@@ -142,14 +170,15 @@ describe('CreateCircleForm', () => {
     const nextButton = screen.getByRole('button', { name: '次へ' });
     await user.click(nextButton);
 
-    // ステップ2: スケジュール設定
+    // ステップ2: スケジュール設定（新しいUI）
     await waitFor(() => {
-      expect(screen.getByText('ステップ 2: スケジュール設定')).toBeInTheDocument();
+      expect(screen.getByText('スケジュール')).toBeInTheDocument();
+      expect(screen.getByText('STEP 2')).toBeInTheDocument();
     });
 
     // このテストでは、スケジュール選択の複雑なUIテストをスキップし、
     // 基本的なフォーム機能のテストに集中します
-    expect(screen.getByText('開催可能な日時を選択してください')).toBeInTheDocument();
+    expect(screen.getByText('📅 開催可能な日時を選択してください')).toBeInTheDocument();
 
     // テストの目的を達成したので、ここで終了
     // 実際のアプリケーションでは、ユーザーがスケジュールを選択してから次に進みます

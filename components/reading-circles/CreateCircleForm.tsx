@@ -1,27 +1,18 @@
 'use client';
 
-import {
-  AlertCircle,
-  ArrowLeft,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Search,
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
+import { BookSearchComponent } from '@/components/book/BookSearchComponent';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useDebounce } from '@/hooks/useDebounce';
-import { searchBooksWithSuggestions } from '@/lib/api/books';
 import { getSupabaseSession } from '@/lib/supabase';
 import { Book } from '@/types';
 
@@ -66,12 +57,6 @@ export function CreateCircleForm() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [bookSearchQuery, setBookSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Book[]>([]);
-  const [hasMoreResults, setHasMoreResults] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // ドラッグ選択用の状態
   const [isDragging, setIsDragging] = useState(false);
@@ -79,18 +64,44 @@ export function CreateCircleForm() {
   const [dragEnd, setDragEnd] = useState<{ day: number; hour: number } | null>(null);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
 
-  const debouncedSearchTerm = useDebounce(bookSearchQuery, 500);
+  // ドラッグ終了
+  const handleMouseUp = useCallback(() => {
+    if (isDragging && dragStart && dragEnd) {
+      const slotsInRange = getSlotsInDragRange(dragStart, dragEnd);
 
-  // 書籍検索の実行
-  useEffect(() => {
-    if (debouncedSearchTerm) {
-      handleBookSearch(true);
-    } else {
-      setSearchResults([]);
-      setHasMoreResults(false);
-      setCurrentPage(0);
+      setFormData(prev => {
+        const newScheduleSlots = [...prev.schedule_slots];
+
+        slotsInRange.forEach(({ day, hour }) => {
+          const existingIndex = newScheduleSlots.findIndex(
+            slot => slot.day === day && slot.hour === hour
+          );
+
+          if (dragMode === 'select') {
+            // 選択モード：まだ選択されていないスロットを追加
+            if (existingIndex === -1) {
+              newScheduleSlots.push({ day, hour, selected: true });
+            }
+          } else {
+            // 選択解除モード：選択されているスロットを削除
+            if (existingIndex >= 0) {
+              newScheduleSlots.splice(existingIndex, 1);
+            }
+          }
+        });
+
+        return {
+          ...prev,
+          schedule_slots: newScheduleSlots,
+        };
+      });
     }
-  }, [debouncedSearchTerm]);
+
+    // ドラッグ状態をリセット
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  }, [isDragging, dragStart, dragEnd, dragMode]);
 
   // グローバルマウスイベントリスナーの設定（ドラッグ機能用）
   useEffect(() => {
@@ -118,54 +129,7 @@ export function CreateCircleForm() {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.body.style.userSelect = ''; // テキスト選択を復元
     };
-  }, [isDragging]);
-
-  const handleBookSearch = async (isNewSearch = false) => {
-    if (!debouncedSearchTerm.trim()) return;
-
-    const pageToLoad = isNewSearch ? 0 : currentPage + 1;
-    const startIndex = pageToLoad * 20;
-
-    if (isNewSearch) {
-      setIsSearching(true);
-      setSearchResults([]);
-      setCurrentPage(0);
-    } else {
-      setIsLoadingMore(true);
-    }
-
-    try {
-      const { books, hasMore: moreAvailable } = await searchBooksWithSuggestions(
-        debouncedSearchTerm,
-        startIndex,
-        20
-      );
-
-      if (isNewSearch) {
-        setSearchResults(books);
-      } else {
-        setSearchResults(prev => [...prev, ...books]);
-      }
-
-      setHasMoreResults(moreAvailable);
-      setCurrentPage(pageToLoad);
-    } catch (error) {
-      console.error('検索エラー:', error);
-      if (isNewSearch) {
-        setSearchResults([]);
-      }
-      setHasMoreResults(false);
-    } finally {
-      setIsSearching(false);
-      setIsLoadingMore(false);
-    }
-  };
-
-  const handleLoadMoreResults = () => {
-    if (!isLoadingMore && hasMoreResults) {
-      handleBookSearch(false);
-    }
-  };
+  }, [isDragging, handleMouseUp]);
 
   // バリデーション
   const validateStep = (step: number): boolean => {
@@ -203,8 +167,6 @@ export function CreateCircleForm() {
       ...prev,
       book_candidates: [...prev.book_candidates, book],
     }));
-    setBookSearchQuery('');
-    setSearchResults([]);
   };
 
   // 選択された書籍を削除
@@ -292,45 +254,6 @@ export function CreateCircleForm() {
     if (isDragging && dragStart) {
       setDragEnd({ day, hour });
     }
-  };
-
-  // ドラッグ終了
-  const handleMouseUp = () => {
-    if (isDragging && dragStart && dragEnd) {
-      const slotsInRange = getSlotsInDragRange(dragStart, dragEnd);
-
-      setFormData(prev => {
-        const newScheduleSlots = [...prev.schedule_slots];
-
-        slotsInRange.forEach(({ day, hour }) => {
-          const existingIndex = newScheduleSlots.findIndex(
-            slot => slot.day === day && slot.hour === hour
-          );
-
-          if (dragMode === 'select') {
-            // 選択モード：まだ選択されていないスロットを追加
-            if (existingIndex === -1) {
-              newScheduleSlots.push({ day, hour, selected: true });
-            }
-          } else {
-            // 選択解除モード：選択されているスロットを削除
-            if (existingIndex >= 0) {
-              newScheduleSlots.splice(existingIndex, 1);
-            }
-          }
-        });
-
-        return {
-          ...prev,
-          schedule_slots: newScheduleSlots,
-        };
-      });
-    }
-
-    // ドラッグ状態をリセット
-    setIsDragging(false);
-    setDragStart(null);
-    setDragEnd(null);
   };
 
   // ステップナビゲーション
@@ -709,11 +632,30 @@ export function CreateCircleForm() {
                             tabIndex={0}
                             aria-label={`${book.title}を削除`}
                           >
-                            <img
-                              src={book.img_url}
-                              alt={book.title}
-                              className="w-16 h-20 object-cover rounded-lg flex-shrink-0 shadow-md"
-                            />
+                            <div className="w-16 h-20 flex-shrink-0 rounded-lg shadow-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                              {book.img_url ? (
+                                <img
+                                  src={book.img_url}
+                                  alt={book.title}
+                                  className="w-full h-full object-cover"
+                                  onError={e => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.innerHTML =
+                                        '<div class="text-gray-400 text-xs text-center p-1">📚<br/>No Image</div>';
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="text-gray-400 text-xs text-center p-1">
+                                  📚
+                                  <br />
+                                  No Image
+                                </div>
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-white mb-1">
                                 {book.title}
@@ -729,115 +671,12 @@ export function CreateCircleForm() {
                     </div>
                   )}
 
-                  {/* 書籍検索フィールド */}
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-500 w-5 h-5" />
-                      <Input
-                        placeholder="書籍タイトルで検索... 🔍"
-                        value={bookSearchQuery}
-                        onChange={e => setBookSearchQuery(e.target.value)}
-                        className="pl-12 h-14 text-lg rounded-2xl border-2 border-emerald-300 focus:border-emerald-500 hover:border-emerald-400 bg-white transition-all duration-200"
-                      />
-                    </div>
-
-                    {/* 検索結果 */}
-                    {bookSearchQuery && (
-                      <div className="max-h-80 overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl border-2 border-emerald-200 dark:border-emerald-700">
-                        {isSearching && (
-                          <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 animate-spin mr-3 text-emerald-500" />
-                            <span className="text-lg text-emerald-600">検索中... 🔍</span>
-                          </div>
-                        )}
-
-                        {!isSearching && searchResults.length === 0 && bookSearchQuery && (
-                          <div className="text-center py-12 text-gray-500">
-                            <div className="text-4xl mb-2">😅</div>
-                            <p className="text-lg">検索結果が見つかりませんでした</p>
-                            <p className="text-sm">別のキーワードで試してみてください</p>
-                          </div>
-                        )}
-
-                        {!isSearching && searchResults.length > 0 && (
-                          <div className="p-4">
-                            <div className="space-y-3">
-                              {searchResults.map(book => (
-                                <div
-                                  key={book.id}
-                                  className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 p-4 rounded-xl border-2 border-transparent hover:border-emerald-200 dark:hover:border-emerald-700 transition-all duration-200 hover:shadow-md"
-                                  onClick={() => handleBookSelect(book)}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      handleBookSelect(book);
-                                    }
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                >
-                                  <div className="flex items-center gap-4">
-                                    <img
-                                      src={book.img_url}
-                                      alt={book.title}
-                                      className="w-16 h-20 object-cover rounded-lg flex-shrink-0 shadow-md"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <h4 className="font-bold text-lg line-clamp-2 mb-2 text-gray-900 dark:text-white">
-                                        {book.title}
-                                      </h4>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                        {book.author}
-                                      </p>
-                                      {book.categories && book.categories.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                          {book.categories.slice(0, 2).map((category, index) => (
-                                            <span
-                                              key={index}
-                                              className="text-xs bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full font-medium"
-                                            >
-                                              {category}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500 hover:border-emerald-600 rounded-xl px-4 py-2 font-medium"
-                                    >
-                                      選択 ✨
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* もっと見るボタン */}
-                            {hasMoreResults && (
-                              <div className="flex justify-center mt-6 pt-4 border-t-2 border-emerald-100">
-                                <Button
-                                  onClick={handleLoadMoreResults}
-                                  disabled={isLoadingMore}
-                                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl px-8 py-3 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                                >
-                                  {isLoadingMore ? (
-                                    <>
-                                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                      読み込み中... ⏳
-                                    </>
-                                  ) : (
-                                    <>もっと見る 👀</>
-                                  )}
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  {/* 書籍検索 */}
+                  <BookSearchComponent
+                    onBookSelect={handleBookSelect}
+                    placeholder="書籍タイトルで検索... 🔍"
+                    excludeBooks={formData.book_candidates}
+                  />
                 </div>
               </div>
             </div>
@@ -1016,11 +855,26 @@ export function CreateCircleForm() {
                         <div className="space-y-2 mb-3">
                           {formData.book_candidates.map((book, _index) => (
                             <div key={book.id} className="flex items-center gap-2 text-sm">
-                              <img
-                                src={book.img_url}
-                                alt={book.title}
-                                className="w-8 h-10 object-cover rounded flex-shrink-0"
-                              />
+                              <div className="w-8 h-10 flex-shrink-0 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+                                {book.img_url ? (
+                                  <img
+                                    src={book.img_url}
+                                    alt={book.title}
+                                    className="w-full h-full object-cover"
+                                    onError={e => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const parent = target.parentElement;
+                                      if (parent) {
+                                        parent.innerHTML =
+                                          '<div class="text-gray-400 text-xs text-center p-1">📚</div>';
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="text-gray-400 text-xs text-center p-1">📚</div>
+                                )}
+                              </div>
                               <div>
                                 <div className="font-medium">{book.title}</div>
                                 <div className="text-xs text-gray-600">{book.author}</div>

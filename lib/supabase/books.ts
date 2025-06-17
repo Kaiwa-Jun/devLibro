@@ -115,74 +115,22 @@ export const saveBookToDB = async (book: Book): Promise<Book | null> => {
       return str.slice(0, 2000);
     };
 
-    // まず、DBでこの書籍が既に存在するか一括で確認
-    const existingBook = null;
+    // 既存の書籍をチェック（ISBNまたはIDで）
+    const { data: books, error: selectError } = await supabase
+      .from('books')
+      .select('*')
+      .or(`isbn.eq.${book.isbn || 'null'},id.eq.${book.id}`)
+      .limit(1);
 
-    // 書籍IDで検索（Google Books ID）
-    if (book.id) {
-      try {
-        // 方法1: [GBID:xxx] パターンで検索
-        const gbidPattern = `[GBID:${book.id}]`;
-        const { data: gbData1, error: gbError1 } = await supabase
-          .from('books')
-          .select('*')
-          .ilike('description', `%${gbidPattern}%`)
-          .limit(1);
-
-        if (!gbError1 && gbData1 && gbData1.length > 0) {
-          console.log('Google Books IDパターンで既存の書籍を発見:', gbData1[0]);
-          return formatBookFromDB(gbData1[0]);
-        }
-
-        // 方法2: より広い検索パターン
-        const { data: gbData2, error: gbError2 } = await supabase
-          .from('books')
-          .select('*')
-          .or(`description.ilike.%${book.id}%`)
-          .limit(1);
-
-        if (!gbError2 && gbData2 && gbData2.length > 0) {
-          console.log('広い検索パターンで既存の書籍を発見:', gbData2[0]);
-          return formatBookFromDB(gbData2[0]);
-        }
-      } catch (error) {
-        console.error('Google Books IDでの検索エラー:', error);
-      }
+    if (selectError) {
+      console.error('書籍検索エラー:', selectError);
+      throw selectError;
     }
 
-    // ISBNで検索（存在する場合、かつ一時的に生成されたものでない場合）
-    if (book.isbn && !book.isbn.startsWith('N-')) {
-      try {
-        const { data: isbnData, error: isbnError } = await supabase
-          .from('books')
-          .select('*')
-          .eq('isbn', book.isbn)
-          .limit(1);
-
-        if (!isbnError && isbnData && isbnData.length > 0) {
-          console.log('ISBNで既存の書籍を発見:', isbnData[0]);
-          return formatBookFromDB(isbnData[0]);
-        }
-      } catch (error) {
-        console.error('ISBNでの検索エラー:', error);
-      }
-    }
-
-    // タイトルと著者で検索（より厳密な重複チェック）
-    try {
-      const { data: titleData, error: titleError } = await supabase
-        .from('books')
-        .select('*')
-        .eq('title', book.title)
-        .eq('author', book.author || '不明')
-        .limit(1);
-
-      if (!titleError && titleData && titleData.length > 0) {
-        console.log('タイトルと著者で既存の書籍を発見:', titleData[0]);
-        return formatBookFromDB(titleData[0]);
-      }
-    } catch (error) {
-      console.error('タイトルと著者での検索エラー:', error);
+    // 既存の書籍が見つかった場合はそれを返す
+    if (books && books.length > 0) {
+      console.log('既存の書籍が見つかりました:', books[0]);
+      return books[0] as Book;
     }
 
     // プログラミング言語とフレームワークを検出

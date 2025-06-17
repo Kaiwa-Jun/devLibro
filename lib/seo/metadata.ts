@@ -185,12 +185,6 @@ export function generateBookPageMetadata({
   noIndex?: boolean;
 }): Metadata {
   const fullUrl = `${siteConfig.url}${path}`;
-  const originalImageUrl = bookImage?.startsWith('http')
-    ? bookImage
-    : `${siteConfig.url}${bookImage}`;
-  const optimizedImageUrl = bookImage
-    ? processBookImageForTwitterCard(originalImageUrl)
-    : originalImageUrl;
 
   return {
     title: title,
