@@ -58,9 +58,9 @@ export function BookSearchComponent({
     [excludeBooks]
   );
 
-  // 検索関数（ページ番号と結果リセットフラグを引数に追加）
+  // 書籍検索処理
   const handleSearch = useCallback(
-    async (currentPage = 1, resetResults = false) => {
+    async (searchPage: number = 1, resetResults: boolean = true) => {
       if (!debouncedSearchTerm) return;
 
       if (resetResults) {
@@ -70,22 +70,24 @@ export function BookSearchComponent({
       }
 
       try {
-        console.log(`📚 [書籍検索] "${debouncedSearchTerm}" を検索中... (ページ: ${currentPage})`);
+        console.log(`📚 [書籍検索] 開始: "${debouncedSearchTerm}" (ページ: ${searchPage})`);
 
-        // データベースと楽天Books APIの両方から検索
-        const [dbResults, rakutenResults] = await Promise.all([
-          searchBooksByTitleInDB(debouncedSearchTerm, 10),
-          searchRakutenBooksWithPagination(debouncedSearchTerm, currentPage, 20),
-        ]);
-
-        console.log(
-          `📚 [書籍検索] 結果: DBから${dbResults.length}件、楽天から${rakutenResults.books.length}件`
+        // 楽天ブックスAPIで検索
+        const rakutenResults = await searchRakutenBooksWithPagination(
+          debouncedSearchTerm,
+          searchPage,
+          20
         );
+        console.log(`📚 [楽天ブックス] 検索結果: ${rakutenResults.books.length}件`);
 
-        // 重複を削除するためにISBNベースで結合
-        const combinedResults = [...dbResults];
+        // DBから検索
+        const dbResults = await searchBooksByTitleInDB(debouncedSearchTerm, 20);
+        console.log(`📚 [DB] 検索結果: ${dbResults.length}件`);
 
-        // データベースに存在しない書籍のみを楽天結果から追加
+        // 結果を結合（重複除去）
+        const combinedResults: Book[] = [...dbResults];
+
+        // 楽天の結果をDBの結果と重複チェックして追加
         rakutenResults.books.forEach(rakutenBook => {
           // まずISBNで重複チェック
           if (rakutenBook.isbn) {
@@ -118,9 +120,11 @@ export function BookSearchComponent({
           setSearchResults(filteredResults);
         } else {
           // 既存の結果と重複を取り除いて結合
-          const existingIds = new Set(searchResults.map(book => book.id));
-          const newResults = filteredResults.filter(book => !existingIds.has(book.id));
-          setSearchResults(prev => [...prev, ...newResults]);
+          setSearchResults(prev => {
+            const existingIds = new Set(prev.map(book => book.id));
+            const newResults = filteredResults.filter(book => !existingIds.has(book.id));
+            return [...prev, ...newResults];
+          });
         }
       } catch (error) {
         console.error('書籍検索エラー:', error);
@@ -132,7 +136,7 @@ export function BookSearchComponent({
         }
       }
     },
-    [debouncedSearchTerm, isBookExcluded, searchResults]
+    [debouncedSearchTerm, isBookExcluded]
   );
 
   // 追加結果をロード
