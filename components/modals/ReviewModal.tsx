@@ -86,7 +86,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
     try {
       const displayType = postType === 'named' ? 'custom' : 'anon';
 
-      const { data, error } = await addReview({
+      const { error } = await addReview({
         bookId,
         userId: user.id,
         difficulty,
@@ -125,6 +125,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
       // レビュー追加イベントを発行
       reviewEvents.emit(REVIEW_ADDED, { bookId });
 
+      console.log('Review saved successfully');
       onClose();
     } catch (error: unknown) {
       console.error('レビュー保存中に例外が発生しました:', error);

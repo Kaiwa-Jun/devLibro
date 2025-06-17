@@ -64,8 +64,9 @@ export const useFilterStore = create<FilterState>(set => ({
 
   clearFilters: () => set({ difficulty: [], language: [], category: [], framework: [] }),
 
-  clearFiltersByType: type =>
-    set(state => ({
-      [type]: [],
-    })),
+  clearFiltersByType: _type =>
+    set(_state => {
+      const newState = { difficulty: [], language: [], category: [], framework: [] };
+      return newState;
+    }),
 }));

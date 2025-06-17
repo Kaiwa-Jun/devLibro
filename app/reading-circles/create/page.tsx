@@ -1,13 +1,10 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { CreateCircleForm } from '@/components/reading-circles/CreateCircleForm';
-import { Button } from '@/components/ui/button';
 
 export default function CreateReadingCirclePage() {
   const { user, loading } = useAuth();
@@ -35,15 +32,6 @@ export default function CreateReadingCirclePage() {
   return (
     <div className="min-h-screen bg-background pt-16 pb-16 md:pb-0">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/reading-circles">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold">新しい読書会を作成</h1>
-        </div>
-
         <CreateCircleForm />
       </div>
     </div>

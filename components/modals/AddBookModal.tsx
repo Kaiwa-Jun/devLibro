@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Loader2, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import CongratulationsModal from '@/components/modals/CongratulationsModal';
@@ -86,19 +86,125 @@ export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps
     }
   };
 
-  // 検索語が変更されたときにリセットして再検索
+  // 書籍がユーザーの本棚に既に存在するかチェック
+  const isBookInUserLibrary = (book: Book): boolean => {
+    return userBooks.some(userBook => {
+      // ISBNがある場合はISBNでマッチング
+      if (book.isbn && userBook.book.isbn) {
+        return book.isbn === userBook.book.isbn;
+      }
+      // ISBNがない場合はタイトルと著者でマッチング
+      return (
+        book.title.toLowerCase() === userBook.book.title.toLowerCase() &&
+        book.author.toLowerCase() === userBook.book.author.toLowerCase()
+      );
+    });
+  };
+
+  // 検索関数（ページ番号と結果リセットフラグを引数に追加）
+  const handleSearch = useCallback(
+    async (currentPage = 1, resetResults = false) => {
+      if (!debouncedSearchTerm) return;
+
+      if (resetResults) {
+        setIsSearching(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      try {
+        console.log(`📚 [楽天検索] "${debouncedSearchTerm}" を検索中... (ページ: ${currentPage})`);
+
+        // データベースと楽天Books APIの両方から検索
+        const [dbResults, rakutenResults] = await Promise.all([
+          searchBooksByTitleInDB(debouncedSearchTerm, 10),
+          searchRakutenBooksWithPagination(debouncedSearchTerm, currentPage, 20),
+        ]);
+
+        console.log(
+          `📚 [楽天検索] 結果: DBから${dbResults.length}件、楽天から${rakutenResults.books.length}件`
+        );
+
+        // 重複を削除するためにISBNベースで結合
+        const combinedResults = [...dbResults];
+
+        // データベースに存在しない書籍のみを楽天結果から追加
+        rakutenResults.books.forEach(rakutenBook => {
+          // まずISBNで重複チェック
+          if (rakutenBook.isbn) {
+            const existsInDB = dbResults.some(dbBook => dbBook.isbn === rakutenBook.isbn);
+            if (!existsInDB) {
+              combinedResults.push(rakutenBook);
+              return;
+            }
+          }
+
+          // 次にタイトルで重複チェック
+          const existsInDB = dbResults.some(
+            dbBook => dbBook.title.toLowerCase() === rakutenBook.title.toLowerCase()
+          );
+
+          if (!existsInDB) {
+            combinedResults.push(rakutenBook);
+          }
+        });
+
+        // ユーザーの本棚に既に存在する書籍を除外
+        const filteredResults = combinedResults.filter(book => !isBookInUserLibrary(book));
+
+        console.log(`📚 [楽天検索] フィルター後: ${filteredResults.length}件`);
+
+        // 次のページがあるかどうかを判定
+        setHasMore(rakutenResults.hasMore);
+
+        if (resetResults) {
+          setSearchResults(filteredResults);
+        } else {
+          // 既存の結果と重複を取り除いて結合
+          const existingIds = new Set(searchResults.map(book => book.id));
+          const newResults = filteredResults.filter(book => !existingIds.has(book.id));
+          setSearchResults(prev => [...prev, ...newResults]);
+        }
+
+        if (filteredResults.length === 0 && combinedResults.length > 0) {
+          toast.info('検索結果はありますが、すべての書籍が既にあなたの本棚に追加されています');
+        }
+      } catch (error) {
+        console.error('書籍検索エラー:', error);
+        toast.error('検索中にエラーが発生しました');
+      } finally {
+        if (resetResults) {
+          setIsSearching(false);
+        } else {
+          setIsLoadingMore(false);
+        }
+      }
+    },
+    [debouncedSearchTerm, searchResults, userBooks, isBookInUserLibrary]
+  );
+
+  // 検索語が変更されたときの処理
   useEffect(() => {
+    setPage(1);
     if (debouncedSearchTerm) {
-      // 検索語が変わったら検索結果をリセット
       setSearchResults([]);
-      setPage(1);
       setHasMore(true);
       handleSearch(1, true);
     } else {
       setSearchResults([]);
       setHasMore(false);
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, handleSearch]);
+
+  // 追加結果をロード
+  const loadMoreResults = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !debouncedSearchTerm) return;
+
+    const nextPage = page + 1;
+    setIsLoadingMore(true);
+    await handleSearch(nextPage, false);
+    setPage(nextPage);
+  }, [isLoadingMore, hasMore, debouncedSearchTerm, page, handleSearch]);
 
   // Intersection Observerを設定
   useEffect(() => {
@@ -121,111 +227,14 @@ export default function AddBookModal({ onClose, onBookAdded }: AddBookModalProps
         observerRef.current.disconnect();
       }
     };
-  }, [hasMore, isSearching, isLoadingMore, debouncedSearchTerm, loadingRef.current]);
-
-  // 書籍がユーザーの本棚に既に存在するかチェック
-  const isBookInUserLibrary = (book: Book): boolean => {
-    return userBooks.some(userBook => {
-      // ISBNがある場合はISBNでマッチング
-      if (book.isbn && userBook.book.isbn) {
-        return book.isbn === userBook.book.isbn;
-      }
-      // ISBNがない場合はタイトルと著者でマッチング
-      return (
-        book.title.toLowerCase() === userBook.book.title.toLowerCase() &&
-        book.author.toLowerCase() === userBook.book.author.toLowerCase()
-      );
-    });
-  };
-
-  // 追加結果をロード
-  const loadMoreResults = async () => {
-    if (isLoadingMore || !hasMore || !debouncedSearchTerm) return;
-
-    const nextPage = page + 1;
-    setIsLoadingMore(true);
-    await handleSearch(nextPage, false);
-    setPage(nextPage);
-  };
-
-  // 検索関数（ページ番号と結果リセットフラグを引数に追加）
-  const handleSearch = async (currentPage = 1, resetResults = false) => {
-    if (!debouncedSearchTerm) return;
-
-    if (resetResults) {
-      setIsSearching(true);
-    } else {
-      setIsLoadingMore(true);
-    }
-
-    try {
-      console.log(`📚 [楽天検索] "${debouncedSearchTerm}" を検索中... (ページ: ${currentPage})`);
-
-      // データベースと楽天Books APIの両方から検索
-      const [dbResults, rakutenResults] = await Promise.all([
-        searchBooksByTitleInDB(debouncedSearchTerm, 10),
-        searchRakutenBooksWithPagination(debouncedSearchTerm, currentPage, 20),
-      ]);
-
-      console.log(
-        `📚 [楽天検索] 結果: DBから${dbResults.length}件、楽天から${rakutenResults.books.length}件`
-      );
-
-      // 重複を削除するためにISBNベースで結合
-      const combinedResults = [...dbResults];
-
-      // データベースに存在しない書籍のみを楽天結果から追加
-      rakutenResults.books.forEach(rakutenBook => {
-        // まずISBNで重複チェック
-        if (rakutenBook.isbn) {
-          const existsInDB = dbResults.some(dbBook => dbBook.isbn === rakutenBook.isbn);
-          if (!existsInDB) {
-            combinedResults.push(rakutenBook);
-            return;
-          }
-        }
-
-        // 次にタイトルで重複チェック
-        const existsInDB = dbResults.some(
-          dbBook => dbBook.title.toLowerCase() === rakutenBook.title.toLowerCase()
-        );
-
-        if (!existsInDB) {
-          combinedResults.push(rakutenBook);
-        }
-      });
-
-      // ユーザーの本棚に既に存在する書籍を除外
-      const filteredResults = combinedResults.filter(book => !isBookInUserLibrary(book));
-
-      console.log(`📚 [楽天検索] フィルター後: ${filteredResults.length}件`);
-
-      // 次のページがあるかどうかを判定
-      setHasMore(rakutenResults.hasMore);
-
-      if (resetResults) {
-        setSearchResults(filteredResults);
-      } else {
-        // 既存の結果と重複を取り除いて結合
-        const existingIds = new Set(searchResults.map(book => book.id));
-        const newResults = filteredResults.filter(book => !existingIds.has(book.id));
-        setSearchResults(prev => [...prev, ...newResults]);
-      }
-
-      if (filteredResults.length === 0 && combinedResults.length > 0) {
-        toast.info('検索結果はありますが、すべての書籍が既にあなたの本棚に追加されています');
-      }
-    } catch (error) {
-      console.error('書籍検索エラー:', error);
-      toast.error('検索中にエラーが発生しました');
-    } finally {
-      if (resetResults) {
-        setIsSearching(false);
-      } else {
-        setIsLoadingMore(false);
-      }
-    }
-  };
+  }, [
+    hasMore,
+    isSearching,
+    isLoadingMore,
+    debouncedSearchTerm,
+    loadingRef.current,
+    loadMoreResults,
+  ]);
 
   const handleSelectBook = (book: Book) => {
     setSelectedBook(book);

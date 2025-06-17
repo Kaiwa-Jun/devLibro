@@ -47,8 +47,9 @@ interface DatabaseReview {
 }
 
 export default function ReviewList({ bookId }: ReviewListProps) {
-  const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
 
   // データ取得関数をuseCallbackでメモ化
   const fetchReviews = useCallback(async () => {
@@ -88,7 +89,7 @@ export default function ReviewList({ bookId }: ReviewListProps) {
                       userName = String(userObject.display_name);
                     }
                   }
-                } catch (_e) {
+                } catch {
                   // 何もしない - デフォルトのユーザー名を使用
                 }
               }
@@ -116,8 +117,8 @@ export default function ReviewList({ bookId }: ReviewListProps) {
 
         setReviews(formattedReviews);
       }
-    } catch (err) {
-      console.error('レビュー取得エラー:', err);
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
       setReviews([]);
     } finally {
       setLoading(false);

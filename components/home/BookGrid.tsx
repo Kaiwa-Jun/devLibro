@@ -16,11 +16,9 @@ import { Book } from '@/types';
 const PAGE_SIZE = 20;
 
 export default function BookGrid() {
-  const [loading, setLoading] = useState(true);
-  const [allBooks, setAllBooks] = useState<Book[]>([]);
-  const [hasMoreAllBooks, setHasMoreAllBooks] = useState(false);
-  const [_allBooksPage, _setAllBooksPage] = useState(0);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   // 検索ストアから状態を取得
   const {
@@ -32,7 +30,7 @@ export default function BookGrid() {
     incrementPage,
     setSearchResults,
     setSearchLoading,
-    setHasMore,
+    setHasMore: setSearchHasMore,
     setTotalItems,
   } = useSearchStore();
 
@@ -43,7 +41,7 @@ export default function BookGrid() {
 
   // 検索結果か全書籍のどちらを表示するか決定
   const isSearchActive = searchTerm.length >= 2;
-  const displayedBooks = isSearchActive ? searchResults : allBooks;
+  const displayedBooks = isSearchActive ? searchResults : books;
   const isDisplayLoading = isSearchActive ? searchLoading : loading;
 
   // フィルター適用後の書籍
@@ -51,9 +49,7 @@ export default function BookGrid() {
 
   // フィルターを適用した結果と「もっと見る」が可能かどうかを計算
   const finalBooks = hasActiveFilters ? filteredBooks : displayedBooks;
-  const hasMore = isSearchActive
-    ? hasMoreSearch && !hasActiveFilters
-    : hasMoreAllBooks && !hasActiveFilters;
+  const hasMoreAllBooks = hasMoreSearch && !hasActiveFilters;
 
   // Intersection Observerの参照
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -61,18 +57,18 @@ export default function BookGrid() {
   // ローディング参照の設定
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (isLoadingMore) return;
+      if (loading || !hasMore || hasActiveFilters) return;
       if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && hasMore) {
+        if (entries[0].isIntersecting && hasMoreAllBooks) {
           loadMoreBooks();
         }
       });
 
       if (node) observerRef.current.observe(node);
     },
-    [isLoadingMore, hasMore]
+    [loading, hasMore, hasActiveFilters]
   );
 
   // 全書籍を取得
@@ -81,8 +77,8 @@ export default function BookGrid() {
       setLoading(true);
       try {
         const fetchedBooks = await getAllBooksFromDB();
-        setAllBooks(fetchedBooks);
-        setHasMoreAllBooks(false); // 現在の実装では全書籍を一度に取得
+        setBooks(fetchedBooks);
+        setHasMore(false); // 現在の実装では全書籍を一度に取得
         setLoading(false);
       } catch (error) {
         console.error('書籍の取得中にエラーが発生しました:', error);
@@ -111,7 +107,7 @@ export default function BookGrid() {
           PAGE_SIZE
         );
         setSearchResults(books, true); // 検索結果を置き換え
-        setHasMore(hasMore);
+        setSearchHasMore(hasMore);
         setTotalItems(totalItems);
       } catch (error) {
         console.error('検索中にエラーが発生しました:', error);
@@ -121,7 +117,7 @@ export default function BookGrid() {
     };
 
     performSearch();
-  }, [searchTerm, setSearchLoading, setSearchResults, setHasMore, setTotalItems]);
+  }, [searchTerm, setSearchLoading, setSearchResults, setSearchHasMore, setTotalItems]);
 
   // フィルターが変更されたときに書籍をフィルタリング
   useEffect(() => {
@@ -423,38 +419,45 @@ export default function BookGrid() {
   }, [displayedBooks, difficulty, language, category, framework, hasActiveFilters]);
 
   // 追加の書籍を読み込む関数
-  const loadMoreBooks = async () => {
-    if (isLoadingMore || !hasMore || hasActiveFilters) return;
+  const loadMoreBooks = useCallback(async () => {
+    if (loading || !hasMore) return;
 
-    setIsLoadingMore(true);
-
+    setLoading(true);
     try {
-      if (isSearchActive) {
-        // 検索モードの場合は次のページを読み込む
-        const nextPage = searchPage + 1;
-        const startIndex = nextPage * PAGE_SIZE;
+      const nextPage = searchPage + 1;
+      console.log(`📚 [BookGrid] Loading more books for page ${nextPage}`);
+      console.log(`📚 [BookGrid] Current filters:`, { difficulty, language, category, framework });
 
-        const { books, hasMore } = await searchBooksWithSuggestions(
-          searchTerm,
-          startIndex,
-          PAGE_SIZE
-        );
+      const results = await searchBooksWithSuggestions('', (nextPage - 1) * PAGE_SIZE, PAGE_SIZE);
 
-        setSearchResults(books); // 結果に追加
-        setHasMore(hasMore);
-        incrementPage(); // ページをインクリメント
+      if (results.books.length > 0) {
+        setSearchResults(results.books, true);
+        setSearchHasMore(results.hasMore);
+        setTotalItems(results.totalItems);
+        incrementPage();
+        console.log(`📚 [BookGrid] Loaded ${results.books.length} more books`);
       } else {
-        // 全書籍表示モードの場合
-        // Note: 通常はページネーションAPIを使いますが、現在は上限まで取得済みなのでここは省略
-        console.log('全書籍の追加読み込みは未実装です');
-        setHasMoreAllBooks(false);
+        setSearchHasMore(false);
+        console.log(`📚 [BookGrid] No more books available`);
       }
     } catch (error) {
-      console.error('追加データ読み込み中にエラーが発生しました:', error);
+      console.error('Error loading more books:', error);
     } finally {
-      setIsLoadingMore(false);
+      setLoading(false);
     }
-  };
+  }, [
+    loading,
+    hasMore,
+    searchPage,
+    difficulty,
+    language,
+    category,
+    framework,
+    incrementPage,
+    setSearchResults,
+    setSearchHasMore,
+    setTotalItems,
+  ]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -547,7 +550,7 @@ export default function BookGrid() {
       {/* 無限スクロール用ローダー */}
       {hasMore && (
         <div ref={loadMoreRef} className="flex justify-center my-8">
-          {isLoadingMore ? (
+          {loading ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
               <p className="text-sm text-muted-foreground">読み込み中...</p>

@@ -3,7 +3,7 @@
 import { AlertCircle, ArrowLeft, Calendar, Clock, Copy, Share2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -62,11 +62,7 @@ export default function ReadingCircleDetailPage() {
   const [error, setError] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    fetchCircleDetails();
-  }, [id]);
-
-  const fetchCircleDetails = async () => {
+  const fetchCircleDetails = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
 
@@ -131,7 +127,11 @@ export default function ReadingCircleDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchCircleDetails();
+  }, [fetchCircleDetails]);
 
   const copyInviteUrl = async () => {
     if (!circle?.invite_url) return;
