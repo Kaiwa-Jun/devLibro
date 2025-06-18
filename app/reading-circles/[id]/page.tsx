@@ -3,14 +3,12 @@
 import {
   AlertCircle,
   ArrowLeft,
-  Calendar,
   Check,
   Copy,
   Heart,
   Share2,
   Sparkles,
   ThumbsUp,
-  Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -77,12 +75,16 @@ interface ReadingCircle {
     day_of_week: number;
     start_time: string;
     end_time: string;
+    vote_count?: number;
+    user_voted?: boolean;
   }>;
   schedule_candidates?: Array<{
     id: string;
     day_of_week: number;
     start_time: string;
     end_time: string;
+    vote_count?: number;
+    user_voted?: boolean;
   }>;
 }
 
@@ -95,6 +97,14 @@ export default function ReadingCircleDetailPage() {
   const [copied, setCopied] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [voteCounts, setVoteCounts] = useState<Record<number, number>>({});
+  const [localScheduleVotes, setLocalScheduleVotes] = useState<Set<string>>(new Set());
+
+  // ドラッグ選択用の状態
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ day: number; hour: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ day: number; hour: number } | null>(null);
+  const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
+  const [dragTimeout, setDragTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const fetchCircleDetails = useCallback(async () => {
     try {
@@ -200,6 +210,110 @@ export default function ReadingCircleDetailPage() {
     }
   };
 
+  const handleScheduleVote = (scheduleId: string) => {
+    setLocalScheduleVotes(prev => {
+      const newVotes = new Set(prev);
+      if (newVotes.has(scheduleId)) {
+        newVotes.delete(scheduleId);
+      } else {
+        newVotes.add(scheduleId);
+      }
+      return newVotes;
+    });
+  };
+
+  // ドラッグ選択のヘルパー関数
+  const getScheduleId = (
+    day: number,
+    hour: number,
+    schedules: ReadingCircle['schedule_candidates']
+  ) => {
+    const schedule = schedules?.find(
+      s => s.day_of_week === day && parseInt(s.start_time.split(':')[0]) === hour
+    );
+    return schedule?.id;
+  };
+
+  const isInDragRange = (day: number, hour: number) => {
+    if (!isDragging || !dragStart || !dragEnd) return false;
+
+    const minDay = Math.min(dragStart.day, dragEnd.day);
+    const maxDay = Math.max(dragStart.day, dragEnd.day);
+    const minHour = Math.min(dragStart.hour, dragEnd.hour);
+    const maxHour = Math.max(dragStart.hour, dragEnd.hour);
+
+    return day >= minDay && day <= maxDay && hour >= minHour && hour <= maxHour;
+  };
+
+  // ドラッグイベントハンドラー
+  const handleMouseDown = (day: number, hour: number, scheduleId: string | undefined) => {
+    if (!scheduleId) return;
+
+    // 既存のタイマーをクリア
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+    }
+
+    setDragStart({ day, hour });
+    setDragEnd({ day, hour });
+
+    // 現在の選択状態に基づいてドラッグモードを決定
+    const isCurrentlySelected = localScheduleVotes.has(scheduleId);
+    setDragMode(isCurrentlySelected ? 'deselect' : 'select');
+
+    // 少し遅延してからドラッグ状態にする（短いクリックを除外）
+    const timeout = setTimeout(() => {
+      setIsDragging(true);
+    }, 150);
+    setDragTimeout(timeout);
+  };
+
+  const handleMouseEnter = (day: number, hour: number) => {
+    if (isDragging) {
+      setDragEnd({ day, hour });
+    }
+  };
+
+  const handleMouseUp = () => {
+    // タイマーをクリア
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+      setDragTimeout(null);
+    }
+
+    if (isDragging && dragStart && dragEnd) {
+      // ドラッグ範囲内のすべてのスケジュールを選択/選択解除
+      const schedules = circle?.schedule_candidates || [];
+      const minDay = Math.min(dragStart.day, dragEnd.day);
+      const maxDay = Math.max(dragStart.day, dragEnd.day);
+      const minHour = Math.min(dragStart.hour, dragEnd.hour);
+      const maxHour = Math.max(dragStart.hour, dragEnd.hour);
+
+      setLocalScheduleVotes(prev => {
+        const newVotes = new Set(prev);
+
+        for (let day = minDay; day <= maxDay; day++) {
+          for (let hour = minHour; hour <= maxHour; hour++) {
+            const scheduleId = getScheduleId(day, hour, schedules);
+            if (scheduleId) {
+              if (dragMode === 'select') {
+                newVotes.add(scheduleId);
+              } else {
+                newVotes.delete(scheduleId);
+              }
+            }
+          }
+        }
+
+        return newVotes;
+      });
+    }
+
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 pt-16 pb-16 md:pb-0">
@@ -252,7 +366,8 @@ export default function ReadingCircleDetailPage() {
     return null;
   }
 
-  const participantCount = circle.members?.length || 0;
+  // 投票の総数を計算
+  const totalVotes = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 pt-16 pb-16 md:pb-0">
@@ -294,8 +409,8 @@ export default function ReadingCircleDetailPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full px-4 py-2">
-                  <Users className="h-5 w-5 text-purple-600" />
-                  <span className="font-semibold text-purple-700">{participantCount}人</span>
+                  <ThumbsUp className="h-5 w-5 text-purple-600" />
+                  <span className="font-semibold text-purple-700">{totalVotes}票</span>
                 </div>
               </div>
             </CardHeader>
@@ -353,7 +468,7 @@ export default function ReadingCircleDetailPage() {
                             viewTransitionName: `book-card-${candidate.book_id}`,
                             contain: 'layout style paint',
                           }}
-                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-700 hover:shadow-lg ${
                             selectedBookId === candidate.book_id
                               ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
                               : 'bg-white/60 border border-gray-200 hover:bg-white/80'
@@ -363,7 +478,7 @@ export default function ReadingCircleDetailPage() {
                             <Image
                               src={candidate.books.img_url || '/images/book-placeholder.png'}
                               alt={candidate.books.title}
-                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-700"
                               width={64}
                               height={80}
                             />
@@ -429,7 +544,7 @@ export default function ReadingCircleDetailPage() {
                       {circle.bookCandidates.map(candidate => (
                         <div
                           key={candidate.book_id}
-                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-700 hover:shadow-lg ${
                             candidate.is_selected
                               ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
                               : 'bg-white/60 border border-gray-200 hover:bg-white/80'
@@ -442,7 +557,7 @@ export default function ReadingCircleDetailPage() {
                             <Image
                               src={candidate.books.img_url}
                               alt={candidate.books.title}
-                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-700"
                               width={64}
                               height={80}
                             />
@@ -476,7 +591,7 @@ export default function ReadingCircleDetailPage() {
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📚 対象書籍
                   </h3>
-                  <div className="flex items-center gap-4 p-5 bg-white/60 border border-gray-200 rounded-2xl hover:bg-white/80 transition-all duration-300 hover:shadow-lg">
+                  <div className="flex items-center gap-4 p-5 bg-white/60 border border-gray-200 rounded-2xl hover:bg-white/80 transition-all duration-700 hover:shadow-lg">
                     <Image
                       src={circle.book.img_url}
                       alt={circle.book.title}
@@ -492,31 +607,30 @@ export default function ReadingCircleDetailPage() {
                 </div>
               )}
 
-              {/* 基本情報 */}
-              <div className="flex flex-wrap items-center gap-6 bg-white/60 rounded-xl p-4 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-full">
-                    <Calendar className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">作成日</p>
-                    <p className="font-semibold text-gray-800">
-                      {new Date(circle.created_at).toLocaleDateString('ja-JP', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* スケジュール候補 - 輪読会作成の確認画面と同じスタイル */}
+              {/* スケジュール候補 - 投票機能付き */}
               {circle.schedule_candidates && circle.schedule_candidates.length > 0 && (
                 <div>
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📅 開催候補日時
                   </h3>
+
+                  {/* 投票についての説明 */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex gap-3">
+                      <div className="text-blue-600 mt-0.5">💡</div>
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium mb-1">
+                          スケジュール投票について
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          参加可能な時間帯に投票しましょう！投票数の多い時間帯が開催時間の候補になります。
+                          <br />
+                          複数の時間帯をまとめて選択したい場合は、ドラッグで範囲選択できます。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-white rounded-xl border border-gray-300 shadow-sm overflow-hidden">
                     {(() => {
                       // 選択されている曜日と時間帯を取得
@@ -553,8 +667,15 @@ export default function ReadingCircleDetailPage() {
                       }
 
                       return (
-                        <div className="overflow-x-auto">
-                          <div className="min-w-fit">
+                        <div
+                          className="overflow-x-auto"
+                          onMouseUp={handleMouseUp}
+                          onMouseLeave={handleMouseUp}
+                          role="grid"
+                          tabIndex={0}
+                          aria-label="スケジュール投票グリッド"
+                        >
+                          <div className="min-w-fit select-none">
                             {/* ヘッダー行 */}
                             <div
                               className="grid gap-0"
@@ -599,28 +720,80 @@ export default function ReadingCircleDetailPage() {
                                   </span>
                                 </div>
                                 {selectedDays.map(dayIndex => {
-                                  const hasSchedule = schedulesByDay[dayIndex]?.some(
+                                  const schedule = schedulesByDay[dayIndex]?.find(
                                     s => parseInt(s.start_time.split(':')[0]) === hour
                                   );
+
+                                  if (!schedule)
+                                    return (
+                                      <div
+                                        key={`${dayIndex}-${hour}`}
+                                        className="h-12 border-r border-gray-300 last:border-r-0 bg-gray-100"
+                                      />
+                                    );
+
+                                  const isVoted = localScheduleVotes.has(schedule.id);
+                                  const isInRange = isInDragRange(dayIndex, hour);
+
                                   return (
                                     <div
                                       key={`${dayIndex}-${hour}`}
                                       className={`
                                         h-12 border-r border-gray-300 last:border-r-0 flex items-center justify-center relative
+                                        group cursor-pointer transition-all duration-200
                                         ${
-                                          hasSchedule
-                                            ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-inner'
-                                            : 'bg-gray-100'
+                                          isVoted
+                                            ? 'bg-gradient-to-br from-purple-500 to-blue-600 text-white shadow-inner'
+                                            : isInRange && isDragging
+                                              ? dragMode === 'select'
+                                                ? 'bg-purple-200 border border-purple-400'
+                                                : 'bg-red-200 border border-red-400'
+                                              : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
                                         }
                                       `}
+                                      role="gridcell"
+                                      tabIndex={0}
+                                      aria-label={`${DAYS_OF_WEEK[dayIndex]} ${hour}:00 ${isVoted ? '投票済み' : '未投票'}`}
+                                      onMouseDown={() =>
+                                        handleMouseDown(dayIndex, hour, schedule.id)
+                                      }
+                                      onMouseEnter={() => handleMouseEnter(dayIndex, hour)}
+                                      onClick={e => {
+                                        // ドラッグ操作中でない場合のみクリック処理を実行
+                                        if (!isDragging) {
+                                          handleScheduleVote(schedule.id);
+                                        }
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          if (!isDragging) {
+                                            handleScheduleVote(schedule.id);
+                                          }
+                                          e.preventDefault();
+                                        }
+                                      }}
                                     >
-                                      {hasSchedule && (
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                          <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                                            <Check className="w-4 h-4 text-white" />
+                                      {/* 投票数表示 */}
+                                      <div className="flex flex-col items-center justify-center gap-0.5">
+                                        {isVoted ? (
+                                          <div className="w-5 h-5 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                            <Check className="w-3 h-3 text-white" />
                                           </div>
-                                        </div>
-                                      )}
+                                        ) : (
+                                          <div className="w-5 h-5 border border-gray-300 rounded-full flex items-center justify-center group-hover:border-purple-400 transition-colors">
+                                            <ThumbsUp className="w-2.5 h-2.5 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                                          </div>
+                                        )}
+                                        <span
+                                          className={`text-xs font-medium ${
+                                            isVoted
+                                              ? 'text-white'
+                                              : 'text-gray-600 group-hover:text-purple-600'
+                                          }`}
+                                        >
+                                          {isVoted ? '1' : '0'}
+                                        </span>
+                                      </div>
                                     </div>
                                   );
                                 })}
@@ -630,21 +803,6 @@ export default function ReadingCircleDetailPage() {
                         </div>
                       );
                     })()}
-                  </div>
-                  <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
-                    <div className="flex items-start gap-3">
-                      <div className="text-blue-600 mt-0.5">💡</div>
-                      <div>
-                        <p className="text-sm text-blue-800 font-medium mb-1">
-                          スケジュールについて
-                        </p>
-                        <p className="text-sm text-blue-700">
-                          上記の時間帯が開催候補です。実際の開催日時は参加メンバーの都合を考慮して決定されます。
-                          <br />
-                          <strong>参加者全員で相談して、最適な時間を見つけましょう！</strong>
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}

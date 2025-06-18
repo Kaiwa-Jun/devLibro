@@ -109,6 +109,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .eq('id', bookclub.created_by)
       .single();
 
+    // 現在のユーザーを取得（投票情報で使用）
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     // 各書籍候補の投票数とユーザーの投票状況を取得
     const bookCandidatesWithVotes = await Promise.all(
       (bookCandidates || []).map(async (candidate: BookCandidate) => {
@@ -120,16 +125,38 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           .eq('book_id', candidate.book_id);
 
         // 現在のユーザーの投票状況を取得
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
         const userVoted = user
           ? votes?.some((vote: VoteData) => vote.user_id === user.id) || false
           : false;
 
         return {
           ...candidate,
+          vote_count: votes?.length || 0,
+          user_voted: userVoted,
+        };
+      })
+    );
+
+    // スケジュール候補の投票情報を取得
+    const scheduleCandidatesWithVotes = await Promise.all(
+      (schedules || []).map(async (schedule: ScheduleData) => {
+        // 投票数を取得
+        const { data: votes } = await supabase
+          .from('bookclub_schedule_votes')
+          .select('user_id')
+          .eq('bookclub_id', id)
+          .eq('schedule_id', schedule.id);
+
+        // 現在のユーザーの投票状況を取得
+        const userVoted = user
+          ? votes?.some((vote: VoteData) => vote.user_id === user.id) || false
+          : false;
+
+        return {
+          id: schedule.id,
+          day_of_week: schedule.day_of_week,
+          start_time: schedule.start_time,
+          end_time: schedule.end_time,
           vote_count: votes?.length || 0,
           user_voted: userVoted,
         };
@@ -166,12 +193,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         book_candidates: settings?.settings_json?.book_candidates || [],
       },
       book_candidates: bookCandidatesWithVotes,
-      schedule_candidates: (schedules || []).map((schedule: ScheduleData) => ({
-        id: schedule.id,
-        day_of_week: schedule.day_of_week,
-        start_time: schedule.start_time,
-        end_time: schedule.end_time,
-      })),
+      schedule_candidates: scheduleCandidatesWithVotes,
       members: (members || []).map((member: MemberData) => ({
         id: member.id,
         user_id: member.user_id,
