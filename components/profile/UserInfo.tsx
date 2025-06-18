@@ -29,15 +29,6 @@ import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/lib/supabase/client';
 import { truncateUserName } from '@/lib/utils/truncate';
 
-// ユーザープロフィールの型定義
-interface UserProfile {
-  id: string;
-  display_name?: string;
-  experience_years?: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
 const experienceOptions = [
   { value: '0', label: '未経験' },
   { value: '1', label: '1年未満' },

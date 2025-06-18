@@ -10,6 +10,7 @@ export default function ExperienceCheck() {
   const { user, loading } = useAuth();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [checkingExperience, setCheckingExperience] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // ユーザーがログインしていて、ロード中でない場合のみチェック
@@ -35,7 +36,8 @@ export default function ExperienceCheck() {
             setShowWelcomeModal(true);
           }
         } catch (error) {
-          // エラー処理
+          console.error('Error saving experience:', error);
+          setError('経験レベルの保存に失敗しました');
         } finally {
           setCheckingExperience(false);
         }

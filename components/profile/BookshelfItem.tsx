@@ -31,7 +31,6 @@ type BookshelfItemProps = {
 };
 
 export default function BookshelfItem({ userBook, onUpdate }: BookshelfItemProps) {
-  const [progress, setProgress] = useState(userBook.progress || 0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

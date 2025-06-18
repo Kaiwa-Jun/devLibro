@@ -36,9 +36,23 @@ const nextConfig = {
     config.cache = {
       type: 'memory',
     };
+
+    // Supabaseモジュールの解決問題を修正
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+
+    // 外部モジュールの設定
+    if (!isServer) {
+      config.resolve.fallback.fs = false;
+    }
+
     return config;
   },
-  // Radix UIパッケージをtranspileする
+  // Radix UIパッケージとSupabaseをtranspileする
   transpilePackages: [
     '@radix-ui/react-dropdown-menu',
     '@radix-ui/react-menu',
@@ -48,6 +62,9 @@ const nextConfig = {
     '@radix-ui/react-tabs',
     '@radix-ui/primitive',
     'lucide-react',
+    '@supabase/supabase-js',
+    '@supabase/ssr',
+    '@supabase/auth-helpers-nextjs',
   ],
   // コンパイル時の環境変数設定
   env: {

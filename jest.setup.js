@@ -12,20 +12,22 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
 }));
 
-// window.matchMediaのモック
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false, // デフォルトではfalseを返す
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // 廃止予定のメソッド
-    removeListener: jest.fn(), // 廃止予定のメソッド
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
+// window.matchMediaのモック（ブラウザ環境でのみ設定）
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false, // デフォルトではfalseを返す
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // 廃止予定のメソッド
+      removeListener: jest.fn(), // 廃止予定のメソッド
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+}
 
 // Supabaseクライアントのモック
 jest.mock('@/lib/supabase/client', () => ({

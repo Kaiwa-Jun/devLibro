@@ -26,6 +26,36 @@ export default function SearchPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // 追加データの読み込み
+  const loadMoreBooks = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    const startIndex = nextPage * 20; // 1ページあたり20件表示
+
+    try {
+      const results = await searchBooksByTitle({
+        query,
+        startIndex,
+      });
+
+      setBooks(prevBooks => [...prevBooks, ...results.books]);
+      setHasMore(results.hasMore);
+      setPage(nextPage);
+
+      // 追加読み込みイベントを記録
+      if (debugMode()) {
+        console.log(`[Analytics Debug] Load more results: page ${nextPage} for "${query}"`);
+      }
+    } catch (error) {
+      console.error('Error loading more books:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, page, query]);
+
   const loaderRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (isLoadingMore) return;
@@ -39,7 +69,7 @@ export default function SearchPage() {
 
       if (node) observerRef.current.observe(node);
     },
-    [isLoadingMore, hasMore]
+    [isLoadingMore, hasMore, loadMoreBooks]
   );
 
   // 最初の検索
@@ -81,35 +111,6 @@ export default function SearchPage() {
 
     fetchBooks();
   }, [query, router, trackSearch]);
-
-  // 追加データの読み込み
-  const loadMoreBooks = async () => {
-    if (isLoadingMore || !hasMore) return;
-
-    setIsLoadingMore(true);
-    const nextPage = page + 1;
-    const startIndex = nextPage * 20; // 1ページあたり20件表示
-
-    try {
-      const results = await searchBooksByTitle({
-        query,
-        startIndex,
-      });
-
-      setBooks(prevBooks => [...prevBooks, ...results.books]);
-      setHasMore(results.hasMore);
-      setPage(nextPage);
-
-      // 追加読み込みイベントを記録
-      if (debugMode()) {
-        console.log(`[Analytics Debug] Load more results: page ${nextPage} for "${query}"`);
-      }
-    } catch (error) {
-      console.error('Error loading more books:', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
 
   return (
     <div className="container py-6">

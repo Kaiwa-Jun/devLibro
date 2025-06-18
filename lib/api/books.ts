@@ -225,7 +225,6 @@ export const searchBooksWithSuggestions = async (
   try {
     // パラメータの調整
     const apiStartIndex = startIndex > 0 ? startIndex : 0;
-    const dbLimit = startIndex === 0 ? maxResults : 0; // 最初のページのみDBから取得
 
     let dbResults: Book[] = [];
     let dbTotal = 0;

@@ -42,15 +42,15 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
         setUserName(displayName);
 
         // Supabaseからプロフィール情報を取得
-        const { data, error } = await getUserProfile(user.id);
-        if (error) {
-          console.error('プロフィール取得エラー:', error);
+        const { data: profileData, error: _error } = await getUserProfile(user.id);
+        if (_error) {
+          console.error('プロフィール取得エラー:', _error);
           return;
         }
 
         // プロフィール情報があれば反映
-        if (data && data.display_name) {
-          setUserName(String(data.display_name));
+        if (profileData && profileData.display_name) {
+          setUserName(String(profileData.display_name));
         }
       } catch (error) {
         console.error('プロフィール取得中にエラーが発生しました:', error);
@@ -86,7 +86,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
     try {
       const displayType = postType === 'named' ? 'custom' : 'anon';
 
-      const { data, error } = await addReview({
+      const { error } = await addReview({
         bookId,
         userId: user.id,
         difficulty,
@@ -125,6 +125,7 @@ export default function ReviewModal({ bookId, onClose }: ReviewModalProps) {
       // レビュー追加イベントを発行
       reviewEvents.emit(REVIEW_ADDED, { bookId });
 
+      console.log('Review saved successfully');
       onClose();
     } catch (error: unknown) {
       console.error('レビュー保存中に例外が発生しました:', error);

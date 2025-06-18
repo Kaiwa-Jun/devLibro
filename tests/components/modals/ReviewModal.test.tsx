@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -73,9 +74,6 @@ jest.mock('framer-motion', () => ({
     ),
   },
 }));
-
-// ReviewModalのhandleSaveReview関数をモックするための設定
-const mockHandleSaveReview = jest.fn();
 
 // コンポーネントのモック
 jest.mock('@/components/modals/ReviewModal', () => {
@@ -166,7 +164,6 @@ describe('ReviewModal', () => {
 
     // 長すぎるコメントは切り詰められる (201文字のテキスト)
     const longText = 'あ'.repeat(201);
-    const expectedText = 'あ'.repeat(200); // 期待される制限後のテキスト
 
     // テキストエリアに長いテキストを入力
     fireEvent.change(commentTextarea, { target: { value: longText } });
@@ -296,6 +293,51 @@ describe('ReviewModal', () => {
     await waitFor(() => {
       // わかりやすいエラーメッセージが表示されることを確認
       expect(toast.error).toHaveBeenCalledWith('すでにこの書籍のレビューを投稿しています');
+    });
+  });
+
+  it('保存ボタンクリック時にレビューが保存される', async () => {
+    const user = userEvent.setup();
+    const mockOnClose = jest.fn();
+
+    // 成功レスポンスのモック
+    (addReview as jest.Mock).mockResolvedValue({ error: null });
+
+    render(<ReviewModal bookId="test-book-id" onClose={mockOnClose} />);
+
+    // 匿名投稿を選択
+    const anonymousRadio = screen.getByLabelText('匿名で投稿');
+    await user.click(anonymousRadio);
+
+    // 難易度を設定
+    const difficultySlider = screen.getByRole('slider');
+    fireEvent.change(difficultySlider, { target: { value: '3' } });
+
+    // コメントを入力
+    const commentInput = screen.getByPlaceholderText(
+      '書籍の感想や難易度についてのコメントを書いてください'
+    );
+    await user.type(commentInput, 'とても良い本でした');
+
+    // 保存ボタンをクリック
+    const saveButton = screen.getByText('レビューを保存');
+    await user.click(saveButton);
+
+    // addReviewが正しい引数で呼ばれることを確認
+    await waitFor(() => {
+      expect(addReview).toHaveBeenCalledWith({
+        bookId: 'test-book-id',
+        userId: 'user-123',
+        difficulty: 3,
+        comment: 'とても良い本でした',
+        displayType: 'anon',
+        customPenName: undefined,
+      });
+    });
+
+    // 成功時にonCloseが呼ばれることを確認
+    await waitFor(() => {
+      expect(mockOnClose).toHaveBeenCalled();
     });
   });
 });

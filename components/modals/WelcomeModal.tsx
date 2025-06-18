@@ -39,7 +39,7 @@ interface WelcomeModalProps {
 
 export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const { user } = useAuth();
-  const [experience, setExperience] = useState('0');
+  const [selectedExperience, setSelectedExperience] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -56,7 +56,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
         '3': 4,
         '4': 5,
       };
-      const years = yearsMap[experience];
+      const years = yearsMap[selectedExperience];
 
       // Supabaseに保存
       const { error } = await updateUserProfile(user.id, {
@@ -64,14 +64,14 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
       });
 
       if (error) {
-        toast.error('プロフィールの更新に失敗しました');
+        console.error('Error saving experience:', error);
         return;
       }
 
       toast.success('経験年数を設定しました');
       onClose();
     } catch (error) {
-      toast.error('プロフィールの更新に失敗しました');
+      console.error('Error saving experience:', error);
     } finally {
       setIsSaving(false);
     }
@@ -113,7 +113,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
         <div className="space-y-6 py-4">
           <div className="space-y-4">
             <Label htmlFor="experience">経験年数</Label>
-            <Select value={experience} onValueChange={setExperience}>
+            <Select value={selectedExperience} onValueChange={setSelectedExperience}>
               <SelectTrigger id="experience" className="w-full">
                 <SelectValue placeholder="経験年数を選択" />
               </SelectTrigger>

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BookOpen, Home } from 'lucide-react';
+import { BookOpen, Home, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -19,6 +19,12 @@ export default function TabBar() {
       href: '/',
       icon: Home,
       active: pathname === '/' || pathname === '/books',
+    },
+    {
+      name: '輪読会',
+      href: '/reading-circles',
+      icon: Users,
+      active: pathname.startsWith('/reading-circles'),
     },
     {
       name: '本棚',
