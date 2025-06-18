@@ -9,8 +9,10 @@ import {
   Heart,
   Share2,
   Sparkles,
+  ThumbsUp,
   Users,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -20,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSupabaseClient } from '@/lib/supabase/client';
 
 interface ReadingCircle {
   id: string;
@@ -36,6 +37,18 @@ interface ReadingCircle {
     author: string;
     img_url: string;
   };
+  book_candidates?: Array<{
+    book_id: number;
+    is_selected: boolean;
+    vote_count: number;
+    user_voted: boolean;
+    books: {
+      id: string;
+      title: string;
+      author: string;
+      img_url: string;
+    };
+  }>;
   bookCandidates?: Array<{
     book_id: string;
     is_selected: boolean;
@@ -62,6 +75,12 @@ interface ReadingCircle {
     start_time: string;
     end_time: string;
   }>;
+  schedule_candidates?: Array<{
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+  }>;
 }
 
 export default function ReadingCircleDetailPage() {
@@ -71,66 +90,21 @@ export default function ReadingCircleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [votingLoading, setVotingLoading] = useState<number | null>(null);
 
   const fetchCircleDetails = useCallback(async () => {
     try {
-      const supabase = getSupabaseClient();
+      // APIから詳細情報を取得（投票情報も含む）
+      const response = await fetch(`/api/reading-circles/${id}`, {
+        credentials: 'include',
+      });
 
-      // 読書会の詳細を取得
-      const { data: circleData, error: circleError } = await supabase
-        .from('bookclubs')
-        .select(
-          `
-          *,
-          books (
-            id,
-            title,
-            author,
-            img_url
-          ),
-          bookclub_book_candidates (
-            book_id,
-            is_selected,
-            books (
-              id,
-              title,
-              author,
-              img_url
-            )
-          ),
-          bookclub_settings (
-            max_participants,
-            is_public,
-            requires_approval
-          ),
-          bookclub_members (
-            id,
-            user_id,
-            role
-          ),
-          bookclub_schedule_candidates (
-            id,
-            day_of_week,
-            start_time,
-            end_time
-          )
-        `
-        )
-        .eq('id', id)
-        .single();
-
-      if (circleError) {
+      if (!response.ok) {
         throw new Error('読書会の情報を取得できませんでした');
       }
 
-      setCircle({
-        ...circleData,
-        book: circleData.books,
-        bookCandidates: circleData.bookclub_book_candidates,
-        settings: circleData.bookclub_settings?.[0],
-        members: circleData.bookclub_members,
-        scheduleCandidates: circleData.bookclub_schedule_candidates,
-      });
+      const data = await response.json();
+      setCircle(data);
     } catch (err) {
       console.error('Error fetching circle details:', err);
       setError(err instanceof Error ? err.message : '読書会の情報を取得できませんでした');
@@ -142,6 +116,53 @@ export default function ReadingCircleDetailPage() {
   useEffect(() => {
     fetchCircleDetails();
   }, [fetchCircleDetails]);
+
+  const handleVote = async (bookId: number, action: 'vote' | 'unvote') => {
+    setVotingLoading(bookId);
+    try {
+      const response = await fetch(`/api/reading-circles/${id}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          book_id: bookId,
+          action,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '投票に失敗しました');
+      }
+
+      const result = await response.json();
+
+      // UIを更新
+      setCircle(prev => {
+        if (!prev?.book_candidates) return prev;
+
+        return {
+          ...prev,
+          book_candidates: prev.book_candidates.map(candidate =>
+            candidate.book_id === bookId
+              ? {
+                  ...candidate,
+                  vote_count: result.vote_count,
+                  user_voted: result.user_voted,
+                }
+              : candidate
+          ),
+        };
+      });
+    } catch (err) {
+      console.error('Vote error:', err);
+      alert(err instanceof Error ? err.message : '投票に失敗しました');
+    } finally {
+      setVotingLoading(null);
+    }
+  };
 
   const copyInviteUrl = async () => {
     if (!circle?.invite_url) return;
@@ -254,9 +275,7 @@ export default function ReadingCircleDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full px-4 py-2">
                   <Users className="h-5 w-5 text-purple-600" />
-                  <span className="font-semibold text-purple-700">
-                    {participantCount}/{maxParticipants}人
-                  </span>
+                  <span className="font-semibold text-purple-700">{participantCount}人</span>
                 </div>
               </div>
             </CardHeader>
@@ -273,63 +292,165 @@ export default function ReadingCircleDetailPage() {
                 </div>
               )}
 
-              {/* 対象書籍 */}
-              {circle.bookCandidates && circle.bookCandidates.length > 0 && (
+              {/* 対象書籍候補（新API対応） */}
+              {circle.book_candidates && circle.book_candidates.length > 0 && (
                 <div>
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📚 対象書籍候補
                   </h3>
                   <div className="space-y-4">
-                    {circle.bookCandidates.map(candidate => (
-                      <div
-                        key={candidate.book_id}
-                        className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
-                          candidate.is_selected
-                            ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
-                            : 'bg-white/60 border border-gray-200 hover:bg-white/80'
-                        }`}
-                      >
-                        <div className="relative">
-                          <img
-                            src={candidate.books.img_url}
-                            alt={candidate.books.title}
-                            className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
-                          />
-                          {candidate.is_selected && (
-                            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full p-1">
-                              <Check className="h-3 w-3" />
+                    {circle.book_candidates
+                      .sort((a, b) => b.vote_count - a.vote_count) // 投票数順でソート
+                      .map(candidate => (
+                        <div
+                          key={candidate.book_id}
+                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+                            candidate.is_selected
+                              ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
+                              : 'bg-white/60 border border-gray-200 hover:bg-white/80'
+                          }`}
+                        >
+                          <div className="relative">
+                            <Image
+                              src={candidate.books.img_url}
+                              alt={candidate.books.title}
+                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                              width={64}
+                              height={80}
+                            />
+                            {candidate.is_selected && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full p-1">
+                                <Check className="h-3 w-3" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-gray-800 text-lg mb-1">
+                              {candidate.books.title}
+                            </p>
+                            <p className="text-gray-600 mb-2">{candidate.books.author}</p>
+                            {candidate.is_selected && (
+                              <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
+                                <Sparkles className="h-3 w-3" />
+                                現在選択中
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            {/* 投票数表示 */}
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <ThumbsUp className="h-4 w-4" />
+                              <span className="font-semibold">{candidate.vote_count}</span>
+                              <span>票</span>
                             </div>
-                          )}
+                            {/* 投票ボタン */}
+                            <Button
+                              size="sm"
+                              variant={candidate.user_voted ? 'default' : 'outline'}
+                              onClick={() =>
+                                handleVote(
+                                  candidate.book_id,
+                                  candidate.user_voted ? 'unvote' : 'vote'
+                                )
+                              }
+                              disabled={votingLoading === candidate.book_id}
+                              className={`min-w-[80px] ${
+                                candidate.user_voted
+                                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white'
+                                  : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                              }`}
+                            >
+                              {votingLoading === candidate.book_id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                              ) : candidate.user_voted ? (
+                                '投票済み'
+                              ) : (
+                                '投票する'
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-gray-800 text-lg mb-1">
-                            {candidate.books.title}
-                          </p>
-                          <p className="text-gray-600 mb-2">{candidate.books.author}</p>
-                          {candidate.is_selected && (
-                            <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
-                              <Sparkles className="h-3 w-3" />
-                              現在選択中
-                            </span>
-                          )}
-                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
+                    <div className="flex items-start gap-3">
+                      <div className="text-green-600 mt-0.5">💡</div>
+                      <div>
+                        <p className="text-sm text-green-800 font-medium mb-1">書籍投票について</p>
+                        <p className="text-sm text-green-700">
+                          気になる書籍に投票しましょう！投票数の多い書籍が最終的に選ばれる可能性が高くなります。
+                          <br />
+                          <strong>投票はいつでも変更できます。</strong>
+                        </p>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* 対象書籍候補（旧形式との互換性） */}
+              {!circle.book_candidates?.length &&
+                circle.bookCandidates &&
+                circle.bookCandidates.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
+                      📚 対象書籍候補
+                    </h3>
+                    <div className="space-y-4">
+                      {circle.bookCandidates.map(candidate => (
+                        <div
+                          key={candidate.book_id}
+                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+                            candidate.is_selected
+                              ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
+                              : 'bg-white/60 border border-gray-200 hover:bg-white/80'
+                          }`}
+                        >
+                          <div className="relative">
+                            <Image
+                              src={candidate.books.img_url}
+                              alt={candidate.books.title}
+                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                              width={64}
+                              height={80}
+                            />
+                            {candidate.is_selected && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full p-1">
+                                <Check className="h-3 w-3" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-gray-800 text-lg mb-1">
+                              {candidate.books.title}
+                            </p>
+                            <p className="text-gray-600 mb-2">{candidate.books.author}</p>
+                            {candidate.is_selected && (
+                              <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
+                                <Sparkles className="h-3 w-3" />
+                                現在選択中
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               {/* 既存の単一書籍表示（後方互換性のため） */}
-              {!circle.bookCandidates?.length && circle.book && (
+              {!circle.book_candidates?.length && !circle.bookCandidates?.length && circle.book && (
                 <div>
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📚 対象書籍
                   </h3>
                   <div className="flex items-center gap-4 p-5 bg-white/60 border border-gray-200 rounded-2xl hover:bg-white/80 transition-all duration-300 hover:shadow-lg">
-                    <img
+                    <Image
                       src={circle.book.img_url}
                       alt={circle.book.title}
                       className="w-16 h-20 object-cover rounded-lg shadow-md"
+                      width={64}
+                      height={80}
                     />
                     <div>
                       <p className="font-bold text-gray-800 text-lg">{circle.book.title}</p>
@@ -359,7 +480,7 @@ export default function ReadingCircleDetailPage() {
               </div>
 
               {/* スケジュール候補 - 輪読会作成の確認画面と同じスタイル */}
-              {circle.scheduleCandidates && circle.scheduleCandidates.length > 0 && (
+              {circle.schedule_candidates && circle.schedule_candidates.length > 0 && (
                 <div>
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📅 開催候補日時
@@ -367,7 +488,17 @@ export default function ReadingCircleDetailPage() {
                   <div className="bg-white rounded-xl border border-gray-300 shadow-sm overflow-hidden">
                     {(() => {
                       // 選択されている曜日と時間帯を取得
-                      const schedulesByDay = circle.scheduleCandidates!.reduce(
+                      const schedules = circle.schedule_candidates || [];
+
+                      if (schedules.length === 0) {
+                        return (
+                          <div className="p-4 text-center text-gray-500">
+                            開催候補日時が設定されていません
+                          </div>
+                        );
+                      }
+
+                      const schedulesByDay = schedules.reduce(
                         (acc, schedule) => {
                           if (!acc[schedule.day_of_week]) {
                             acc[schedule.day_of_week] = [];
@@ -375,16 +506,14 @@ export default function ReadingCircleDetailPage() {
                           acc[schedule.day_of_week].push(schedule);
                           return acc;
                         },
-                        {} as Record<number, typeof circle.scheduleCandidates>
+                        {} as Record<number, typeof schedules>
                       );
 
                       const selectedDays = Object.keys(schedulesByDay)
                         .map(Number)
                         .sort((a, b) => a - b);
                       const allHours = Array.from(
-                        new Set(
-                          circle.scheduleCandidates!.map(s => parseInt(s.start_time.split(':')[0]))
-                        )
+                        new Set(schedules.map(s => parseInt(s.start_time.split(':')[0])))
                       ).sort((a, b) => a - b);
 
                       if (selectedDays.length === 0 || allHours.length === 0) {
