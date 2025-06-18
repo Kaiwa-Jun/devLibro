@@ -80,7 +80,7 @@ export default function MyReadingCircleCard({ circle, index }: MyReadingCircleCa
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     {circle.status === 'recruiting'
-                      ? `${circle.participants}/${circle.maxParticipants}人参加`
+                      ? `${circle.participants}人参加`
                       : `${circle.participants}人のメンバー`}
                   </div>
                   {circle.nextMeetingDate && (

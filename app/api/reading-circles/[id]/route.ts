@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createApiRouteSupabaseClient } from '@/lib/supabase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,27 +34,31 @@ interface ScheduleData {
   end_time: string;
 }
 
+interface BookCandidate {
+  book_id: number;
+  is_selected: boolean;
+  books: {
+    id: string;
+    title: string;
+    author: string;
+    img_url: string;
+  };
+}
+
+interface VoteData {
+  user_id: string;
+}
+
 // 読書会詳細取得
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createApiRouteSupabaseClient();
+    const supabase = getSupabaseServerClient();
     const { id } = params;
 
+    // まず基本的な読書会情報を取得
     const { data: bookclub, error } = await supabase
       .from('bookclubs')
-      .select(
-        `
-        *,
-        bookclub_settings(*),
-        bookclub_schedule_candidates(*),
-        bookclub_members(
-          *,
-          users(display_name, avatar_url)
-        ),
-        bookclub_progress(*),
-        users!bookclubs_created_by_fkey(display_name, avatar_url)
-      `
-      )
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -62,14 +66,106 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: '読書会が見つかりません' }, { status: 404 });
     }
 
-    const settings = bookclub.bookclub_settings?.[0];
-    const schedules = bookclub.bookclub_schedule_candidates || [];
-    const members = bookclub.bookclub_members || [];
-    const progress = bookclub.bookclub_progress || [];
+    // 関連データを個別に取得
+    const { data: settings } = await supabase
+      .from('bookclub_settings')
+      .select('*')
+      .eq('bookclub_id', id)
+      .single();
+
+    const { data: schedules } = await supabase
+      .from('bookclub_schedule_candidates')
+      .select('*')
+      .eq('bookclub_id', id);
+
+    const { data: members } = await supabase
+      .from('bookclub_members')
+      .select(
+        `
+        *,
+        users(display_name, avatar_url)
+      `
+      )
+      .eq('bookclub_id', id);
+
+    const { data: progress } = await supabase
+      .from('bookclub_progress')
+      .select('*')
+      .eq('bookclub_id', id);
+
+    const { data: bookCandidates } = await supabase
+      .from('bookclub_book_candidates')
+      .select(
+        `
+        *,
+        books(*)
+      `
+      )
+      .eq('bookclub_id', id);
+
+    const { data: createdByUser } = await supabase
+      .from('users')
+      .select('display_name, avatar_url')
+      .eq('id', bookclub.created_by)
+      .single();
+
+    // 現在のユーザーを取得（投票情報で使用）
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // 各書籍候補の投票数とユーザーの投票状況を取得
+    const bookCandidatesWithVotes = await Promise.all(
+      (bookCandidates || []).map(async (candidate: BookCandidate) => {
+        // 投票数を取得
+        const { data: votes } = await supabase
+          .from('bookclub_book_votes')
+          .select('user_id')
+          .eq('bookclub_id', id)
+          .eq('book_id', candidate.book_id);
+
+        // 現在のユーザーの投票状況を取得
+        const userVoted = user
+          ? votes?.some((vote: VoteData) => vote.user_id === user.id) || false
+          : false;
+
+        return {
+          ...candidate,
+          vote_count: votes?.length || 0,
+          user_voted: userVoted,
+        };
+      })
+    );
+
+    // スケジュール候補の投票情報を取得
+    const scheduleCandidatesWithVotes = await Promise.all(
+      (schedules || []).map(async (schedule: ScheduleData) => {
+        // 投票数を取得
+        const { data: votes } = await supabase
+          .from('bookclub_schedule_votes')
+          .select('user_id')
+          .eq('bookclub_id', id)
+          .eq('schedule_id', schedule.id);
+
+        // 現在のユーザーの投票状況を取得
+        const userVoted = user
+          ? votes?.some((vote: VoteData) => vote.user_id === user.id) || false
+          : false;
+
+        return {
+          id: schedule.id,
+          day_of_week: schedule.day_of_week,
+          start_time: schedule.start_time,
+          end_time: schedule.end_time,
+          vote_count: votes?.length || 0,
+          user_voted: userVoted,
+        };
+      })
+    );
 
     // 平均進捗計算
     const avgProgress =
-      progress.length > 0
+      progress && progress.length > 0
         ? Math.round(
             progress.reduce((sum: number, p: ProgressData) => sum + (p.progress_rate || 0), 0) /
               progress.length
@@ -87,8 +183,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       created_at: bookclub.created_at,
       organizer: {
         id: bookclub.created_by,
-        name: bookclub.users?.display_name || '不明',
-        avatar_url: bookclub.users?.avatar_url,
+        name: createdByUser?.display_name || '不明',
+        avatar_url: createdByUser?.avatar_url,
       },
       settings: {
         max_participants: settings?.max_participants || 10,
@@ -96,13 +192,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         requires_approval: settings?.requires_approval || false,
         book_candidates: settings?.settings_json?.book_candidates || [],
       },
-      schedule_candidates: schedules.map((schedule: ScheduleData) => ({
-        id: schedule.id,
-        day_of_week: schedule.day_of_week,
-        start_time: schedule.start_time,
-        end_time: schedule.end_time,
-      })),
-      members: members.map((member: MemberData) => ({
+      book_candidates: bookCandidatesWithVotes,
+      schedule_candidates: scheduleCandidatesWithVotes,
+      members: (members || []).map((member: MemberData) => ({
         id: member.id,
         user_id: member.user_id,
         role: member.role,
@@ -110,18 +202,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         name: member.users?.display_name || '不明',
         avatar_url: member.users?.avatar_url,
       })),
-      member_count: members.length,
+      member_count: (members || []).length,
       progress: {
         average: avgProgress,
-        individual: progress.map((p: ProgressData) => ({
+        individual: (progress || []).map((p: ProgressData) => ({
           user_id: p.user_id,
           progress_rate: p.progress_rate,
           updated_at: p.updated_at,
         })),
       },
     });
-  } catch (error) {
-    console.error('Get bookclub details error:', error);
+  } catch (_error) {
     return NextResponse.json({ error: '読書会の詳細取得に失敗しました' }, { status: 500 });
   }
 }
@@ -129,7 +220,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // 読書会更新
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createApiRouteSupabaseClient();
+    const supabase = getSupabaseServerClient();
 
     // 認証チェック
     const {
@@ -172,7 +263,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         .eq('id', id);
 
       if (updateError) {
-        console.error('Error updating bookclub:', updateError);
         return NextResponse.json({ error: '読書会の更新に失敗しました' }, { status: 500 });
       }
     }
@@ -192,7 +282,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       ]);
 
       if (settingsError) {
-        console.error('Error updating settings:', settingsError);
+        // Settings update failed, but continue
       }
     }
 
@@ -215,14 +305,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           .insert(scheduleInserts);
 
         if (scheduleError) {
-          console.error('Error updating schedule:', scheduleError);
+          // Schedule update failed, but continue
         }
       }
     }
 
     return NextResponse.json({ message: '読書会が更新されました' });
-  } catch (error) {
-    console.error('Update bookclub error:', error);
+  } catch (_error) {
     return NextResponse.json({ error: '読書会の更新に失敗しました' }, { status: 500 });
   }
 }
@@ -230,7 +319,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // 読書会削除
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createApiRouteSupabaseClient();
+    const supabase = getSupabaseServerClient();
 
     // 認証チェック
     const {
@@ -262,13 +351,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { error: deleteError } = await supabase.from('bookclubs').delete().eq('id', id);
 
     if (deleteError) {
-      console.error('Error deleting bookclub:', deleteError);
       return NextResponse.json({ error: '読書会の削除に失敗しました' }, { status: 500 });
     }
 
     return NextResponse.json({ message: '読書会が削除されました' });
-  } catch (error) {
-    console.error('Delete bookclub error:', error);
+  } catch (_error) {
     return NextResponse.json({ error: '読書会の削除に失敗しました' }, { status: 500 });
   }
 }
