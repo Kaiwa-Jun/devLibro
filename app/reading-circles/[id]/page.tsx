@@ -1,6 +1,16 @@
 'use client';
 
-import { AlertCircle, ArrowLeft, Calendar, Clock, Copy, Share2, Users } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  Check,
+  Copy,
+  Heart,
+  Share2,
+  Sparkles,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -147,22 +157,24 @@ export default function ReadingCircleDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-16 pb-16 md:pb-0">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 pt-16 pb-16 md:pb-0">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Skeleton className="h-10 w-10" />
+          <div className="flex items-center gap-4 mb-8">
+            <Skeleton className="h-12 w-12 rounded-full" />
             <Skeleton className="h-8 w-48" />
           </div>
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <Skeleton className="h-8 w-64" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
+          <div className="max-w-4xl mx-auto">
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <Skeleton className="h-8 w-64" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -170,17 +182,19 @@ export default function ReadingCircleDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background pt-16 pb-16 md:pb-0">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 pt-16 pb-16 md:pb-0">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4 mb-8">
             <Link href="/reading-circles">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/50">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold">輪読会詳細</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              輪読会詳細 ✨
+            </h1>
           </div>
-          <Alert variant="destructive" className="max-w-2xl mx-auto">
+          <Alert variant="destructive" className="max-w-2xl mx-auto shadow-lg">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -200,55 +214,101 @@ export default function ReadingCircleDetailPage() {
   const DAYS_OF_WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 
   return (
-    <div className="min-h-screen bg-background pt-16 pb-16 md:pb-0">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 pt-16 pb-16 md:pb-0">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
+        {/* ヘッダー */}
+        <div className="flex items-center gap-4 mb-8">
           <Link href="/reading-circles">
-            <Button variant="ghost" size="icon">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-white/50 transition-all duration-200"
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold">輪読会詳細</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              輪読会詳細
+            </h1>
+            <Sparkles className="h-6 w-6 text-purple-500" />
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto space-y-6">
           {/* メインカード */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">{circle.title}</CardTitle>
-              {circle.purpose && <p className="text-muted-foreground mt-2">{circle.purpose}</p>}
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2"></div>
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-3xl font-bold text-gray-800 mb-2 leading-tight">
+                    {circle.title}
+                  </CardTitle>
+                  {circle.purpose && (
+                    <p className="text-lg text-purple-600 font-medium flex items-center gap-2">
+                      <Heart className="h-5 w-5" />
+                      {circle.purpose}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full px-4 py-2">
+                  <Users className="h-5 w-5 text-purple-600" />
+                  <span className="font-semibold text-purple-700">
+                    {participantCount}/{maxParticipants}人
+                  </span>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
               {/* 説明 */}
               {circle.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">説明</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{circle.description}</p>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2 text-gray-800">
+                    📝 輪読会について
+                  </h3>
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {circle.description}
+                  </p>
                 </div>
               )}
 
               {/* 対象書籍 */}
               {circle.bookCandidates && circle.bookCandidates.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-2">対象書籍候補</h3>
-                  <div className="space-y-3">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
+                    📚 対象書籍候補
+                  </h3>
+                  <div className="space-y-4">
                     {circle.bookCandidates.map(candidate => (
                       <div
                         key={candidate.book_id}
-                        className={`flex items-center gap-4 p-4 border rounded-lg ${
-                          candidate.is_selected ? 'border-primary bg-primary/5' : ''
+                        className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+                          candidate.is_selected
+                            ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
+                            : 'bg-white/60 border border-gray-200 hover:bg-white/80'
                         }`}
                       >
-                        <img
-                          src={candidate.books.img_url}
-                          alt={candidate.books.title}
-                          className="w-16 h-20 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium">{candidate.books.title}</p>
-                          <p className="text-sm text-muted-foreground">{candidate.books.author}</p>
+                        <div className="relative">
+                          <img
+                            src={candidate.books.img_url}
+                            alt={candidate.books.title}
+                            className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                          />
                           {candidate.is_selected && (
-                            <span className="text-xs text-primary font-medium mt-1 inline-block">
+                            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full p-1">
+                              <Check className="h-3 w-3" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-gray-800 text-lg mb-1">
+                            {candidate.books.title}
+                          </p>
+                          <p className="text-gray-600 mb-2">{candidate.books.author}</p>
+                          {candidate.is_selected && (
+                            <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
+                              <Sparkles className="h-3 w-3" />
                               現在選択中
                             </span>
                           )}
@@ -262,95 +322,213 @@ export default function ReadingCircleDetailPage() {
               {/* 既存の単一書籍表示（後方互換性のため） */}
               {!circle.bookCandidates?.length && circle.book && (
                 <div>
-                  <h3 className="font-semibold mb-2">対象書籍</h3>
-                  <div className="flex items-center gap-4 p-4 border rounded-lg">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
+                    📚 対象書籍
+                  </h3>
+                  <div className="flex items-center gap-4 p-5 bg-white/60 border border-gray-200 rounded-2xl hover:bg-white/80 transition-all duration-300 hover:shadow-lg">
                     <img
                       src={circle.book.img_url}
                       alt={circle.book.title}
-                      className="w-16 h-20 object-cover rounded"
+                      className="w-16 h-20 object-cover rounded-lg shadow-md"
                     />
                     <div>
-                      <p className="font-medium">{circle.book.title}</p>
-                      <p className="text-sm text-muted-foreground">{circle.book.author}</p>
+                      <p className="font-bold text-gray-800 text-lg">{circle.book.title}</p>
+                      <p className="text-gray-600">{circle.book.author}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* 参加者情報 */}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <span>
-                    {participantCount}/{maxParticipants}人参加
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <span>{new Date(circle.created_at).toLocaleDateString('ja-JP')}作成</span>
+              {/* 基本情報 */}
+              <div className="flex flex-wrap items-center gap-6 bg-white/60 rounded-xl p-4 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-2 rounded-full">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">作成日</p>
+                    <p className="font-semibold text-gray-800">
+                      {new Date(circle.created_at).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* スケジュール候補 */}
+              {/* スケジュール候補 - 輪読会作成の確認画面と同じスタイル */}
               {circle.scheduleCandidates && circle.scheduleCandidates.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-2">開催候補日時</h3>
-                  <div className="space-y-2">
-                    {circle.scheduleCandidates
-                      .sort((a, b) => {
-                        // 曜日でソート、同じ曜日なら開始時間でソート
-                        if (a.day_of_week !== b.day_of_week) {
-                          return a.day_of_week - b.day_of_week;
-                        }
-                        return a.start_time.localeCompare(b.start_time);
-                      })
-                      .map(schedule => (
-                        <div
-                          key={schedule.id}
-                          className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {DAYS_OF_WEEK[schedule.day_of_week]}曜日
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              {schedule.start_time} - {schedule.end_time}
-                            </span>
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
+                    📅 開催候補日時
+                  </h3>
+                  <div className="bg-white rounded-xl border border-gray-300 shadow-sm overflow-hidden">
+                    {(() => {
+                      // 選択されている曜日と時間帯を取得
+                      const schedulesByDay = circle.scheduleCandidates!.reduce(
+                        (acc, schedule) => {
+                          if (!acc[schedule.day_of_week]) {
+                            acc[schedule.day_of_week] = [];
+                          }
+                          acc[schedule.day_of_week].push(schedule);
+                          return acc;
+                        },
+                        {} as Record<number, typeof circle.scheduleCandidates>
+                      );
+
+                      const selectedDays = Object.keys(schedulesByDay)
+                        .map(Number)
+                        .sort((a, b) => a - b);
+                      const allHours = Array.from(
+                        new Set(
+                          circle.scheduleCandidates!.map(s => parseInt(s.start_time.split(':')[0]))
+                        )
+                      ).sort((a, b) => a - b);
+
+                      if (selectedDays.length === 0 || allHours.length === 0) {
+                        return null;
+                      }
+
+                      return (
+                        <div className="overflow-x-auto">
+                          <div className="min-w-fit">
+                            {/* ヘッダー行 */}
+                            <div
+                              className="grid gap-0"
+                              style={{
+                                gridTemplateColumns: `80px repeat(${selectedDays.length}, 1fr)`,
+                              }}
+                            >
+                              <div className="h-12 bg-gray-100 border-r border-b border-gray-300 flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-600">時間</span>
+                              </div>
+                              {selectedDays.map(dayIndex => (
+                                <div
+                                  key={dayIndex}
+                                  className={`
+                                    h-12 flex items-center justify-center text-sm font-bold border-r border-b border-gray-300 last:border-r-0
+                                    ${
+                                      dayIndex === 0
+                                        ? 'bg-red-50 text-red-700' // 日曜日
+                                        : dayIndex === 6
+                                          ? 'bg-blue-50 text-blue-700' // 土曜日
+                                          : 'bg-gray-50 text-gray-700' // 平日
+                                    }
+                                  `}
+                                >
+                                  {DAYS_OF_WEEK[dayIndex]}
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* 時間スロット */}
+                            {allHours.map((hour, hourIndex) => (
+                              <div
+                                key={hour}
+                                className={`grid gap-0 ${hourIndex < allHours.length - 1 ? 'border-b border-gray-300' : ''}`}
+                                style={{
+                                  gridTemplateColumns: `80px repeat(${selectedDays.length}, 1fr)`,
+                                }}
+                              >
+                                <div className="h-12 bg-gray-50 border-r border-gray-300 flex items-center justify-center">
+                                  <span className="text-sm font-medium text-gray-600">
+                                    {hour}:00
+                                  </span>
+                                </div>
+                                {selectedDays.map(dayIndex => {
+                                  const hasSchedule = schedulesByDay[dayIndex]?.some(
+                                    s => parseInt(s.start_time.split(':')[0]) === hour
+                                  );
+                                  return (
+                                    <div
+                                      key={`${dayIndex}-${hour}`}
+                                      className={`
+                                        h-12 border-r border-gray-300 last:border-r-0 flex items-center justify-center relative
+                                        ${
+                                          hasSchedule
+                                            ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-inner'
+                                            : 'bg-gray-100'
+                                        }
+                                      `}
+                                    >
+                                      {hasSchedule && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                          <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-white" />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
+                      );
+                    })()}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    ※ 実際の開催日時は参加者と相談して決定します
-                  </p>
+                  <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <div className="text-blue-600 mt-0.5">💡</div>
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium mb-1">
+                          スケジュールについて
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          上記の時間帯が開催候補です。実際の開催日時は参加メンバーの都合を考慮して決定されます。
+                          <br />
+                          <strong>参加者全員で相談して、最適な時間を見つけましょう！</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* 共有カード */}
-          <Card>
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-green-400 to-blue-500 h-2"></div>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" />
-                参加者を招待
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="bg-gradient-to-r from-green-500 to-blue-500 p-2 rounded-full">
+                  <Share2 className="h-5 w-5 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                  みんなを招待しよう！
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                以下のURLを共有して、参加者を募集しましょう。
+              <p className="text-gray-700 mb-6 text-lg">
+                以下のURLをシェアして、仲間を集めましょう ✨
               </p>
-              <div className="flex items-center gap-2">
-                <Input value={circle.invite_url} readOnly className="flex-1" />
-                <Button onClick={copyInviteUrl} variant="outline" size="icon">
-                  <Copy className="h-4 w-4" />
+              <div className="flex items-center gap-3">
+                <Input
+                  value={circle.invite_url}
+                  readOnly
+                  className="flex-1 h-12 text-base bg-white/80 border-2 border-gray-200 rounded-xl focus:border-blue-400 transition-colors"
+                />
+                <Button
+                  onClick={copyInviteUrl}
+                  className="h-12 px-6 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  コピー
                 </Button>
               </div>
-              {copied && <p className="text-green-600 text-sm mt-2">URLをコピーしました！</p>}
+              {copied && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl">
+                  <p className="text-green-700 font-medium flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    URLをコピーしました！シェアして仲間を集めよう 🎉
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
