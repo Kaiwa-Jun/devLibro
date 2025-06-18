@@ -1,35 +1,27 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-
 export default function CookieConsent() {
-  const [showConsent, setShowConsent] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // ローカルストレージからクッキー同意の状態を確認
     const consent = localStorage.getItem('cookie-consent');
     if (!consent) {
-      // 少し遅延させて表示すると、ページ読み込み直後のアニメーションが自然になる
-      const timer = setTimeout(() => {
-        setShowConsent(true);
-      }, 500);
-      return () => clearTimeout(timer);
+      setIsVisible(true);
     }
   }, []);
 
-  const handleAccept = () => {
+  const acceptCookies = () => {
     localStorage.setItem('cookie-consent', 'accepted');
-    setShowConsent(false);
+    setIsVisible(false);
   };
 
-  const handleDecline = () => {
+  const declineCookies = () => {
     localStorage.setItem('cookie-consent', 'declined');
-    setShowConsent(false);
+    setIsVisible(false);
 
     // Google Analyticsを無効にする場合の処理
     // この例では、cookieを削除し、データ収集を無効にする
@@ -45,40 +37,47 @@ export default function CookieConsent() {
     }
   };
 
+  if (!isVisible) return null;
+
   return (
-    <AnimatePresence>
-      {showConsent && (
-        <motion.div
-          className="fixed bottom-0 left-0 right-0 z-50 bg-blue-50 dark:bg-slate-800 border-t-2 border-blue-200 dark:border-slate-700 p-4 shadow-lg"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        >
-          <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex-1">
-              <p className="text-sm">
-                当サイトではアクセス解析のためCookieを使用しています。 詳しくは
-                <Link href="/privacy-policy" className="text-primary hover:underline font-medium">
-                  プライバシーポリシー
-                </Link>
-                をご確認ください。
-              </p>
-            </div>
-            <div className="flex flex-row gap-2">
-              <Button variant="outline" size="sm" onClick={handleDecline}>
-                拒否
-              </Button>
-              <Button size="sm" onClick={handleAccept} className="bg-blue-600 hover:bg-blue-700">
-                同意する
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setShowConsent(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-sm text-gray-700">
+              このサイトではCookieを使用してユーザー体験を向上させています。
+              <Link
+                href="/privacy-policy"
+                className="text-blue-600 hover:text-blue-800 underline ml-1"
+              >
+                プライバシーポリシー
+              </Link>
+              をご確認ください。
+            </p>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={declineCookies}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              拒否
+            </button>
+            <button
+              onClick={acceptCookies}
+              className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+            >
+              同意する
+            </button>
+            <button
+              onClick={declineCookies}
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="閉じる"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

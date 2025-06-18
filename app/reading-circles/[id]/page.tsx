@@ -15,13 +15,16 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { startTransition, useCallback, useEffect, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// 曜日の定義
+const DAYS_OF_WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 
 interface ReadingCircle {
   id: string;
@@ -90,7 +93,8 @@ export default function ReadingCircleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [copied, setCopied] = useState(false);
-  const [votingLoading, setVotingLoading] = useState<number | null>(null);
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
+  const [voteCounts, setVoteCounts] = useState<Record<number, number>>({});
 
   const fetchCircleDetails = useCallback(async () => {
     try {
@@ -105,6 +109,15 @@ export default function ReadingCircleDetailPage() {
 
       const data = await response.json();
       setCircle(data);
+
+      // 初期の投票数を設定
+      if (data.book_candidates) {
+        const initialVoteCounts: Record<number, number> = {};
+        data.book_candidates.forEach((candidate: { book_id: number; vote_count: number }) => {
+          initialVoteCounts[candidate.book_id] = candidate.vote_count || 0;
+        });
+        setVoteCounts(initialVoteCounts);
+      }
     } catch (err) {
       console.error('Error fetching circle details:', err);
       setError(err instanceof Error ? err.message : '読書会の情報を取得できませんでした');
@@ -117,50 +130,61 @@ export default function ReadingCircleDetailPage() {
     fetchCircleDetails();
   }, [fetchCircleDetails]);
 
-  const handleVote = async (bookId: number, action: 'vote' | 'unvote') => {
-    setVotingLoading(bookId);
-    try {
-      const response = await fetch(`/api/reading-circles/${id}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          book_id: bookId,
-          action,
-        }),
+  const handleVote = (bookId: number) => {
+    // View Transitionでアニメーションを実行
+    if ('startViewTransition' in document && document.startViewTransition) {
+      document.startViewTransition(() => {
+        startTransition(() => {
+          // 現在投票している書籍と同じ場合は投票取消、違う場合は新しく投票
+          if (selectedBookId === bookId) {
+            // 投票取消
+            setSelectedBookId(null);
+            setVoteCounts(prev => ({
+              ...prev,
+              [bookId]: Math.max(0, (prev[bookId] || 0) - 1),
+            }));
+          } else {
+            // 前の投票を取り消し（もしあれば）
+            if (selectedBookId !== null) {
+              setVoteCounts(prev => ({
+                ...prev,
+                [selectedBookId]: Math.max(0, (prev[selectedBookId] || 0) - 1),
+              }));
+            }
+
+            // 新しく投票
+            setSelectedBookId(bookId);
+            setVoteCounts(prev => ({
+              ...prev,
+              [bookId]: (prev[bookId] || 0) + 1,
+            }));
+          }
+        });
       });
+    } else {
+      // View Transitionがサポートされていない場合は通常の処理
+      startTransition(() => {
+        if (selectedBookId === bookId) {
+          setSelectedBookId(null);
+          setVoteCounts(prev => ({
+            ...prev,
+            [bookId]: Math.max(0, (prev[bookId] || 0) - 1),
+          }));
+        } else {
+          if (selectedBookId !== null) {
+            setVoteCounts(prev => ({
+              ...prev,
+              [selectedBookId]: Math.max(0, (prev[selectedBookId] || 0) - 1),
+            }));
+          }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '投票に失敗しました');
-      }
-
-      const result = await response.json();
-
-      // UIを更新
-      setCircle(prev => {
-        if (!prev?.book_candidates) return prev;
-
-        return {
-          ...prev,
-          book_candidates: prev.book_candidates.map(candidate =>
-            candidate.book_id === bookId
-              ? {
-                  ...candidate,
-                  vote_count: result.vote_count,
-                  user_voted: result.user_voted,
-                }
-              : candidate
-          ),
-        };
+          setSelectedBookId(bookId);
+          setVoteCounts(prev => ({
+            ...prev,
+            [bookId]: (prev[bookId] || 0) + 1,
+          }));
+        }
       });
-    } catch (err) {
-      console.error('Vote error:', err);
-      alert(err instanceof Error ? err.message : '投票に失敗しました');
-    } finally {
-      setVotingLoading(null);
     }
   };
 
@@ -229,10 +253,6 @@ export default function ReadingCircleDetailPage() {
   }
 
   const participantCount = circle.members?.length || 0;
-  const maxParticipants = circle.settings?.max_participants || 10;
-
-  // 曜日の表示用配列
-  const DAYS_OF_WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 pt-16 pb-16 md:pb-0">
@@ -298,27 +318,56 @@ export default function ReadingCircleDetailPage() {
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📚 対象書籍候補
                   </h3>
-                  <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <div className="flex gap-3">
+                      <div className="text-green-600 mt-0.5">💡</div>
+                      <div>
+                        <p className="text-sm text-green-800 font-medium mb-1">書籍投票について</p>
+                        <p className="text-sm text-green-700">
+                          読みたい書籍に投票しましょう！投票数の多い書籍が輪読会で読む本になります。
+                          <br />
+                          <strong>投票はいつでも変更できます。</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 書籍候補一覧 */}
+                  <div className="space-y-4" style={{ contain: 'layout style' }}>
                     {circle.book_candidates
-                      .sort((a, b) => b.vote_count - a.vote_count) // 投票数順でソート
-                      .map(candidate => (
+                      .sort((a, b) => {
+                        const aVotes =
+                          voteCounts[a.book_id] !== undefined
+                            ? voteCounts[a.book_id]
+                            : a.vote_count;
+                        const bVotes =
+                          voteCounts[b.book_id] !== undefined
+                            ? voteCounts[b.book_id]
+                            : b.vote_count;
+                        return bVotes - aVotes;
+                      }) // 投票数順でソート（動的投票数を考慮）
+                      .map((candidate, _index) => (
                         <div
                           key={candidate.book_id}
+                          style={{
+                            viewTransitionName: `book-card-${candidate.book_id}`,
+                            contain: 'layout style paint',
+                          }}
                           className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${
-                            candidate.is_selected
+                            selectedBookId === candidate.book_id
                               ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
                               : 'bg-white/60 border border-gray-200 hover:bg-white/80'
                           }`}
                         >
                           <div className="relative">
                             <Image
-                              src={candidate.books.img_url}
+                              src={candidate.books.img_url || '/images/book-placeholder.png'}
                               alt={candidate.books.title}
                               className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-300"
                               width={64}
                               height={80}
                             />
-                            {candidate.is_selected && (
+                            {selectedBookId === candidate.book_id && (
                               <div className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full p-1">
                                 <Check className="h-3 w-3" />
                               </div>
@@ -329,10 +378,10 @@ export default function ReadingCircleDetailPage() {
                               {candidate.books.title}
                             </p>
                             <p className="text-gray-600 mb-2">{candidate.books.author}</p>
-                            {candidate.is_selected && (
+                            {selectedBookId === candidate.book_id && (
                               <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
                                 <Sparkles className="h-3 w-3" />
-                                現在選択中
+                                投票済み
                               </span>
                             )}
                           </div>
@@ -340,50 +389,30 @@ export default function ReadingCircleDetailPage() {
                             {/* 投票数表示 */}
                             <div className="flex items-center gap-1 text-sm text-gray-600">
                               <ThumbsUp className="h-4 w-4" />
-                              <span className="font-semibold">{candidate.vote_count}</span>
+                              <span className="font-semibold">
+                                {voteCounts[candidate.book_id] !== undefined
+                                  ? voteCounts[candidate.book_id]
+                                  : candidate.vote_count}
+                              </span>
                               <span>票</span>
                             </div>
+
                             {/* 投票ボタン */}
                             <Button
                               size="sm"
-                              variant={candidate.user_voted ? 'default' : 'outline'}
-                              onClick={() =>
-                                handleVote(
-                                  candidate.book_id,
-                                  candidate.user_voted ? 'unvote' : 'vote'
-                                )
-                              }
-                              disabled={votingLoading === candidate.book_id}
+                              variant={selectedBookId === candidate.book_id ? 'default' : 'outline'}
+                              onClick={() => handleVote(candidate.book_id)}
                               className={`min-w-[80px] ${
-                                candidate.user_voted
+                                selectedBookId === candidate.book_id
                                   ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white'
                                   : 'border-purple-300 text-purple-600 hover:bg-purple-50'
                               }`}
                             >
-                              {votingLoading === candidate.book_id ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                              ) : candidate.user_voted ? (
-                                '投票済み'
-                              ) : (
-                                '投票する'
-                              )}
+                              {selectedBookId === candidate.book_id ? '投票取消' : '投票する'}
                             </Button>
                           </div>
                         </div>
                       ))}
-                  </div>
-                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
-                    <div className="flex items-start gap-3">
-                      <div className="text-green-600 mt-0.5">💡</div>
-                      <div>
-                        <p className="text-sm text-green-800 font-medium mb-1">書籍投票について</p>
-                        <p className="text-sm text-green-700">
-                          気になる書籍に投票しましょう！投票数の多い書籍が最終的に選ばれる可能性が高くなります。
-                          <br />
-                          <strong>投票はいつでも変更できます。</strong>
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -405,6 +434,9 @@ export default function ReadingCircleDetailPage() {
                               ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
                               : 'bg-white/60 border border-gray-200 hover:bg-white/80'
                           }`}
+                          style={{
+                            viewTransitionName: `book-card-${candidate.book_id}`,
+                          }}
                         >
                           <div className="relative">
                             <Image

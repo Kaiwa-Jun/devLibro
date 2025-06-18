@@ -7,32 +7,32 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
+    --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card-foreground: 240 10% 3.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover-foreground: 240 10% 3.9%;
 
-    --primary: 207 82% 51%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 240 9% 11%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 200 4% 96%;
-    --secondary-foreground: 0 0% 13%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
 
-    --muted: 200 4% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 36 100% 50%;
-    --accent-foreground: 0 0% 13%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 207 82% 51%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
 
     --difficulty-easy: #ef4444;
     --difficulty-somewhat-easy: #eab308;
@@ -41,37 +41,42 @@
     --difficulty-hard: #a855f7;
     --difficulty-unknown: #94a3b8;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 93%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 93%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 93%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 183 100% 35%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
 
-    --secondary: 0 0% 11%;
-    --secondary-foreground: 0 0% 93%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 11%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --accent: 36 100% 66%;
-    --accent-foreground: 0 0% 13%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 93%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 183 100% 35%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
 
     --difficulty-easy: #ef4444;
     --difficulty-somewhat-easy: #eab308;
@@ -79,6 +84,12 @@
     --difficulty-somewhat-hard: #3b82f6;
     --difficulty-hard: #a855f7;
     --difficulty-unknown: #94a3b8;
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -105,4 +116,71 @@
 
 .dark [data-state='active'] {
   border-color: hsl(0 0% 20%) !important;
+}
+
+/* CSS View Transitions for book cards */
+@media (prefers-reduced-motion: no-preference) {
+  /* 書籍カードのView Transition */
+  [style*='view-transition-name'] {
+    contain: layout style paint;
+  }
+
+  /* 書籍カード専用のアニメーション */
+  ::view-transition-old(book-card-*) {
+    animation: book-card-fade-out 0.25s ease-in-out both;
+  }
+
+  ::view-transition-new(book-card-*) {
+    animation: book-card-fade-in 0.25s ease-in-out both;
+  }
+
+  /* 書籍カードのグループアニメーション - より制御された移動 */
+  ::view-transition-group(book-card-*) {
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform-origin: center center;
+  }
+
+  /* 上下の交差移動アニメーション - より小さな移動距離 */
+  @keyframes book-card-fade-out {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+    }
+  }
+
+  @keyframes book-card-fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ルート要素と他の要素のアニメーションを完全に無効化 */
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(root) {
+    animation: none !important;
+  }
+
+  /* 書籍カード以外の全ての要素のアニメーションを無効化 */
+  ::view-transition-old(*):not([style*='book-card-']),
+  ::view-transition-new(*):not([style*='book-card-']),
+  ::view-transition-group(*):not([style*='book-card-']) {
+    animation: none !important;
+  }
+
+  /* コンテナのアニメーションも無効化 */
+  ::view-transition-old(space-y-4),
+  ::view-transition-new(space-y-4) {
+    animation: none !important;
+  }
 }
