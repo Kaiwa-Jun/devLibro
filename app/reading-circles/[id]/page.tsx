@@ -448,7 +448,7 @@ export default function ReadingCircleDetailPage() {
                   </div>
 
                   {/* 書籍候補一覧 */}
-                  <div className="space-y-4" style={{ contain: 'layout style' }}>
+                  <div className="space-y-4 px-2" style={{ contain: 'layout style' }}>
                     {circle.book_candidates
                       .sort((a, b) => {
                         const aVotes =
@@ -468,17 +468,17 @@ export default function ReadingCircleDetailPage() {
                             viewTransitionName: `book-card-${candidate.book_id}`,
                             contain: 'layout style paint',
                           }}
-                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-700 hover:shadow-lg ${
+                          className={`group flex items-center gap-4 p-6 mx-2 rounded-2xl transition-all duration-700 hover:shadow-lg ${
                             selectedBookId === candidate.book_id
                               ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
                               : 'bg-white/60 border border-gray-200 hover:bg-white/80'
                           }`}
                         >
-                          <div className="relative">
+                          <Link href={`/book/${candidate.books.id}`} className="relative block">
                             <Image
                               src={candidate.books.img_url || '/images/book-placeholder.png'}
                               alt={candidate.books.title}
-                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-700"
+                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-700 hover:scale-105"
                               width={64}
                               height={80}
                             />
@@ -487,11 +487,14 @@ export default function ReadingCircleDetailPage() {
                                 <Check className="h-3 w-3" />
                               </div>
                             )}
-                          </div>
+                          </Link>
                           <div className="flex-1">
-                            <p className="font-bold text-gray-800 text-lg mb-1">
+                            <Link
+                              href={`/book/${candidate.books.id}`}
+                              className="font-bold text-gray-800 text-lg mb-1 hover:text-purple-600 transition-colors duration-200 block"
+                            >
                               {candidate.books.title}
-                            </p>
+                            </Link>
                             <p className="text-gray-600 mb-2">{candidate.books.author}</p>
                             {selectedBookId === candidate.book_id && (
                               <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
@@ -540,11 +543,11 @@ export default function ReadingCircleDetailPage() {
                     <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                       📚 対象書籍候補
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4 px-2">
                       {circle.bookCandidates.map(candidate => (
                         <div
                           key={candidate.book_id}
-                          className={`group flex items-center gap-4 p-5 rounded-2xl transition-all duration-700 hover:shadow-lg ${
+                          className={`group flex items-center gap-4 p-6 mx-2 rounded-2xl transition-all duration-700 hover:shadow-lg ${
                             candidate.is_selected
                               ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-300 shadow-md'
                               : 'bg-white/60 border border-gray-200 hover:bg-white/80'
@@ -553,11 +556,11 @@ export default function ReadingCircleDetailPage() {
                             viewTransitionName: `book-card-${candidate.book_id}`,
                           }}
                         >
-                          <div className="relative">
+                          <Link href={`/book/${candidate.books.id}`} className="relative block">
                             <Image
                               src={candidate.books.img_url}
                               alt={candidate.books.title}
-                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-700"
+                              className="w-16 h-20 object-cover rounded-lg shadow-md group-hover:shadow-lg transition-shadow duration-700 hover:scale-105"
                               width={64}
                               height={80}
                             />
@@ -566,11 +569,14 @@ export default function ReadingCircleDetailPage() {
                                 <Check className="h-3 w-3" />
                               </div>
                             )}
-                          </div>
+                          </Link>
                           <div className="flex-1">
-                            <p className="font-bold text-gray-800 text-lg mb-1">
+                            <Link
+                              href={`/book/${candidate.books.id}`}
+                              className="font-bold text-gray-800 text-lg mb-1 hover:text-purple-600 transition-colors duration-200 block"
+                            >
                               {candidate.books.title}
-                            </p>
+                            </Link>
                             <p className="text-gray-600 mb-2">{candidate.books.author}</p>
                             {candidate.is_selected && (
                               <span className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1 rounded-full font-medium">
@@ -591,16 +597,23 @@ export default function ReadingCircleDetailPage() {
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-gray-800">
                     📚 対象書籍
                   </h3>
-                  <div className="flex items-center gap-4 p-5 bg-white/60 border border-gray-200 rounded-2xl hover:bg-white/80 transition-all duration-700 hover:shadow-lg">
-                    <Image
-                      src={circle.book.img_url}
-                      alt={circle.book.title}
-                      className="w-16 h-20 object-cover rounded-lg shadow-md"
-                      width={64}
-                      height={80}
-                    />
+                  <div className="flex items-center gap-4 p-6 mx-2 bg-white/60 border border-gray-200 rounded-2xl hover:bg-white/80 transition-all duration-700 hover:shadow-lg">
+                    <Link href={`/book/${circle.book.id}`} className="block">
+                      <Image
+                        src={circle.book.img_url}
+                        alt={circle.book.title}
+                        className="w-16 h-20 object-cover rounded-lg shadow-md hover:scale-105 transition-transform duration-200"
+                        width={64}
+                        height={80}
+                      />
+                    </Link>
                     <div>
-                      <p className="font-bold text-gray-800 text-lg">{circle.book.title}</p>
+                      <Link
+                        href={`/book/${circle.book.id}`}
+                        className="font-bold text-gray-800 text-lg hover:text-purple-600 transition-colors duration-200 block"
+                      >
+                        {circle.book.title}
+                      </Link>
                       <p className="text-gray-600">{circle.book.author}</p>
                     </div>
                   </div>
